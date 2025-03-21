@@ -5,8 +5,7 @@ views:
     cards:
       - type: custom:apexcharts-card
         title: Power Consumption
-        series: !include
-          - sensor.energy_dashboard_chart_config
+        series: "{{ states('sensor.energy_dashboard_chart_config') }}"
         graph_span: 24h
         update_interval: 60
         header:

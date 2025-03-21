@@ -1,5 +1,6 @@
+import os
+import json
 from homeassistant.helpers.entity_registry import async_get
-from homeassistant.components.lovelace.dashboard import async_create_dashboard
 
 async def async_setup(hass, config):
     async def get_sensors(service_call):
@@ -28,44 +29,43 @@ async def async_setup(hass, config):
 
     async def create_dashboard():
         """Create the Energy Dashboard in the Home Assistant UI."""
+        dashboards_path = hass.config.path(".storage/lovelace_dashboards")
+        resources_path = hass.config.path(".storage/lovelace_resources")
+
+        # Ensure directories exist
+        os.makedirs(dashboards_path, exist_ok=True)
+
+        # Register the dashboard
         dashboard_config = {
             "title": "Energy Dashboard",
-            "views": [
-                {
-                    "title": "Energy Overview",
-                    "path": "energy_overview",
-                    "cards": [
-                        {
-                            "type": "custom:apexcharts-card",
-                            "title": "Power Consumption",
-                            "series": "{{ states('sensor.energy_dashboard_chart_config') }}",
-                            "graph_span": "24h",
-                            "update_interval": 60,
-                            "header": {
-                                "show": True,
-                                "title": "Power Consumption Over Time",
-                            },
-                        },
-                        {
-                            "type": "custom:sensor-list",
-                            "title": "Power and Energy Sensors",
-                            "entities": "{{ states('sensor.energy_dashboard_sensors') }}",
-                        },
-                        {
-                            "type": "custom:timeframe-control",
-                            "title": "Select Timeframe",
-                            "options": [
-                                {"label": "Last Hour", "value": "1h"},
-                                {"label": "Last 24 Hours", "value": "24h"},
-                                {"label": "Last Week", "value": "7d"},
-                                {"label": "Last Month", "value": "30d"},
-                            ],
-                        },
-                    ],
-                }
-            ],
+            "mode": "yaml",
+            "filename": "dashboards/energy_dashboard/dashboard.yaml",
+            "icon": "mdi:chart-line",
+            "show_in_sidebar": True,
+            "require_admin": False,
         }
-        await async_create_dashboard(hass, "energy_dashboard", dashboard_config)
+
+        dashboards_file = os.path.join(dashboards_path, "energy_dashboard")
+        with open(dashboards_file, "w") as file:
+            json.dump(dashboard_config, file)
+
+        # Register resources for custom cards
+        resources = [
+            {
+                "url": "/local/community/apexcharts-card/apexcharts-card.js",
+                "type": "module",
+            },
+            {
+                "url": "/local/community/sensor-list/sensor-list.js",
+                "type": "module",
+            },
+        ]
+
+        with open(resources_path, "w") as file:
+            json.dump(resources, file)
+
+        # Notify Home Assistant to reload dashboards
+        hass.bus.async_fire("lovelace_updated")
 
     # Call the create_dashboard function during setup
     hass.async_create_task(create_dashboard())
