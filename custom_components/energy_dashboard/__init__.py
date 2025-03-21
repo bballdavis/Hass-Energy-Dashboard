@@ -30,46 +30,79 @@ async def async_setup(hass, config):
     async def create_dashboard():
         """Create the Energy Dashboard in the Home Assistant UI."""
         dashboards_path = hass.config.path(".storage/lovelace_dashboards")
-        resources_path = hass.config.path(".storage/lovelace_resources")
+        dashboard_file_path = hass.config.path("dashboards/energy_dashboard/dashboard.yaml")
 
-        # Ensure directories exist
-        os.makedirs(dashboards_path, exist_ok=True)
+        # Ensure the dashboards directory exists
+        os.makedirs(os.path.dirname(dashboard_file_path), exist_ok=True)
 
-        # Register the dashboard
-        dashboard_config = {
+        # Write the dashboard YAML file
+        dashboard_yaml = {
             "title": "Energy Dashboard",
+            "views": [
+                {
+                    "title": "Energy Overview",
+                    "path": "energy_overview",
+                    "cards": [
+                        {
+                            "type": "custom:apexcharts-card",
+                            "title": "Power Consumption",
+                            "series": "{{ states('sensor.energy_dashboard_chart_config') | fromjson }}",
+                            "graph_span": "24h",
+                            "update_interval": 60,
+                            "header": {
+                                "show": True,
+                                "title": "Power Consumption Over Time",
+                            },
+                        },
+                        {
+                            "type": "custom:sensor-list",
+                            "title": "Power and Energy Sensors",
+                            "entities": "{{ states('sensor.energy_dashboard_sensors') | fromjson }}",
+                        },
+                        {
+                            "type": "custom:timeframe-control",
+                            "title": "Select Timeframe",
+                            "options": [
+                                {"label": "Last Hour", "value": "1h"},
+                                {"label": "Last 24 Hours", "value": "24h"},
+                                {"label": "Last Week", "value": "7d"},
+                                {"label": "Last Month", "value": "30d"},
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+
+        with open(dashboard_file_path, "w") as dashboard_file:
+            json.dump(dashboard_yaml, dashboard_file)
+
+        # Register the dashboard in Home Assistant
+        dashboards_config = {
+            "url_path": "energy_dashboard",
             "mode": "yaml",
-            "filename": "dashboards/energy_dashboard/dashboard.yaml",
+            "filename": dashboard_file_path,
+            "title": "Energy Dashboard",
             "icon": "mdi:chart-line",
             "show_in_sidebar": True,
             "require_admin": False,
         }
 
-        dashboards_file = os.path.join(dashboards_path, "energy_dashboard")
-        with open(dashboards_file, "w") as file:
-            json.dump(dashboard_config, file)
+        dashboards_registry_path = os.path.join(dashboards_path, "dashboards")
+        os.makedirs(dashboards_registry_path, exist_ok=True)
 
-        # Register resources for custom cards
-        resources = [
-            {
-                "url": "/local/community/apexcharts-card/apexcharts-card.js",
-                "type": "module",
-            },
-            {
-                "url": "/local/community/sensor-list/sensor-list.js",
-                "type": "module",
-            },
-        ]
-
-        with open(resources_path, "w") as file:
-            json.dump(resources, file)
+        with open(os.path.join(dashboards_registry_path, "energy_dashboard.json"), "w") as dashboards_registry_file:
+            json.dump(dashboards_config, dashboards_registry_file)
 
         # Notify Home Assistant to reload dashboards
         hass.bus.async_fire("lovelace_updated")
 
+    # Ensure the `get_sensors` service is called during setup to populate the sensor list
+    hass.services.async_register("energy_dashboard", "get_sensors", get_sensors)
+    hass.services.async_register("energy_dashboard", "update_chart", update_chart)
+    hass.async_create_task(get_sensors(None))  # Populate sensors on startup
+
     # Call the create_dashboard function during setup
     hass.async_create_task(create_dashboard())
 
-    hass.services.async_register("energy_dashboard", "get_sensors", get_sensors)
-    hass.services.async_register("energy_dashboard", "update_chart", update_chart)
     return True
