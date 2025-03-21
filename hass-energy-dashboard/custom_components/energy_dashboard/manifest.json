@@ -1,0 +1,10 @@
+{
+  "domain": "energy_dashboard",
+  "name": "Energy Dashboard",
+  "version": "1.0.0",
+  "documentation": "https://github.com/yourusername/hass-energy-dashboard",
+  "dependencies": [],
+  "requirements": [],
+  "codeowners": ["@yourusername"],
+  "iot_class": "local_polling"
+}

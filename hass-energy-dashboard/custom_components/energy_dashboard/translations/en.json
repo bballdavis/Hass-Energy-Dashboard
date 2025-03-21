@@ -1,0 +1,22 @@
+{
+    "title": "Energy Dashboard",
+    "description": "A dashboard for monitoring energy usage with Savant Energy integration.",
+    "power_sensors": {
+        "label": "Power Sensors",
+        "description": "List of power sensors from Savant Energy.",
+        "toggle": "Toggle Power Sensors"
+    },
+    "energy_sensors": {
+        "label": "Energy Sensors",
+        "description": "List of energy sensors from Savant Energy.",
+        "toggle": "Toggle Energy Sensors"
+    },
+    "timeframe": {
+        "label": "Select Timeframe",
+        "description": "Choose the timeframe for the data displayed on the dashboard."
+    },
+    "chart": {
+        "label": "Power Usage Chart",
+        "description": "Displays the power usage over the selected timeframe."
+    }
+}

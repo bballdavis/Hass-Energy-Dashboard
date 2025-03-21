@@ -1,0 +1,52 @@
+title: ApexCharts Card Configuration
+type: custom:apexcharts-card
+header:
+  title: Power Consumption
+  show: true
+  color: '#FF5733'
+  font_size: 20px
+  align: center
+chart_type: line
+series:
+  - entity: sensor.savant_energy_power
+    name: Power (W)
+    type: line
+    stroke_width: 2
+    color: '#FF5733'
+  - entity: sensor.savant_energy_energy
+    name: Energy (kWh)
+    type: area
+    stroke_width: 2
+    color: '#33FF57'
+data:
+  - entity: sensor.savant_energy_power
+    name: Power
+  - entity: sensor.savant_energy_energy
+    name: Energy
+apex_config:
+  chart:
+    height: 350
+    type: line
+  xaxis:
+    type: datetime
+    labels:
+      format: 'MMM dd HH:mm'
+  yaxis:
+    title:
+      text: 'Power / Energy'
+  tooltip:
+    shared: true
+    intersect: false
+  legend:
+    position: top
+    horizontalAlign: center
+    floating: true
+    offsetY: 20
+    offsetX: 0
+  dataLabels:
+    enabled: false
+  stroke:
+    curve: smooth
+  colors:
+    - '#FF5733'
+    - '#33FF57'
