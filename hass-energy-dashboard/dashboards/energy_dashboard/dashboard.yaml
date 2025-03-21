@@ -5,8 +5,7 @@ views:
     cards:
       - type: custom:apexcharts-card
         title: Power Consumption
-        series: !include
-          - sensor.energy_dashboard_chart_config
+        series: "{{ states('sensor.energy_dashboard_chart_config') }}"
         graph_span: 24h
         update_interval: 60
         header:
@@ -14,8 +13,7 @@ views:
           title: Power Consumption Over Time
       - type: custom:sensor-list
         title: Power and Energy Sensors
-        entities: !include
-          - sensor.energy_dashboard_sensors
+        entities: []
       - type: custom:timeframe-control
         title: Select Timeframe
         options:
