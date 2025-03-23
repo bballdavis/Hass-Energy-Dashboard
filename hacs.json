@@ -1,4 +1,9 @@
 {
-    "name": "Energy Dashboard",
-    "render_readme": true
-  }
+  "name": "Energy Dashboard Card",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": ["lovelace"],
+  "country": ["US"],
+  "homeassistant": "2021.11.0",
+  "iot_class": "local_polling"
+}
