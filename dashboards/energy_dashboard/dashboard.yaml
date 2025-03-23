@@ -1,6 +1,0 @@
-title: Energy Dashboard
-views:
-  - title: Energy Overview
-    path: energy_overview
-    cards:
-      - type: custom:energy-dashboard
