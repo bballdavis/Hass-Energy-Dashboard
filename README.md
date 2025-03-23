@@ -10,6 +10,6 @@ This is a custom Lovelace card for visualizing energy and power data.
 
 ```yaml
 resources:
-  - url: /hacsfiles/hass-energy-dashboard/energy-dashboard-card.js
+  - url: /local/community/energy-dashboard-card/energy-dashboard-card.js
     type: module
 ```
