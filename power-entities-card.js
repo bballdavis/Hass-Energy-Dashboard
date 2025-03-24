@@ -26,51 +26,27 @@ class PowerEntitiesCard extends LitElement {
         line-height: var(--paper-font-headline_-_line-height);
         color: var(--ha-card-header-color, --primary-text-color);
       }
-      ha-card {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        overflow: hidden;
-      }
       .entities-container {
-        display: flex;
-        flex-direction: column;
         padding: 0 var(--card-padding) var(--card-padding);
-        overflow-y: auto;
-        max-height: calc(100% - 50px); /* Adjust based on header height */
-        scrollbar-width: thin;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      .entities-container::-webkit-scrollbar {
-        width: 6px;
-        background-color: var(--scrollbar-thumb-color, rgba(0, 0, 0, 0.2));
-      }
-      .entities-container::-webkit-scrollbar-thumb {
-        background-color: var(--scrollbar-thumb-color, rgba(0, 0, 0, 0.2));
-        border-radius: 6px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-gap: 8px;
       }
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
-        border-radius: 8px;
-        padding: 5px 12px; 
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        padding: 10px 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex;
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        height: 20px;
-        margin-bottom: 4px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      .entity-item:last-child {
-        margin-bottom: 0;
+        height: 40px;
       }
       .entity-item:hover {
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transform: translateY(-1px);
       }
       .entity-item.on {
@@ -81,29 +57,21 @@ class PowerEntitiesCard extends LitElement {
         display: flex;
         flex-direction: column;
         justify-content: center;
-        max-width: 60%;
       }
       .entity-name {
         font-weight: bold;
-        font-size: 0.8em;
+        font-size: 0.95em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        max-width: 140px;
       }
       .entity-state {
         display: flex;
         align-items: center;
-        gap: 4px;
-        justify-content: flex-end;
-        min-width: 40%;
-      }
-      .status-indicator {
-        font-size: 0.7em;
       }
       .power-value {
         font-weight: 500;
-        font-size: 0.8em;
-        text-align: right;
       }
       .empty-message {
         padding: var(--card-padding);
@@ -132,9 +100,7 @@ class PowerEntitiesCard extends LitElement {
   }
 
   getCardSize() {
-    // Calculate card size based on the number of entities and their height
-    // For a scrollable list, return a fixed size
-    return 5;
+    return 1 + Math.ceil(this.powerEntities.length / 2);
   }
 
   updated(changedProps) {
