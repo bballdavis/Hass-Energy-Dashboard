@@ -16,6 +16,8 @@ class PowerEntitiesCard extends LitElement {
     return css`
       :host {
         --card-padding: 16px;
+        --entity-height: 17px;
+        --entity-width: 240px;
       }
       .card-header {
         padding: var(--card-padding);
@@ -29,9 +31,10 @@ class PowerEntitiesCard extends LitElement {
       }
       .entities-container {
         padding: 0 var(--card-padding) var(--card-padding);
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        grid-gap: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-start;
       }
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
@@ -44,7 +47,17 @@ class PowerEntitiesCard extends LitElement {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        height: 17px;
+        height: var(--entity-height);
+        width: var(--entity-width);
+        box-sizing: border-box;
+        flex-grow: 0;
+        flex-shrink: 0;
+      }
+      @media (max-width: 600px) {
+        .entity-item {
+          width: 100%;
+          flex-grow: 1;
+        }
       }
       .entity-item:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -66,10 +79,13 @@ class PowerEntitiesCard extends LitElement {
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 140px;
+        flex: 1;
       }
       .entity-state {
         display: flex;
         align-items: center;
+        justify-content: flex-end;
+        min-width: 60px;
       }
       .power-value {
         font-weight: 500;
@@ -102,7 +118,21 @@ class PowerEntitiesCard extends LitElement {
   }
 
   getCardSize() {
-    return 1 + Math.ceil(this.powerEntities.length / 2);
+    // More accurate card sizing based on number of entities and their size
+    if (!this.powerEntities || this.powerEntities.length === 0) return 1;
+    
+    // Calculate how many entities fit in a row based on card width
+    // This is an estimate since we can't directly access the card width
+    const cardWidth = 500; // Estimate based on typical Home Assistant card width
+    const entityWidth = 240 + 8; // Width + gap
+    const entitiesPerRow = Math.max(1, Math.floor(cardWidth / entityWidth));
+    
+    // Calculate rows needed
+    const rows = Math.ceil(this.powerEntities.length / entitiesPerRow);
+    
+    // Each row is about 37px (17px height + 20px padding/margins)
+    // Add 1 for the header
+    return rows + 1;
   }
 
   updated(changedProps) {
