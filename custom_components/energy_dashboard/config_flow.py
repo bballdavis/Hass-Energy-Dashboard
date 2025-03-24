@@ -7,8 +7,10 @@ class EnergyDashboardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         if user_input is not None:
-            return self.async_create_entry(title="Energy Dashboard", data=user_input)
+            # Create the entry without requiring additional input
+            return self.async_create_entry(title="Energy Dashboard", data={})
 
+        # Show a simple form to allow the user to confirm installation
         return self.async_show_form(step_id="user")
 
     @staticmethod
@@ -22,6 +24,8 @@ class EnergyDashboardOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         if user_input is not None:
+            # Save options if provided
             return self.async_create_entry(title="", data=user_input)
 
+        # Show options form
         return self.async_show_form(step_id="init")

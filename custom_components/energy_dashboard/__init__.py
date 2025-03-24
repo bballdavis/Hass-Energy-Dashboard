@@ -4,7 +4,8 @@ from homeassistant.core import HomeAssistant
 DOMAIN = "energy_dashboard"
 
 async def async_setup(hass: HomeAssistant, config: dict):
-    # ...existing code...
+    # Allow the integration to be discovered via the UI without requiring configuration.yaml
+    hass.data.setdefault(DOMAIN, {})
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
