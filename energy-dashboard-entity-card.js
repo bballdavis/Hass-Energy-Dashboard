@@ -16,11 +16,11 @@ class EnergyDashboardEntityCard extends LitElement {
     return css`
       :host {
         --card-padding: 16px;
-        --entity-height: 13px; /* Reduced from 17px to 13px (about 25% smaller) */
+        --entity-height: 12px; /* Reduced by 30% from original 17px */
         --entity-width: 240px;
         --button-height: 32px;
         --entity-font-size: 0.95em;
-        --section-title-font-size: 0.9975em; /* Reduced by 30% from 1.425em to 0.9975em */
+        --section-title-font-size: 0.9975em;
       }
       .card-header {
         padding: var(--card-padding);
@@ -116,7 +116,7 @@ class EnergyDashboardEntityCard extends LitElement {
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
         border-radius: 12px;
-        padding: 9px 16px; /* Reduce padding by 25% from the original value of 12px 16px */
+        padding: 8px 16px; /* Reduced vertical padding by 30% from original 12px */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         cursor: pointer;
         transition: all 0.3s ease;
@@ -133,6 +133,7 @@ class EnergyDashboardEntityCard extends LitElement {
         /* Explicitly force full width */
         min-width: 100%;
         max-width: 100%;
+        margin-bottom: 2px; /* Added small margin to provide some separation */
       }
       
       /* Remove media query that might be causing the issue */
@@ -159,12 +160,12 @@ class EnergyDashboardEntityCard extends LitElement {
         justify-content: center;
         flex: 3; /* Give the name section more room */
         min-width: 0; /* Allow the flex container to shrink below min-content */
-        margin-top: -2px; /* Add negative margin to help vertically align content better */
-        margin-bottom: -2px;
+        margin-top: -1px; /* Adjusted for reduced container size */
+        margin-bottom: -1px;
       }
       .entity-name {
         font-weight: bold;
-        font-size: 0.92em; /* Slightly smaller font size to match reduced container size */
+        font-size: 0.95em; /* Reverted to original size */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -180,7 +181,7 @@ class EnergyDashboardEntityCard extends LitElement {
         max-width: 85px; /* Limit the max width to ensure name gets space */
         white-space: nowrap; /* Prevent line breaks in state display */
         flex: 0 0 auto; /* Don't grow, don't shrink, use auto width */
-        font-size: 0.92em; /* Slightly smaller font size to match reduced container size */
+        font-size: 0.95em; /* Reverted to original size */
       }
       .power-value {
         font-weight: 500;
@@ -216,15 +217,15 @@ class EnergyDashboardEntityCard extends LitElement {
   }
 
   getCardSize() {
-    // Adjusted card sizing for smaller entity items
+    // Adjusted card sizing for 30% smaller entity items
     if (!this.powerEntities || this.powerEntities.length === 0) return 1;
     
-    // Each entity is now its own row, but smaller
+    // Each entity is now its own row, but 30% smaller
     const rows = this.powerEntities.length;
     
-    // Each row is now about 30px (13px height + 17px padding/margins)
+    // Each row is now about 28px (12px height + 16px padding/margins)
     // Add 1 for the header and 1 for the controls
-    return rows * 0.75 + 2; // Multiply rows by 0.75 to account for 25% height reduction
+    return rows * 0.7 + 2; // Multiply rows by 0.7 to account for 30% height reduction
   }
 
   updated(changedProps) {
@@ -488,6 +489,7 @@ class EnergyDashboardEntityCard extends LitElement {
                   class="entity-item ${entity.isOn ? 'on' : 'off'}"
                   data-entity="${entity.entityId}"
                   @click="${this._toggleEntity}"
+                  style="gap: 4px;" /* Added to ensure better alignment with smaller container */
                 >
                   <div class="entity-left">
                     <div class="entity-name" title="${entity.name}">${entity.name}</div>
