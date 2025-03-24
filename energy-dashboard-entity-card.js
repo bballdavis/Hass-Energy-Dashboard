@@ -305,7 +305,7 @@ class EnergyDashboardEntityCardEditor extends LitElement {
         display: flex;
         flex-direction: row;
         align-items: center;
-        padding: 8px 0;
+        padding: 8px 16px;
       }
       .title {
         padding-left: 16px;
@@ -313,7 +313,7 @@ class EnergyDashboardEntityCardEditor extends LitElement {
         font-weight: 500;
       }
       .value {
-        flex: 1;
+        width: 100%;
       }
       ha-switch {
         margin-right: 16px;
@@ -336,25 +336,40 @@ class EnergyDashboardEntityCardEditor extends LitElement {
     if (!this.config) return;
     
     const target = ev.target;
-    const configValue = target.configValue;
-    const value = target.type === 'checkbox' ? target.checked : 
-                 target.type === 'number' ? parseInt(target.value) : target.value;
     
-    if (this.config[configValue] === value) return;
-
-    // Update config
-    const newConfig = {
-      ...this.config,
-      [configValue]: value
-    };
+    if (this.config === undefined) {
+      return;
+    }
     
-    // Dispatch config-changed event
-    const event = new CustomEvent('config-changed', {
-      detail: { config: newConfig },
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(event);
+    if (target.configValue) {
+      let newValue;
+      
+      if (target.checked !== undefined) {
+        newValue = target.checked;
+      } else if (target.value) {
+        if (target.type === 'number') {
+          newValue = Number(target.value);
+        } else {
+          newValue = target.value;
+        }
+      }
+      
+      if (this.config[target.configValue] === newValue) {
+        return;
+      }
+      
+      const newConfig = {
+        ...this.config,
+        [target.configValue]: newValue
+      };
+      
+      const event = new CustomEvent('config-changed', {
+        detail: { config: newConfig },
+        bubbles: true,
+        composed: true
+      });
+      this.dispatchEvent(event);
+    }
   }
 
   render() {
@@ -366,11 +381,11 @@ class EnergyDashboardEntityCardEditor extends LitElement {
         
         <div class="row">
           <ha-textfield
-            class="value"
             label="Title"
             .value="${this.config.title || ''}"
             .configValue=${"title"}
-            @input="${this.valueChanged}"
+            @change="${this.valueChanged}"
+            class="value"
           ></ha-textfield>
         </div>
         
@@ -403,16 +418,14 @@ class EnergyDashboardEntityCardEditor extends LitElement {
         
         <div class="row">
           <ha-textfield
-            class="value"
-            label="Auto-select Entities Count"
+            label="Auto-select Count"
             type="number"
             min="0"
             max="50"
-            .value="${this.config.auto_select_count || 6}"
+            .value="${String(this.config.auto_select_count || 6)}"
             .configValue=${"auto_select_count"}
-            @input="${this.valueChanged}"
-            helper-persistent
-            helper-text="Number of entities to automatically select by default"
+            @change="${this.valueChanged}"
+            class="value"
           ></ha-textfield>
         </div>
       </div>
@@ -423,8 +436,13 @@ class EnergyDashboardEntityCardEditor extends LitElement {
 // Register the editor
 customElements.define('energy-dashboard-entity-card-editor', EnergyDashboardEntityCardEditor);
 
-// Set card editor on main class
+// Set card editor on main class - both methods are provided for compatibility
 EnergyDashboardEntityCard.getConfigElement = function() {
+  return document.createElement('energy-dashboard-entity-card-editor');
+};
+
+// This is the modern way to specify the editor
+EnergyDashboardEntityCard.editConfigElement = function() {
   return document.createElement('energy-dashboard-entity-card-editor');
 };
 
