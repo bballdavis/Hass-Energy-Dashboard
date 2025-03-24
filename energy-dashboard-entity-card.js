@@ -8,7 +8,9 @@ class EnergyDashboardEntityCard extends LitElement {
       hass: { type: Object },
       config: { type: Object },
       powerEntities: { type: Array },
-      entityToggleStates: { type: Object }
+      energyEntities: { type: Array },
+      entityToggleStates: { type: Object },
+      energyEntityToggleStates: { type: Object }
     };
   }
 
@@ -191,14 +193,23 @@ class EnergyDashboardEntityCard extends LitElement {
         text-align: center;
         color: var(--secondary-text-color);
       }
+      .section-separator {
+        height: 1px;
+        background-color: var(--divider-color, #e0e0e0);
+        margin: 12px var(--card-padding) 8px;
+        opacity: 0.6;
+      }
     `;
   }
 
   constructor() {
     super();
     this.powerEntities = [];
+    this.energyEntities = [];
     this.entityToggleStates = {};
+    this.energyEntityToggleStates = {};
     this._initialized = false;
+    this._energyInitialized = false;
   }
 
   setConfig(config) {
@@ -212,20 +223,30 @@ class EnergyDashboardEntityCard extends LitElement {
       show_toggle: true,
       auto_select_count: 6,
       max_height: 400, // Default to around 15 entities before scrolling (37px per row * ~15 = ~400px)
+      show_energy_section: true,
+      energy_auto_select_count: 6,
       ...config
     };
   }
 
   getCardSize() {
-    // Adjusted card sizing for 30% smaller entity items
-    if (!this.powerEntities || this.powerEntities.length === 0) return 1;
+    // Adjusted card sizing for both power and energy entities
+    let rows = 0;
     
-    // Each entity is now its own row, but 30% smaller
-    const rows = this.powerEntities.length;
+    // Count power entities if any
+    if (this.powerEntities && this.powerEntities.length > 0) {
+      rows += this.powerEntities.length * 0.7; // Account for 30% height reduction
+      rows += 2; // Add for power section header and controls
+    }
     
-    // Each row is now about 28px (12px height + 16px padding/margins)
-    // Add 1 for the header and 1 for the controls
-    return rows * 0.7 + 2; // Multiply rows by 0.7 to account for 30% height reduction
+    // Count energy entities if enabled and present
+    if (this.config.show_energy_section && this.energyEntities && this.energyEntities.length > 0) {
+      rows += this.energyEntities.length * 0.7; // Account for 30% height reduction
+      rows += 2; // Add for energy section header and controls
+    }
+    
+    // If both sections are empty, return 1
+    return rows > 0 ? rows : 1;
   }
 
   updated(changedProps) {
@@ -238,65 +259,129 @@ class EnergyDashboardEntityCard extends LitElement {
     if (!this.hass) return;
 
     try {
-      // Get current power entities
-      const newPowerEntities = Object.keys(this.hass.states)
-        .filter(entityId => {
-          const stateObj = this.hass.states[entityId];
-          return stateObj && stateObj.attributes && 
-                (stateObj.attributes.unit_of_measurement === 'W' || 
-                 stateObj.attributes.unit_of_measurement === 'kW');
-        })
-        .map(entityId => {
-          const stateObj = this.hass.states[entityId];
-          const domain = entityId.split('.')[0];
-          const isToggleable = ['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain);
-          
-          let powerValue = 0;
-          try {
-            // Convert kW to W if needed
-            if (stateObj.attributes.unit_of_measurement === 'kW') {
-              powerValue = parseFloat(stateObj.state) * 1000;
-            } else {
-              powerValue = parseFloat(stateObj.state) || 0;
-            }
-          } catch (e) {
-            console.warn(`Error parsing power value for ${entityId}:`, e);
-            powerValue = 0;
-          }
-          
-          return {
-            entityId,
-            name: stateObj.attributes.friendly_name || entityId,
-            state: stateObj.state,
-            unit: stateObj.attributes.unit_of_measurement,
-            powerValue,
-            isToggleable
-          };
-        })
-        .sort((a, b) => b.powerValue - a.powerValue); // Sort by power value, highest first
+      // Update power entities
+      this._updatePowerEntities();
       
-      // Initialize toggle states if they don't exist or we haven't initialized yet
-      if (!this._initialized || Object.keys(this.entityToggleStates).length === 0) {
-        this._initializeToggleStates(newPowerEntities);
-        this._initialized = true;
+      // Update energy entities if energy section is enabled
+      if (this.config.show_energy_section) {
+        this._updateEnergyEntities();
       }
-      
-      // Add toggle state to each entity
-      this.powerEntities = newPowerEntities.map(entity => ({
-        ...entity,
-        isOn: this.entityToggleStates[entity.entityId] || false
-      }));
-
-      // Store the latest toggle states
-      this._saveToggleStates();
     } catch (e) {
-      console.error("Error updating power entities:", e);
+      console.error("Error updating entities:", e);
     }
   }
 
-  _initializeToggleStates(entities) {
+  _updatePowerEntities() {
+    // Get current power entities
+    const newPowerEntities = Object.keys(this.hass.states)
+      .filter(entityId => {
+        const stateObj = this.hass.states[entityId];
+        return stateObj && stateObj.attributes && 
+              (stateObj.attributes.unit_of_measurement === 'W' || 
+               stateObj.attributes.unit_of_measurement === 'kW');
+      })
+      .map(entityId => {
+        const stateObj = this.hass.states[entityId];
+        const domain = entityId.split('.')[0];
+        const isToggleable = ['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain);
+        
+        let powerValue = 0;
+        try {
+          // Convert kW to W if needed
+          if (stateObj.attributes.unit_of_measurement === 'kW') {
+            powerValue = parseFloat(stateObj.state) * 1000;
+          } else {
+            powerValue = parseFloat(stateObj.state) || 0;
+          }
+        } catch (e) {
+          console.warn(`Error parsing power value for ${entityId}:`, e);
+          powerValue = 0;
+        }
+        
+        return {
+          entityId,
+          name: stateObj.attributes.friendly_name || entityId,
+          state: stateObj.state,
+          unit: stateObj.attributes.unit_of_measurement,
+          powerValue,
+          isToggleable
+        };
+      })
+      .sort((a, b) => b.powerValue - a.powerValue); // Sort by power value, highest first
+    
+    // Initialize toggle states if needed
+    if (!this._initialized || Object.keys(this.entityToggleStates).length === 0) {
+      this._initializePowerToggleStates(newPowerEntities);
+      this._initialized = true;
+    }
+    
+    // Add toggle state to each entity
+    this.powerEntities = newPowerEntities.map(entity => ({
+      ...entity,
+      isOn: this.entityToggleStates[entity.entityId] || false
+    }));
+
+    // Store the latest toggle states
+    this._savePowerToggleStates();
+  }
+
+  _updateEnergyEntities() {
+    // Get current energy entities
+    const newEnergyEntities = Object.keys(this.hass.states)
+      .filter(entityId => {
+        const stateObj = this.hass.states[entityId];
+        return stateObj && stateObj.attributes && 
+              (stateObj.attributes.unit_of_measurement === 'Wh' || 
+               stateObj.attributes.unit_of_measurement === 'kWh');
+      })
+      .map(entityId => {
+        const stateObj = this.hass.states[entityId];
+        const domain = entityId.split('.')[0];
+        const isToggleable = ['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain);
+        
+        let energyValue = 0;
+        try {
+          // Convert Wh to kWh for consistent sorting
+          if (stateObj.attributes.unit_of_measurement === 'Wh') {
+            energyValue = parseFloat(stateObj.state) / 1000;
+          } else {
+            energyValue = parseFloat(stateObj.state) || 0;
+          }
+        } catch (e) {
+          console.warn(`Error parsing energy value for ${entityId}:`, e);
+          energyValue = 0;
+        }
+        
+        return {
+          entityId,
+          name: stateObj.attributes.friendly_name || entityId,
+          state: stateObj.state,
+          unit: stateObj.attributes.unit_of_measurement,
+          energyValue,
+          isToggleable
+        };
+      })
+      .sort((a, b) => b.energyValue - a.energyValue); // Sort by energy value, highest first
+    
+    // Initialize toggle states if needed
+    if (!this._energyInitialized || Object.keys(this.energyEntityToggleStates).length === 0) {
+      this._initializeEnergyToggleStates(newEnergyEntities);
+      this._energyInitialized = true;
+    }
+    
+    // Add toggle state to each entity
+    this.energyEntities = newEnergyEntities.map(entity => ({
+      ...entity,
+      isOn: this.energyEntityToggleStates[entity.entityId] || false
+    }));
+
+    // Store the latest toggle states
+    this._saveEnergyToggleStates();
+  }
+
+  _initializePowerToggleStates(entities) {
     // Get stored toggle states from localStorage
-    const savedStates = this._loadToggleStates();
+    const savedStates = this._loadToggleStates('energy-dashboard-power-toggle-states');
     
     if (savedStates && Object.keys(savedStates).length > 0) {
       this.entityToggleStates = savedStates;
@@ -310,39 +395,62 @@ class EnergyDashboardEntityCard extends LitElement {
     }
   }
 
-  _loadToggleStates() {
+  _initializeEnergyToggleStates(entities) {
+    // Get stored toggle states from localStorage
+    const savedStates = this._loadToggleStates('energy-dashboard-energy-toggle-states');
+    
+    if (savedStates && Object.keys(savedStates).length > 0) {
+      this.energyEntityToggleStates = savedStates;
+    } else {
+      // Set top N entities to ON by default, where N is energy_auto_select_count from config
+      const toggleStates = {};
+      entities.slice(0, this.config.energy_auto_select_count).forEach(entity => {
+        toggleStates[entity.entityId] = true;
+      });
+      this.energyEntityToggleStates = toggleStates;
+    }
+  }
+
+  _loadToggleStates(key = 'energy-dashboard-entity-toggle-states') {
     try {
-      const stored = localStorage.getItem('energy-dashboard-entity-toggle-states');
+      const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : null;
     } catch (e) {
-      console.error('Failed to load toggle states:', e);
+      console.error(`Failed to load toggle states for ${key}:`, e);
       return null;
     }
   }
 
-  _saveToggleStates() {
+  _savePowerToggleStates() {
+    this._saveToggleStates(this.entityToggleStates, 'energy-dashboard-power-toggle-states');
+  }
+
+  _saveEnergyToggleStates() {
+    this._saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
+  }
+
+  _saveToggleStates(states, key = 'energy-dashboard-entity-toggle-states') {
     try {
-      localStorage.setItem('energy-dashboard-entity-toggle-states', 
-        JSON.stringify(this.entityToggleStates));
+      localStorage.setItem(key, JSON.stringify(states));
     } catch (e) {
-      console.error('Failed to save toggle states:', e);
+      console.error(`Failed to save toggle states for ${key}:`, e);
       // Try with reduced data if storage limit is hit
       try {
         const reducedStates = {};
         // Just keep the true values to save space
-        Object.keys(this.entityToggleStates).forEach(key => {
-          if (this.entityToggleStates[key]) {
+        Object.keys(states).forEach(key => {
+          if (states[key]) {
             reducedStates[key] = true;
           }
         });
-        localStorage.setItem('energy-dashboard-entity-toggle-states', JSON.stringify(reducedStates));
+        localStorage.setItem(key, JSON.stringify(reducedStates));
       } catch (e2) {
-        console.error('Failed to save reduced toggle states:', e2);
+        console.error(`Failed to save reduced toggle states for ${key}:`, e2);
       }
     }
   }
 
-  _toggleEntity(ev) {
+  _togglePowerEntity(ev) {
     const entityId = ev.currentTarget.dataset.entity;
     if (!entityId || !this.config.show_toggle) return;
     
@@ -357,21 +465,48 @@ class EnergyDashboardEntityCard extends LitElement {
     );
     
     // Save the updated toggle states
-    this._saveToggleStates();
+    this._savePowerToggleStates();
     
     // Request an update
     this.requestUpdate();
     
     // If entity is toggleable, also control the actual device
+    this._controlEntity(entityId, this.entityToggleStates[entityId]);
+  }
+
+  _toggleEnergyEntity(ev) {
+    const entityId = ev.currentTarget.dataset.entity;
+    if (!entityId || !this.config.show_toggle) return;
+    
+    // Toggle the entity state in our JSON store
+    this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
+    
+    // Update the UI
+    this.energyEntities = this.energyEntities.map(entity => 
+      entity.entityId === entityId 
+        ? { ...entity, isOn: this.energyEntityToggleStates[entityId] } 
+        : entity
+    );
+    
+    // Save the updated toggle states
+    this._saveEnergyToggleStates();
+    
+    // Request an update
+    this.requestUpdate();
+    
+    // If entity is toggleable, also control the actual device
+    this._controlEntity(entityId, this.energyEntityToggleStates[entityId]);
+  }
+
+  _controlEntity(entityId, isOn) {
     const domain = entityId.split('.')[0];
     if (['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain)) {
-      const isOn = this.entityToggleStates[entityId];
       const service = isOn ? 'turn_on' : 'turn_off';
       this.hass.callService(domain, service, { entity_id: entityId });
     }
   }
 
-  _resetToDefaultEntities() {
+  _resetToPowerDefaultEntities() {
     if (!this.powerEntities || this.powerEntities.length === 0) return;
     
     // Reset toggle states to default (top N based on auto_select_count)
@@ -386,13 +521,34 @@ class EnergyDashboardEntityCard extends LitElement {
     this.entityToggleStates = newToggleStates;
     
     // Update UI with new states
-    this._updateEntityStates();
+    this._updatePowerEntityStates();
     
     // Save the updated toggle states
-    this._saveToggleStates();
+    this._savePowerToggleStates();
+  }
+
+  _resetToEnergyDefaultEntities() {
+    if (!this.energyEntities || this.energyEntities.length === 0) return;
+    
+    // Reset toggle states to default (top N based on energy_auto_select_count)
+    const newToggleStates = {};
+    this.energyEntities
+      .slice(0, this.config.energy_auto_select_count)
+      .forEach(entity => {
+        newToggleStates[entity.entityId] = true;
+      });
+    
+    // Update toggle states
+    this.energyEntityToggleStates = newToggleStates;
+    
+    // Update UI with new states
+    this._updateEnergyEntityStates();
+    
+    // Save the updated toggle states
+    this._saveEnergyToggleStates();
   }
   
-  _clearAllEntities() {
+  _clearAllPowerEntities() {
     // Turn all entities off
     const newToggleStates = {};
     this.powerEntities.forEach(entity => {
@@ -403,13 +559,30 @@ class EnergyDashboardEntityCard extends LitElement {
     this.entityToggleStates = newToggleStates;
     
     // Update UI with new states
-    this._updateEntityStates();
+    this._updatePowerEntityStates();
     
     // Save the updated toggle states
-    this._saveToggleStates();
+    this._savePowerToggleStates();
+  }
+
+  _clearAllEnergyEntities() {
+    // Turn all entities off
+    const newToggleStates = {};
+    this.energyEntities.forEach(entity => {
+      newToggleStates[entity.entityId] = false;
+    });
+    
+    // Update toggle states
+    this.energyEntityToggleStates = newToggleStates;
+    
+    // Update UI with new states
+    this._updateEnergyEntityStates();
+    
+    // Save the updated toggle states
+    this._saveEnergyToggleStates();
   }
   
-  _selectAllEntities() {
+  _selectAllPowerEntities() {
     // Turn all entities on
     const newToggleStates = {};
     this.powerEntities.forEach(entity => {
@@ -420,13 +593,30 @@ class EnergyDashboardEntityCard extends LitElement {
     this.entityToggleStates = newToggleStates;
     
     // Update UI with new states
-    this._updateEntityStates();
+    this._updatePowerEntityStates();
     
     // Save the updated toggle states
-    this._saveToggleStates();
+    this._savePowerToggleStates();
+  }
+
+  _selectAllEnergyEntities() {
+    // Turn all entities on
+    const newToggleStates = {};
+    this.energyEntities.forEach(entity => {
+      newToggleStates[entity.entityId] = true;
+    });
+    
+    // Update toggle states
+    this.energyEntityToggleStates = newToggleStates;
+    
+    // Update UI with new states
+    this._updateEnergyEntityStates();
+    
+    // Save the updated toggle states
+    this._saveEnergyToggleStates();
   }
   
-  _updateEntityStates() {
+  _updatePowerEntityStates() {
     // Update the powerEntities with the new toggle states
     this.powerEntities = this.powerEntities.map(entity => ({
       ...entity,
@@ -438,12 +628,26 @@ class EnergyDashboardEntityCard extends LitElement {
     
     // Also toggle the actual entities if they are toggleable
     this.powerEntities.forEach(entity => {
-      if (entity.isToggleable) {
-        const domain = entity.entityId.split('.')[0];
-        if (['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain)) {
-          const service = entity.isOn ? 'turn_on' : 'turn_off';
-          this.hass.callService(domain, service, { entity_id: entity.entityId });
-        }
+      if (entity.isToggleable && entity.isOn !== undefined) {
+        this._controlEntity(entity.entityId, entity.isOn);
+      }
+    });
+  }
+
+  _updateEnergyEntityStates() {
+    // Update the energyEntities with the new toggle states
+    this.energyEntities = this.energyEntities.map(entity => ({
+      ...entity,
+      isOn: this.energyEntityToggleStates[entity.entityId] || false
+    }));
+    
+    // Request a UI update
+    this.requestUpdate();
+    
+    // Also toggle the actual entities if they are toggleable
+    this.energyEntities.forEach(entity => {
+      if (entity.isToggleable && entity.isOn !== undefined) {
+        this._controlEntity(entity.entityId, entity.isOn);
       }
     });
   }
@@ -455,7 +659,7 @@ class EnergyDashboardEntityCard extends LitElement {
 
     // Calculate container style based on max_height config
     const containerStyle = this.config.max_height > 0 ? 
-      `max-height: ${this.config.max_height}px; overflow-y: auto;` : '';
+      `max-height: ${Math.min(this.config.max_height, 400)}px; overflow-y: auto;` : '';
 
     return html`
       <ha-card>
@@ -463,17 +667,18 @@ class EnergyDashboardEntityCard extends LitElement {
           <div class="card-header">${this.config.title}</div>
         ` : ''}
         
+        <!-- Power Entities Section -->
         ${this.powerEntities.length > 0 ? html`
           <div class="control-buttons">
-            <button class="control-button" @click="${this._resetToDefaultEntities}">
+            <button class="control-button" @click="${this._resetToPowerDefaultEntities}">
               <ha-icon icon="mdi:refresh"></ha-icon>
               <span>Reset</span>
             </button>
-            <button class="control-button" @click="${this._clearAllEntities}">
+            <button class="control-button" @click="${this._clearAllPowerEntities}">
               <ha-icon icon="mdi:close-circle-outline"></ha-icon>
               <span>Clear</span>
             </button>
-            <button class="control-button" @click="${this._selectAllEntities}">
+            <button class="control-button" @click="${this._selectAllPowerEntities}">
               <ha-icon icon="mdi:check-circle-outline"></ha-icon>
               <span>Select All</span>
             </button>
@@ -488,8 +693,8 @@ class EnergyDashboardEntityCard extends LitElement {
                 <div 
                   class="entity-item ${entity.isOn ? 'on' : 'off'}"
                   data-entity="${entity.entityId}"
-                  @click="${this._toggleEntity}"
-                  style="gap: 4px;" /* Added to ensure better alignment with smaller container */
+                  @click="${this._togglePowerEntity}"
+                  style="gap: 4px;"
                 >
                   <div class="entity-left">
                     <div class="entity-name" title="${entity.name}">${entity.name}</div>
@@ -510,6 +715,59 @@ class EnergyDashboardEntityCard extends LitElement {
             No power entities found. Make sure you have entities with unit set to W or kW.
           </div>
         `}
+
+        <!-- Energy Entities Section -->
+        ${this.config.show_energy_section && this.energyEntities.length > 0 ? html`
+          <div class="section-separator"></div>
+
+          <div class="control-buttons">
+            <button class="control-button" @click="${this._resetToEnergyDefaultEntities}">
+              <ha-icon icon="mdi:refresh"></ha-icon>
+              <span>Reset</span>
+            </button>
+            <button class="control-button" @click="${this._clearAllEnergyEntities}">
+              <ha-icon icon="mdi:close-circle-outline"></ha-icon>
+              <span>Clear</span>
+            </button>
+            <button class="control-button" @click="${this._selectAllEnergyEntities}">
+              <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+              <span>Select All</span>
+            </button>
+          </div>
+          
+          <div class="section-title">Energy Entities</div>
+          
+          <!-- Add wrapper div to enforce single column layout for energy entities -->
+          <div style="width: 100%; box-sizing: border-box;">
+            <div class="entities-container" style="${containerStyle}">
+              ${this.energyEntities.map(entity => html`
+                <div 
+                  class="entity-item ${entity.isOn ? 'on' : 'off'}"
+                  data-entity="${entity.entityId}"
+                  @click="${this._toggleEnergyEntity}"
+                  style="gap: 4px;"
+                >
+                  <div class="entity-left">
+                    <div class="entity-name" title="${entity.name}">${entity.name}</div>
+                  </div>
+                  <div class="entity-state">
+                    <div class="status-indicator">${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
+                    <div class="power-value">${this.config.show_state ? 
+                      `${entity.state} ${entity.unit}` : 
+                      ''}
+                    </div>
+                  </div>
+                </div>
+              `)}
+            </div>
+          </div>
+        ` : this.config.show_energy_section ? html`
+          <div class="section-separator"></div>
+          <div class="section-title">Energy Entities</div>
+          <div class="empty-message">
+            No energy entities found. Make sure you have entities with unit set to Wh or kWh.
+          </div>
+        ` : ''}
       </ha-card>
     `;
   }
@@ -558,6 +816,8 @@ class EnergyDashboardEntityCardEditor extends LitElement {
       show_toggle: true,
       auto_select_count: 6,
       max_height: 400, // Default to ~15 entities
+      show_energy_section: true,
+      energy_auto_select_count: 6,
       ...config
     };
   }
@@ -661,6 +921,28 @@ class EnergyDashboardEntityCardEditor extends LitElement {
         
         <div class="row">
           <ha-textfield
+            label="Energy Auto-select Count"
+            type="number"
+            min="0"
+            max="50"
+            .value="${String(this.config.energy_auto_select_count || 6)}"
+            .configValue=${"energy_auto_select_count"}
+            @change="${this.valueChanged}"
+            class="value"
+          ></ha-textfield>
+        </div>
+        
+        <div class="row">
+          <ha-switch
+            .checked=${this.config.show_energy_section !== false}
+            .configValue=${"show_energy_section"}
+            @change=${this.valueChanged}
+          ></ha-switch>
+          <div>Show Energy Section</div>
+        </div>
+        
+        <div class="row">
+          <ha-textfield
             label="Max Height (0 for no limit)"
             type="number"
             min="0"
@@ -693,7 +975,9 @@ EnergyDashboardEntityCard.getStubConfig = function() {
     show_state: true,
     show_toggle: true,
     auto_select_count: 6,
-    max_height: 400
+    max_height: 400,
+    show_energy_section: true,
+    energy_auto_select_count: 6
   };
 };
 
@@ -703,7 +987,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "energy-dashboard-entity-card",
   name: "Energy Dashboard Entity Card",
-  description: "Card that displays all entities with power measurements (W or kW)",
+  description: "Card that displays power (W/kW) and energy (Wh/kWh) measurement entities",
   preview: false,
   documentationURL: "https://github.com/yourusername/Hass-Energy-Dashboard"
 });
