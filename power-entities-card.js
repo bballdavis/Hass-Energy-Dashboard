@@ -29,7 +29,7 @@ class PowerEntitiesCard extends LitElement {
       .entities-container {
         padding: 0 var(--card-padding) var(--card-padding);
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         grid-gap: 8px;
       }
       .entity-item {
