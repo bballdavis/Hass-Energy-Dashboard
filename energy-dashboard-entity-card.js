@@ -16,7 +16,7 @@ class EnergyDashboardEntityCard extends LitElement {
     return css`
       :host {
         --card-padding: 16px;
-        --entity-height: 17px;
+        --entity-height: 13px; /* Reduced from 17px to 13px (about 25% smaller) */
         --entity-width: 240px;
         --button-height: 32px;
         --entity-font-size: 0.95em;
@@ -116,7 +116,7 @@ class EnergyDashboardEntityCard extends LitElement {
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
         border-radius: 12px;
-        padding: 10px 16px;
+        padding: 9px 16px; /* Reduce padding by 25% from the original value of 12px 16px */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         cursor: pointer;
         transition: all 0.3s ease;
@@ -126,7 +126,6 @@ class EnergyDashboardEntityCard extends LitElement {
         justify-content: space-between;
         height: auto; /* Changed from fixed height to auto to accommodate longer names */
         min-height: var(--entity-height);
-        padding: 12px 16px; /* Increased padding slightly for better readability */
         width: 100%; /* Make entities full width to match control buttons */
         box-sizing: border-box;
         flex-grow: 1;
@@ -160,10 +159,12 @@ class EnergyDashboardEntityCard extends LitElement {
         justify-content: center;
         flex: 3; /* Give the name section more room */
         min-width: 0; /* Allow the flex container to shrink below min-content */
+        margin-top: -2px; /* Add negative margin to help vertically align content better */
+        margin-bottom: -2px;
       }
       .entity-name {
         font-weight: bold;
-        font-size: 0.95em;
+        font-size: 0.92em; /* Slightly smaller font size to match reduced container size */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -179,6 +180,7 @@ class EnergyDashboardEntityCard extends LitElement {
         max-width: 85px; /* Limit the max width to ensure name gets space */
         white-space: nowrap; /* Prevent line breaks in state display */
         flex: 0 0 auto; /* Don't grow, don't shrink, use auto width */
+        font-size: 0.92em; /* Slightly smaller font size to match reduced container size */
       }
       .power-value {
         font-weight: 500;
@@ -214,15 +216,15 @@ class EnergyDashboardEntityCard extends LitElement {
   }
 
   getCardSize() {
-    // Adjusted card sizing for full width entities
+    // Adjusted card sizing for smaller entity items
     if (!this.powerEntities || this.powerEntities.length === 0) return 1;
     
-    // Each entity is now its own row
+    // Each entity is now its own row, but smaller
     const rows = this.powerEntities.length;
     
-    // Each row is about 37px (17px height + 20px padding/margins)
+    // Each row is now about 30px (13px height + 17px padding/margins)
     // Add 1 for the header and 1 for the controls
-    return rows + 2;
+    return rows * 0.75 + 2; // Multiply rows by 0.75 to account for 25% height reduction
   }
 
   updated(changedProps) {
