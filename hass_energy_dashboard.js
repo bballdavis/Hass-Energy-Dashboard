@@ -8,6 +8,12 @@ class HassEnergyDashboard extends HTMLElement {
     this._selectedEnergy = [];
   }
 
+  // Required by Home Assistant, even if we don't use it
+  setConfig(config) {
+    // Just store the config, but we won't use it since we auto-discover entities
+    this._config = config || {};
+  }
+
   set hass(hass) {
     this._hass = hass;
     // Always populate entities from hass.states (no more config check needed)
