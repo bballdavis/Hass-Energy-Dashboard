@@ -30,7 +30,7 @@ class EnergyDashboardEntityCard extends LitElement {
         font-weight: var(--paper-font-headline_-_font-weight);
         letter-spacing: var(--paper-font-headline_-_letter-spacing);
         line-height: var(--paper-font-headline_-_line-height);
-        color: var(--ha-card-header-color, --primary-text-color);
+        color: var (--ha-card-header-color, --primary-text-color);
       }
       .control-buttons {
         padding: 0 var(--card-padding) 8px;
@@ -95,6 +95,8 @@ class EnergyDashboardEntityCard extends LitElement {
         scrollbar-color: var(--scrollbar-thumb-color) transparent;
         width: calc(100% - (var(--card-padding) * 2));
         box-sizing: border-box;
+        /* Force single column layout */
+        min-width: 100%;
       }
       
       /* Webkit scrollbar styling */
@@ -127,13 +129,21 @@ class EnergyDashboardEntityCard extends LitElement {
         box-sizing: border-box;
         flex-grow: 1;
         flex-shrink: 0;
+        /* Explicitly force full width */
+        min-width: 100%;
+        max-width: 100%;
       }
+      
+      /* Remove media query that might be causing the issue */
+      /*
       @media (max-width: 600px) {
         .entity-item {
           width: 100%;
           flex-grow: 1;
         }
       }
+      */
+      
       .entity-item:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transform: translateY(-1px);
@@ -460,25 +470,28 @@ class EnergyDashboardEntityCard extends LitElement {
           
           <div class="section-title">Power Entities</div>
           
-          <div class="entities-container" style="${containerStyle}">
-            ${this.powerEntities.map(entity => html`
-              <div 
-                class="entity-item ${entity.isOn ? 'on' : 'off'}"
-                data-entity="${entity.entityId}"
-                @click="${this._toggleEntity}"
-              >
-                <div class="entity-left">
-                  <div class="entity-name">${entity.name}</div>
-                </div>
-                <div class="entity-state">
-                  <div class="status-indicator">${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
-                  <div class="power-value">${this.config.show_state ? 
-                    `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue)} ${entity.unit || 'W'}` : 
-                    ''}
+          <!-- Add wrapper div to enforce single column layout -->
+          <div style="width: 100%; box-sizing: border-box;">
+            <div class="entities-container" style="${containerStyle}">
+              ${this.powerEntities.map(entity => html`
+                <div 
+                  class="entity-item ${entity.isOn ? 'on' : 'off'}"
+                  data-entity="${entity.entityId}"
+                  @click="${this._toggleEntity}"
+                >
+                  <div class="entity-left">
+                    <div class="entity-name">${entity.name}</div>
+                  </div>
+                  <div class="entity-state">
+                    <div class="status-indicator">${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
+                    <div class="power-value">${this.config.show_state ? 
+                      `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue)} ${entity.unit || 'W'}` : 
+                      ''}
+                    </div>
                   </div>
                 </div>
-              </div>
-            `)}
+              `)}
+            </div>
           </div>
         ` : html`
           <div class="empty-message">
