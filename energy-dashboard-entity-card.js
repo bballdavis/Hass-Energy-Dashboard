@@ -29,6 +29,43 @@ class EnergyDashboardEntityCard extends LitElement {
         line-height: var(--paper-font-headline_-_line-height);
         color: var(--ha-card-header-color, --primary-text-color);
       }
+      .control-buttons {
+        padding: 0 var(--card-padding) 8px;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .control-button {
+        background-color: var(--secondary-background-color);
+        border: none;
+        border-radius: 8px;
+        padding: 6px 12px;
+        color: var(--primary-text-color);
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s ease;
+        flex: 1;
+        margin: 0 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      }
+      .control-button:first-child {
+        margin-left: 0;
+      }
+      .control-button:last-child {
+        margin-right: 0;
+      }
+      .control-button:hover {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
+      }
+      .control-button ha-icon {
+        margin-right: 4px;
+      }
       .entities-container {
         padding: 0 var(--card-padding) var(--card-padding);
         display: flex;
@@ -131,8 +168,8 @@ class EnergyDashboardEntityCard extends LitElement {
       show_header: true,
       show_state: true,
       show_toggle: true,
-      auto_select_count: 6, // Default: auto-select top 6 entities
-      max_height: 0, // 0 means no limit, otherwise limit in pixels
+      auto_select_count: 6,
+      max_height: 400, // Default to around 15 entities before scrolling (37px per row * ~15 = ~400px)
       ...config
     };
   }
@@ -266,6 +303,83 @@ class EnergyDashboardEntityCard extends LitElement {
     }
   }
 
+  _resetToDefaultEntities() {
+    if (!this.powerEntities || this.powerEntities.length === 0) return;
+    
+    // Reset toggle states to default (top N based on auto_select_count)
+    const newToggleStates = {};
+    this.powerEntities
+      .slice(0, this.config.auto_select_count)
+      .forEach(entity => {
+        newToggleStates[entity.entityId] = true;
+      });
+    
+    // Update toggle states
+    this.entityToggleStates = newToggleStates;
+    
+    // Update UI with new states
+    this._updateEntityStates();
+    
+    // Save the updated toggle states
+    this._saveToggleStates();
+  }
+  
+  _clearAllEntities() {
+    // Turn all entities off
+    const newToggleStates = {};
+    this.powerEntities.forEach(entity => {
+      newToggleStates[entity.entityId] = false;
+    });
+    
+    // Update toggle states
+    this.entityToggleStates = newToggleStates;
+    
+    // Update UI with new states
+    this._updateEntityStates();
+    
+    // Save the updated toggle states
+    this._saveToggleStates();
+  }
+  
+  _selectAllEntities() {
+    // Turn all entities on
+    const newToggleStates = {};
+    this.powerEntities.forEach(entity => {
+      newToggleStates[entity.entityId] = true;
+    });
+    
+    // Update toggle states
+    this.entityToggleStates = newToggleStates;
+    
+    // Update UI with new states
+    this._updateEntityStates();
+    
+    // Save the updated toggle states
+    this._saveToggleStates();
+  }
+  
+  _updateEntityStates() {
+    // Update the powerEntities with the new toggle states
+    this.powerEntities = this.powerEntities.map(entity => ({
+      ...entity,
+      isOn: this.entityToggleStates[entity.entityId] || false
+    }));
+    
+    // Request a UI update
+    this.requestUpdate();
+    
+    // Also toggle the actual entities if they are toggleable
+    this.powerEntities.forEach(entity => {
+      if (entity.isToggleable) {
+        const domain = entity.entityId.split('.')[0];
+        if (['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain)) {
+          const service = entity.isOn ? 'turn_on' : 'turn_off';
+          this.hass.callService(domain, service, { entity_id: entity.entityId });
+        }
+      }
+    });
+  }
+
   render() {
     if (!this.hass || !this.config) {
       return html``;
@@ -282,6 +396,17 @@ class EnergyDashboardEntityCard extends LitElement {
         ` : ''}
         
         ${this.powerEntities.length > 0 ? html`
+          <div class="control-buttons">
+            <button class="control-button" @click="${this._resetToDefaultEntities}">
+              <ha-icon icon="mdi:refresh"></ha-icon> Reset
+            </button>
+            <button class="control-button" @click="${this._clearAllEntities}">
+              <ha-icon icon="mdi:close-circle-outline"></ha-icon> Clear
+            </button>
+            <button class="control-button" @click="${this._selectAllEntities}">
+              <ha-icon icon="mdi:check-circle-outline"></ha-icon> Select All
+            </button>
+          </div>
           <div class="entities-container" style="${containerStyle}">
             ${this.powerEntities.map(entity => html`
               <div 
@@ -351,7 +476,7 @@ class EnergyDashboardEntityCardEditor extends LitElement {
       show_state: true,
       show_toggle: true,
       auto_select_count: 6,
-      max_height: 0,
+      max_height: 400, // Default to ~15 entities
       ...config
     };
   }
