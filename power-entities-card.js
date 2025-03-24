@@ -43,7 +43,7 @@ class PowerEntitiesCard extends LitElement {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        height: 28px;
+        height: 17px;
       }
       .entity-item:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
