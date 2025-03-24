@@ -5,5 +5,6 @@
   "documentation": "https://github.com/your-repo-link",
   "dependencies": [],
   "codeowners": ["@your-github-username"],
-  "requirements": []
+  "requirements": [],
+  "config_flow": true
 }
