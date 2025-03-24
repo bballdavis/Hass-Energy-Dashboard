@@ -23,19 +23,35 @@ class PowerEntitiesCard extends LitElement {
         font-size: var(--paper-font-headline_-_font-size);
         font-weight: var(--paper-font-headline_-_font-weight);
         letter-spacing: var(--paper-font-headline_-_letter-spacing);
-        line-height: var(--paper-font-headline_-_line-height);
+        line-height: var (--paper-font-headline_-_line-height);
         color: var(--ha-card-header-color, --primary-text-color);
       }
+      ha-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+      }
       .entities-container {
+        display: flex;
+        flex-direction: column;
         padding: 0 var(--card-padding) var(--card-padding);
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Reduced by 30% from 200px */
-        grid-gap: 6px;
+        overflow-y: auto;
+        max-height: calc(100% - 50px); /* Adjust based on header height */
+        scrollbar-width: thin;
+      }
+      .entities-container::-webkit-scrollbar {
+        width: 6px;
+        background-color: var(--scrollbar-thumb-color, rgba(0, 0, 0, 0.2));
+      }
+      .entities-container::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb-color, rgba(0, 0, 0, 0.2));
+        border-radius: 6px;
       }
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
         border-radius: 8px;
-        padding: 5px 12px; /* Reduced from 10px 16px */
+        padding: 5px 12px; 
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         cursor: pointer;
         transition: all 0.3s ease;
@@ -43,7 +59,12 @@ class PowerEntitiesCard extends LitElement {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        height: 20px; /* Reduced by 50% from 40px */
+        height: 20px;
+        margin-bottom: 4px;
+        width: 100%;
+      }
+      .entity-item:last-child {
+        margin-bottom: 0;
       }
       .entity-item:hover {
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -57,26 +78,29 @@ class PowerEntitiesCard extends LitElement {
         display: flex;
         flex-direction: column;
         justify-content: center;
+        max-width: 60%;
       }
       .entity-name {
         font-weight: bold;
-        font-size: 0.8em; /* Reduced font size to match smaller container */
+        font-size: 0.8em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 90px; /* Reduced from 140px */
       }
       .entity-state {
         display: flex;
         align-items: center;
         gap: 4px;
+        justify-content: flex-end;
+        min-width: 40%;
       }
       .status-indicator {
-        font-size: 0.7em; /* Smaller text for status */
+        font-size: 0.7em;
       }
       .power-value {
         font-weight: 500;
-        font-size: 0.8em; /* Reduced font size to match smaller container */
+        font-size: 0.8em;
+        text-align: right;
       }
       .empty-message {
         padding: var(--card-padding);
@@ -105,7 +129,9 @@ class PowerEntitiesCard extends LitElement {
   }
 
   getCardSize() {
-    return 1 + Math.ceil(this.powerEntities.length / 2);
+    // Calculate card size based on the number of entities and their height
+    // For a scrollable list, return a fixed size
+    return 5;
   }
 
   updated(changedProps) {
