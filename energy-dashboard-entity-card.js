@@ -124,7 +124,9 @@ class EnergyDashboardEntityCard extends LitElement {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        height: var(--entity-height);
+        height: auto; /* Changed from fixed height to auto to accommodate longer names */
+        min-height: var(--entity-height);
+        padding: 12px 16px; /* Increased padding slightly for better readability */
         width: 100%; /* Make entities full width to match control buttons */
         box-sizing: border-box;
         flex-grow: 1;
@@ -163,14 +165,15 @@ class EnergyDashboardEntityCard extends LitElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 70%; /* Increased to accommodate the wider container */
+        max-width: 175%; /* Increased from 70% to 175% (2.5x longer) */
         flex: 1;
       }
       .entity-state {
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        min-width: 60px;
+        min-width: 85px; /* Increased from 60px to accommodate longer power values */
+        white-space: nowrap; /* Prevent line breaks in state display */
       }
       .power-value {
         font-weight: 500;
