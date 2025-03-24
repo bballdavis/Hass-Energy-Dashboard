@@ -29,24 +29,24 @@ class PowerEntitiesCard extends LitElement {
       .entities-container {
         padding: 0 var(--card-padding) var(--card-padding);
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        grid-gap: 8px;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Reduced by 30% from 200px */
+        grid-gap: 6px;
       }
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
-        border-radius: 12px;
-        padding: 10px 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 5px 12px; /* Reduced from 10px 16px */
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex;
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        height: 40px;
+        height: 20px; /* Reduced by 50% from 40px */
       }
       .entity-item:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         transform: translateY(-1px);
       }
       .entity-item.on {
@@ -60,18 +60,23 @@ class PowerEntitiesCard extends LitElement {
       }
       .entity-name {
         font-weight: bold;
-        font-size: 0.95em;
+        font-size: 0.8em; /* Reduced font size to match smaller container */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 140px;
+        max-width: 90px; /* Reduced from 140px */
       }
       .entity-state {
         display: flex;
         align-items: center;
+        gap: 4px;
+      }
+      .status-indicator {
+        font-size: 0.7em; /* Smaller text for status */
       }
       .power-value {
         font-weight: 500;
+        font-size: 0.8em; /* Reduced font size to match smaller container */
       }
       .empty-message {
         padding: var(--card-padding);
