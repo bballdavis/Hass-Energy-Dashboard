@@ -20,7 +20,7 @@ class EnergyDashboardEntityCard extends LitElement {
         --entity-width: 240px;
         --button-height: 32px;
         --entity-font-size: 0.95em;
-        --section-title-font-size: 1.425em; /* 50% larger than entity text */
+        --section-title-font-size: 0.9975em; /* Reduced by 30% from 1.425em to 0.9975em */
       }
       .card-header {
         padding: var(--card-padding);
@@ -77,7 +77,7 @@ class EnergyDashboardEntityCard extends LitElement {
         justify-content: center;
       }
       .section-title {
-        padding: 8px var(--card-padding);
+        padding: 6px var(--card-padding);
         font-size: var(--section-title-font-size);
         font-weight: 500;
         color: var(--primary-text-color);
@@ -93,6 +93,8 @@ class EnergyDashboardEntityCard extends LitElement {
         overflow-y: auto;
         scrollbar-width: thin;
         scrollbar-color: var(--scrollbar-thumb-color) transparent;
+        width: calc(100% - (var(--card-padding) * 2));
+        box-sizing: border-box;
       }
       
       /* Webkit scrollbar styling */
@@ -121,7 +123,7 @@ class EnergyDashboardEntityCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         height: var(--entity-height);
-        width: var(--entity-width);
+        width: calc((100% - 8px) / 2); /* Make entities fit 2 per row to match control buttons width */
         box-sizing: border-box;
         flex-grow: 0;
         flex-shrink: 0;
