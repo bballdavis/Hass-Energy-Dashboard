@@ -1,0 +1,9 @@
+{
+  "domain": "energy_dashboard",
+  "name": "Energy Dashboard",
+  "version": "1.0.0",
+  "documentation": "https://github.com/your-repo-link",
+  "dependencies": [],
+  "codeowners": ["@your-github-username"],
+  "requirements": []
+}

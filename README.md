@@ -1,15 +1,14 @@
-# Energy Dashboard Card
+# Energy Dashboard
 
-This is a custom Lovelace card for visualizing energy and power data.
+This integration creates a custom Energy Dashboard for Home Assistant. It dynamically lists entities with power (W) and energy (Wh) units and displays a chart using the `apexcharts-card`.
 
 ## Installation
 
-1. Add this repository to HACS.
-2. Install the plugin through HACS.
-3. Add the following to your Lovelace configuration:
+1. Install via HACS.
+2. Restart Home Assistant.
+3. Navigate to the Energy Dashboard in Lovelace.
 
-```yaml
-resources:
-  - url: /local/community/energy-dashboard-card/energy-dashboard-card.js
-    type: module
-```
+## Features
+
+- Lists power and energy entities.
+- Interactive chart using `apexcharts-card`.
