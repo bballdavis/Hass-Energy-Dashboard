@@ -30,34 +30,45 @@ class PowerEntitiesCard extends LitElement {
         padding: 0 var(--card-padding) var(--card-padding);
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        grid-gap: 12px;
+        grid-gap: 8px;
       }
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
         border-radius: 12px;
-        padding: 16px;
+        padding: 10px 16px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: 40px;
       }
       .entity-item:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateY(-2px);
+        transform: translateY(-1px);
       }
       .entity-item.on {
         background-color: var(--primary-color);
         color: var(--text-primary-color);
       }
+      .entity-left {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
       .entity-name {
         font-weight: bold;
-        margin-bottom: 8px;
-        font-size: 1.1em;
+        font-size: 0.95em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
       }
       .entity-state {
         display: flex;
-        justify-content: space-between;
+        align-items: center;
       }
       .power-value {
         font-weight: 500;
@@ -119,10 +130,12 @@ class PowerEntitiesCard extends LitElement {
           entityId,
           name: stateObj.attributes.friendly_name || entityId,
           state: stateObj.state,
+          powerValue: parseFloat(stateObj.state) || 0,
           isToggleable,
           isOn
         };
-      });
+      })
+      .sort((a, b) => b.powerValue - a.powerValue); // Sort by power value, highest first
   }
 
   _toggleEntity(ev) {
@@ -155,9 +168,11 @@ class PowerEntitiesCard extends LitElement {
                 data-entity="${entity.entityId}"
                 @click="${this._toggleEntity}"
               >
-                <div class="entity-name">${entity.name}</div>
+                <div class="entity-left">
+                  <div class="entity-name">${entity.name}</div>
+                </div>
                 <div class="entity-state">
-                  <div>${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
+                  <div class="status-indicator">${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
                   <div class="power-value">${this.config.show_state ? `${entity.state} W` : ''}</div>
                 </div>
               </div>
