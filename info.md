@@ -28,3 +28,4 @@ title: Energy Dashboard
 | show_state | boolean | true | Show entity state |
 | show_toggle | boolean | true | Allow toggling entities |
 | auto_select_count | number | 6 | Number of entities to auto-select by default |
+| max_height | number | 0 | Maximum height in pixels (0 = no limit) |

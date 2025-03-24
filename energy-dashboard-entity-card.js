@@ -35,7 +35,25 @@ class EnergyDashboardEntityCard extends LitElement {
         flex-wrap: wrap;
         gap: 8px;
         justify-content: flex-start;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb-color) transparent;
       }
+      
+      /* Webkit scrollbar styling */
+      .entities-container::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      .entities-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      
+      .entities-container::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb-color, var(--divider-color, #e0e0e0));
+        border-radius: 3px;
+      }
+      
       .entity-item {
         background-color: var(--ha-card-background, var(--card-background-color, white));
         border-radius: 12px;
@@ -114,6 +132,7 @@ class EnergyDashboardEntityCard extends LitElement {
       show_state: true,
       show_toggle: true,
       auto_select_count: 6, // Default: auto-select top 6 entities
+      max_height: 0, // 0 means no limit, otherwise limit in pixels
       ...config
     };
   }
@@ -252,6 +271,10 @@ class EnergyDashboardEntityCard extends LitElement {
       return html``;
     }
 
+    // Calculate container style based on max_height config
+    const containerStyle = this.config.max_height > 0 ? 
+      `max-height: ${this.config.max_height}px; overflow-y: auto;` : '';
+
     return html`
       <ha-card>
         ${this.config.show_header ? html`
@@ -259,7 +282,7 @@ class EnergyDashboardEntityCard extends LitElement {
         ` : ''}
         
         ${this.powerEntities.length > 0 ? html`
-          <div class="entities-container">
+          <div class="entities-container" style="${containerStyle}">
             ${this.powerEntities.map(entity => html`
               <div 
                 class="entity-item ${entity.isOn ? 'on' : 'off'}"
@@ -328,6 +351,7 @@ class EnergyDashboardEntityCardEditor extends LitElement {
       show_state: true,
       show_toggle: true,
       auto_select_count: 6,
+      max_height: 0,
       ...config
     };
   }
@@ -426,6 +450,21 @@ class EnergyDashboardEntityCardEditor extends LitElement {
             .configValue=${"auto_select_count"}
             @change="${this.valueChanged}"
             class="value"
+          ></ha-textfield>
+        </div>
+        
+        <div class="row">
+          <ha-textfield
+            label="Max Height (0 for no limit)"
+            type="number"
+            min="0"
+            max="1000"
+            .value="${String(this.config.max_height || 0)}"
+            .configValue=${"max_height"}
+            @change="${this.valueChanged}"
+            class="value"
+            helper-persistent
+            helper-text="Set maximum height in pixels (0 = no limit)"
           ></ha-textfield>
         </div>
       </div>
