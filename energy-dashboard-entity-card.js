@@ -87,7 +87,7 @@ class EnergyDashboardEntityCard extends LitElement {
       .entities-container {
         padding: 0 var(--card-padding) var(--card-padding);
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
         gap: 8px;
         justify-content: flex-start;
         overflow-y: auto;
@@ -123,9 +123,9 @@ class EnergyDashboardEntityCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         height: var(--entity-height);
-        width: calc((100% - 8px) / 2); /* Make entities fit 2 per row to match control buttons width */
+        width: 100%; /* Make entities full width to match control buttons */
         box-sizing: border-box;
-        flex-grow: 0;
+        flex-grow: 1;
         flex-shrink: 0;
       }
       @media (max-width: 600px) {
@@ -153,7 +153,7 @@ class EnergyDashboardEntityCard extends LitElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 140px;
+        max-width: 70%; /* Increased to accommodate the wider container */
         flex: 1;
       }
       .entity-state {
@@ -196,21 +196,15 @@ class EnergyDashboardEntityCard extends LitElement {
   }
 
   getCardSize() {
-    // More accurate card sizing based on number of entities and their size
+    // Adjusted card sizing for full width entities
     if (!this.powerEntities || this.powerEntities.length === 0) return 1;
     
-    // Calculate how many entities fit in a row based on card width
-    // This is an estimate since we can't directly access the card width
-    const cardWidth = 500; // Estimate based on typical Home Assistant card width
-    const entityWidth = 240 + 8; // Width + gap
-    const entitiesPerRow = Math.max(1, Math.floor(cardWidth / entityWidth));
-    
-    // Calculate rows needed
-    const rows = Math.ceil(this.powerEntities.length / entitiesPerRow);
+    // Each entity is now its own row
+    const rows = this.powerEntities.length;
     
     // Each row is about 37px (17px height + 20px padding/margins)
-    // Add 1 for the header
-    return rows + 1;
+    // Add 1 for the header and 1 for the controls
+    return rows + 2;
   }
 
   updated(changedProps) {
