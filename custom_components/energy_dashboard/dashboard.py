@@ -1,8 +1,8 @@
-from homeassistant.helpers.entity_registry import async_get_registry
+from homeassistant.helpers import entity_registry
 
 async def generate_dashboard(hass):
-    registry = await async_get_registry(hass)
-    entities = registry.entities.values()
+    er = entity_registry.async_get(hass)
+    entities = er.entities.values()
 
     power_entities = [e.entity_id for e in entities if e.unit_of_measurement == "W"]
     energy_entities = [e.entity_id for e in entities if e.unit_of_measurement == "Wh"]
