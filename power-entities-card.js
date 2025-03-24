@@ -7,7 +7,8 @@ class PowerEntitiesCard extends LitElement {
     return {
       hass: { type: Object },
       config: { type: Object },
-      powerEntities: { type: Array }
+      powerEntities: { type: Array },
+      entityToggleStates: { type: Object } // Add property for toggle states
     };
   }
 
@@ -84,6 +85,7 @@ class PowerEntitiesCard extends LitElement {
   constructor() {
     super();
     this.powerEntities = [];
+    this.entityToggleStates = {}; // Initialize toggle states object
   }
 
   setConfig(config) {
@@ -112,7 +114,8 @@ class PowerEntitiesCard extends LitElement {
   _updateEntities() {
     if (!this.hass) return;
 
-    this.powerEntities = Object.keys(this.hass.states)
+    // Get current power entities
+    const newPowerEntities = Object.keys(this.hass.states)
       .filter(entityId => {
         const stateObj = this.hass.states[entityId];
         return stateObj.attributes && 
@@ -122,29 +125,93 @@ class PowerEntitiesCard extends LitElement {
         const stateObj = this.hass.states[entityId];
         const domain = entityId.split('.')[0];
         const isToggleable = ['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain);
-        const isOn = stateObj.state === 'on' || 
-                    stateObj.state === 'home' || 
-                    parseFloat(stateObj.state) > 0;
+        const powerValue = parseFloat(stateObj.state) || 0;
         
         return {
           entityId,
           name: stateObj.attributes.friendly_name || entityId,
           state: stateObj.state,
-          powerValue: parseFloat(stateObj.state) || 0,
-          isToggleable,
-          isOn
+          powerValue,
+          isToggleable
         };
       })
       .sort((a, b) => b.powerValue - a.powerValue); // Sort by power value, highest first
+    
+    // Initialize toggle states if they don't exist
+    if (Object.keys(this.entityToggleStates).length === 0) {
+      this._initializeToggleStates(newPowerEntities);
+    }
+    
+    // Add toggle state to each entity
+    this.powerEntities = newPowerEntities.map(entity => ({
+      ...entity,
+      isOn: this.entityToggleStates[entity.entityId] || false
+    }));
+
+    // Store the latest toggle states
+    this._saveToggleStates();
+  }
+
+  _initializeToggleStates(entities) {
+    // Get stored toggle states from localStorage
+    const savedStates = this._loadToggleStates();
+    
+    if (savedStates && Object.keys(savedStates).length > 0) {
+      this.entityToggleStates = savedStates;
+    } else {
+      // Set top 6 entities to ON by default
+      const toggleStates = {};
+      entities.slice(0, 6).forEach(entity => {
+        toggleStates[entity.entityId] = true;
+      });
+      this.entityToggleStates = toggleStates;
+    }
+  }
+
+  _loadToggleStates() {
+    try {
+      const stored = localStorage.getItem('power-entities-toggle-states');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      console.error('Failed to load toggle states:', e);
+      return null;
+    }
+  }
+
+  _saveToggleStates() {
+    try {
+      localStorage.setItem('power-entities-toggle-states', 
+        JSON.stringify(this.entityToggleStates));
+    } catch (e) {
+      console.error('Failed to save toggle states:', e);
+    }
   }
 
   _toggleEntity(ev) {
     const entityId = ev.currentTarget.dataset.entity;
     if (!entityId || !this.config.show_toggle) return;
     
+    // Toggle the entity state in our JSON store
+    this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
+    
+    // Update the UI
+    this.powerEntities = this.powerEntities.map(entity => 
+      entity.entityId === entityId 
+        ? { ...entity, isOn: this.entityToggleStates[entityId] } 
+        : entity
+    );
+    
+    // Save the updated toggle states
+    this._saveToggleStates();
+    
+    // Request an update
+    this.requestUpdate();
+    
+    // If entity is toggleable, also control the actual device
     const domain = entityId.split('.')[0];
     if (['switch', 'light', 'input_boolean', 'fan', 'automation'].includes(domain)) {
-      const service = this.hass.states[entityId].state === 'on' ? 'turn_off' : 'turn_on';
+      const isOn = this.entityToggleStates[entityId];
+      const service = isOn ? 'turn_on' : 'turn_off';
       this.hass.callService(domain, service, { entity_id: entityId });
     }
   }
