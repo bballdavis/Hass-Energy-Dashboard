@@ -18,6 +18,9 @@ class EnergyDashboardEntityCard extends LitElement {
         --card-padding: 16px;
         --entity-height: 17px;
         --entity-width: 240px;
+        --button-height: 32px;
+        --entity-font-size: 0.95em;
+        --section-title-font-size: 1.425em; /* 50% larger than entity text */
       }
       .card-header {
         padding: var(--card-padding);
@@ -52,6 +55,9 @@ class EnergyDashboardEntityCard extends LitElement {
         flex: 1;
         margin: 0 4px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        height: var(--button-height);
+        min-height: var(--button-height);
+        box-sizing: border-box;
       }
       .control-button:first-child {
         margin-left: 0;
@@ -65,6 +71,18 @@ class EnergyDashboardEntityCard extends LitElement {
       }
       .control-button ha-icon {
         margin-right: 4px;
+        --mdc-icon-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .section-title {
+        padding: 8px var(--card-padding);
+        font-size: var(--section-title-font-size);
+        font-weight: 500;
+        color: var(--primary-text-color);
+        display: flex;
+        align-items: center;
       }
       .entities-container {
         padding: 0 var(--card-padding) var(--card-padding);
@@ -398,15 +416,21 @@ class EnergyDashboardEntityCard extends LitElement {
         ${this.powerEntities.length > 0 ? html`
           <div class="control-buttons">
             <button class="control-button" @click="${this._resetToDefaultEntities}">
-              <ha-icon icon="mdi:refresh"></ha-icon> Reset
+              <ha-icon icon="mdi:refresh"></ha-icon>
+              <span>Reset</span>
             </button>
             <button class="control-button" @click="${this._clearAllEntities}">
-              <ha-icon icon="mdi:close-circle-outline"></ha-icon> Clear
+              <ha-icon icon="mdi:close-circle-outline"></ha-icon>
+              <span>Clear</span>
             </button>
             <button class="control-button" @click="${this._selectAllEntities}">
-              <ha-icon icon="mdi:check-circle-outline"></ha-icon> Select All
+              <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+              <span>Select All</span>
             </button>
           </div>
+          
+          <div class="section-title">Power Entities</div>
+          
           <div class="entities-container" style="${containerStyle}">
             ${this.powerEntities.map(entity => html`
               <div 
