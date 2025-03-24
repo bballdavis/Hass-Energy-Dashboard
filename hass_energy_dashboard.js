@@ -10,24 +10,21 @@ class HassEnergyDashboard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    // Only populate dynamically if the user didn't provide config-based entities
-    if ((!this._entities.power || !this._entities.power.length)
-        && (!this._entities.energy || !this._entities.energy.length)) {
-      const power = [];
-      const energy = [];
-      for (const entityId of Object.keys(hass.states)) {
-        const stateObj = hass.states[entityId];
-        if (stateObj.attributes.unit_of_measurement === 'W') {
-          power.push(entityId);
-        }
-        if (stateObj.attributes.unit_of_measurement === 'Wh') {
-          energy.push(entityId);
-        }
+    // Always populate entities from hass.states (no more config check needed)
+    const power = [];
+    const energy = [];
+    for (const entityId of Object.keys(hass.states)) {
+      const stateObj = hass.states[entityId];
+      if (stateObj.attributes.unit_of_measurement === 'W') {
+        power.push(entityId);
       }
-      this._entities.power = power;
-      this._entities.energy = energy;
-      this.render();
+      if (stateObj.attributes.unit_of_measurement === 'Wh') {
+        energy.push(entityId);
+      }
     }
+    this._entities.power = power;
+    this._entities.energy = energy;
+    this.render();
   }
 
   render() {
