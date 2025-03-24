@@ -23,7 +23,7 @@ class PowerEntitiesCard extends LitElement {
         font-size: var(--paper-font-headline_-_font-size);
         font-weight: var(--paper-font-headline_-_font-weight);
         letter-spacing: var(--paper-font-headline_-_letter-spacing);
-        line-height: var (--paper-font-headline_-_line-height);
+        line-height: var(--paper-font-headline_-_line-height);
         color: var(--ha-card-header-color, --primary-text-color);
       }
       ha-card {
@@ -39,6 +39,8 @@ class PowerEntitiesCard extends LitElement {
         overflow-y: auto;
         max-height: calc(100% - 50px); /* Adjust based on header height */
         scrollbar-width: thin;
+        width: 100%;
+        box-sizing: border-box;
       }
       .entities-container::-webkit-scrollbar {
         width: 6px;
@@ -62,6 +64,7 @@ class PowerEntitiesCard extends LitElement {
         height: 20px;
         margin-bottom: 4px;
         width: 100%;
+        box-sizing: border-box;
       }
       .entity-item:last-child {
         margin-bottom: 0;
