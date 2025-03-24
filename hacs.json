@@ -1,12 +1,8 @@
 {
-  "name": "Hass Energy Dashboard",
-  "description": "A custom dashboard for managing energy usage, installed via HACS.",
-  "homeassistant": "2022.0",
-  "domains": [],
+  "name": "Power Entities Card",
+  "content_in_root": true,
+  "filename": "power-entities-card.js",
   "render_readme": true,
-  "zip_release": false,
-  "filename": "hass_energy_dashboard.js",
-  "iot_class": "local_push",
-  "country": "US",
-  "type": "dashboard"
+  "domains": ["sensor", "switch", "light"],
+  "homeassistant": "2023.8.0"
 }
