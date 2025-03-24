@@ -158,6 +158,8 @@ class EnergyDashboardEntityCard extends LitElement {
         display: flex;
         flex-direction: column;
         justify-content: center;
+        flex: 3; /* Give the name section more room */
+        min-width: 0; /* Allow the flex container to shrink below min-content */
       }
       .entity-name {
         font-weight: bold;
@@ -165,15 +167,18 @@ class EnergyDashboardEntityCard extends LitElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 175%; /* Increased from 70% to 175% (2.5x longer) */
+        max-width: 100%; /* Use 100% of the parent container */
         flex: 1;
+        margin-right: 16px; /* Add space between name and state */
       }
       .entity-state {
         display: flex;
         align-items: center;
         justify-content: flex-end;
         min-width: 85px; /* Increased from 60px to accommodate longer power values */
+        max-width: 85px; /* Limit the max width to ensure name gets space */
         white-space: nowrap; /* Prevent line breaks in state display */
+        flex: 0 0 auto; /* Don't grow, don't shrink, use auto width */
       }
       .power-value {
         font-weight: 500;
@@ -483,7 +488,7 @@ class EnergyDashboardEntityCard extends LitElement {
                   @click="${this._toggleEntity}"
                 >
                   <div class="entity-left">
-                    <div class="entity-name">${entity.name}</div>
+                    <div class="entity-name" title="${entity.name}">${entity.name}</div>
                   </div>
                   <div class="entity-state">
                     <div class="status-indicator">${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
