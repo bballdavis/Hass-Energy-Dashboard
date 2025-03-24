@@ -8,7 +8,7 @@ class EnergyDashboardEntityCard extends LitElement {
       hass: { type: Object },
       config: { type: Object },
       powerEntities: { type: Array },
-      entityToggleStates: { type: Object } // Add property for toggle states
+      entityToggleStates: { type: Object }
     };
   }
 
@@ -101,7 +101,7 @@ class EnergyDashboardEntityCard extends LitElement {
   constructor() {
     super();
     this.powerEntities = [];
-    this.entityToggleStates = {}; // Initialize toggle states object
+    this.entityToggleStates = {};
   }
 
   setConfig(config) {
@@ -113,6 +113,7 @@ class EnergyDashboardEntityCard extends LitElement {
       show_header: true,
       show_state: true,
       show_toggle: true,
+      auto_select_count: 6, // Default: auto-select top 6 entities
       ...config
     };
   }
@@ -189,9 +190,9 @@ class EnergyDashboardEntityCard extends LitElement {
     if (savedStates && Object.keys(savedStates).length > 0) {
       this.entityToggleStates = savedStates;
     } else {
-      // Set top 6 entities to ON by default
+      // Set top N entities to ON by default, where N is auto_select_count from config
       const toggleStates = {};
-      entities.slice(0, 6).forEach(entity => {
+      entities.slice(0, this.config.auto_select_count).forEach(entity => {
         toggleStates[entity.entityId] = true;
       });
       this.entityToggleStates = toggleStates;
@@ -285,11 +286,154 @@ class EnergyDashboardEntityCard extends LitElement {
   }
 }
 
+// Define the card editor
+class EnergyDashboardEntityCardEditor extends LitElement {
+  static get properties() {
+    return {
+      hass: { type: Object },
+      config: { type: Object }
+    };
+  }
+
+  static get styles() {
+    return css`
+      .form {
+        display: flex;
+        flex-direction: column;
+      }
+      .row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 8px 0;
+      }
+      .title {
+        padding-left: 16px;
+        margin-top: 8px;
+        font-weight: 500;
+      }
+      .value {
+        flex: 1;
+      }
+      ha-switch {
+        margin-right: 16px;
+      }
+    `;
+  }
+
+  setConfig(config) {
+    this.config = {
+      title: 'Energy Dashboard',
+      show_header: true,
+      show_state: true,
+      show_toggle: true,
+      auto_select_count: 6,
+      ...config
+    };
+  }
+
+  valueChanged(ev) {
+    if (!this.config) return;
+    
+    const target = ev.target;
+    const configValue = target.configValue;
+    const value = target.type === 'checkbox' ? target.checked : 
+                 target.type === 'number' ? parseInt(target.value) : target.value;
+    
+    if (this.config[configValue] === value) return;
+
+    // Update config
+    const newConfig = {
+      ...this.config,
+      [configValue]: value
+    };
+    
+    // Dispatch config-changed event
+    const event = new CustomEvent('config-changed', {
+      detail: { config: newConfig },
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(event);
+  }
+
+  render() {
+    if (!this.config) return html``;
+
+    return html`
+      <div class="form">
+        <div class="title">Card Settings</div>
+        
+        <div class="row">
+          <ha-textfield
+            class="value"
+            label="Title"
+            .value="${this.config.title || ''}"
+            .configValue=${"title"}
+            @input="${this.valueChanged}"
+          ></ha-textfield>
+        </div>
+        
+        <div class="row">
+          <ha-switch
+            .checked=${this.config.show_header !== false}
+            .configValue=${"show_header"}
+            @change=${this.valueChanged}
+          ></ha-switch>
+          <div>Show Header</div>
+        </div>
+        
+        <div class="row">
+          <ha-switch
+            .checked=${this.config.show_state !== false}
+            .configValue=${"show_state"}
+            @change=${this.valueChanged}
+          ></ha-switch>
+          <div>Show State</div>
+        </div>
+        
+        <div class="row">
+          <ha-switch
+            .checked=${this.config.show_toggle !== false}
+            .configValue=${"show_toggle"}
+            @change=${this.valueChanged}
+          ></ha-switch>
+          <div>Allow Toggling</div>
+        </div>
+        
+        <div class="row">
+          <ha-textfield
+            class="value"
+            label="Auto-select Entities Count"
+            type="number"
+            min="0"
+            max="50"
+            .value="${this.config.auto_select_count || 6}"
+            .configValue=${"auto_select_count"}
+            @input="${this.valueChanged}"
+            helper-persistent
+            helper-text="Number of entities to automatically select by default"
+          ></ha-textfield>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Register the editor
+customElements.define('energy-dashboard-entity-card-editor', EnergyDashboardEntityCardEditor);
+
+// Set card editor on main class
+EnergyDashboardEntityCard.getConfigElement = function() {
+  return document.createElement('energy-dashboard-entity-card-editor');
+};
+
 customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "energy-dashboard-entity-card",
   name: "Energy Dashboard Entity Card",
-  description: "Card that displays all entities with power measurements (W)"
+  description: "Card that displays all entities with power measurements (W)",
+  preview: false
 });
