@@ -37,5 +37,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data[DOMAIN].pop(entry.entry_id, None)
-    # Cleanup logic here
+    try:
+        await hass.services.async_call(
+            "lovelace",
+            "delete",
+            {"url_path": "energy_dashboard"},
+            blocking=True
+        )
+    except:
+        pass
     return True
