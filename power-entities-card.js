@@ -29,7 +29,7 @@ class PowerEntitiesCard extends LitElement {
       .entities-container {
         padding: 0 var(--card-padding) var(--card-padding);
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         grid-gap: 8px;
       }
       .entity-item {
@@ -43,7 +43,7 @@ class PowerEntitiesCard extends LitElement {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        height: 40px;
+        height: 28px;
       }
       .entity-item:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
