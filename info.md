@@ -1,4 +1,4 @@
-# Power Entities Card
+# Energy Dashboard Entity Card
 
 A custom Home Assistant card that displays all entities with power measurements (W).
 
@@ -14,15 +14,15 @@ A custom Home Assistant card that displays all entities with power measurements 
 Add the card to your dashboard with the following configuration:
 
 ```yaml
-type: custom:power-entities-card
-title: Power Devices
+type: custom:energy-dashboard-entity-card
+title: Energy Dashboard
 ```
 
 ## Options
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| title | string | 'Power Entities' | Card title |
+| title | string | 'Energy Dashboard' | Card title |
 | show_header | boolean | true | Show card header |
 | show_state | boolean | true | Show entity state |
 | show_toggle | boolean | true | Allow toggling entities |

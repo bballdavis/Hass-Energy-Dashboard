@@ -1,7 +1,7 @@
 {
-  "name": "Power Entities Card",
+  "name": "Energy Dashboard Entity Card",
   "content_in_root": true,
-  "filename": "power-entities-card.js",
+  "filename": "energy-dashboard-entity-card.js",
   "render_readme": true,
   "domains": ["sensor", "switch", "light"],
   "homeassistant": "2023.8.0"

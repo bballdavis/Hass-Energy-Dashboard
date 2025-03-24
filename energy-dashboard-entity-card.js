@@ -2,7 +2,7 @@ const LitElement = Object.getPrototypeOf(customElements.get("ha-panel-lovelace")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-class PowerEntitiesCard extends LitElement {
+class EnergyDashboardEntityCard extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
@@ -109,7 +109,7 @@ class PowerEntitiesCard extends LitElement {
       throw new Error("Invalid configuration");
     }
     this.config = {
-      title: 'Power Devices',
+      title: 'Energy Dashboard',
       show_header: true,
       show_state: true,
       show_toggle: true,
@@ -200,7 +200,7 @@ class PowerEntitiesCard extends LitElement {
 
   _loadToggleStates() {
     try {
-      const stored = localStorage.getItem('power-entities-toggle-states');
+      const stored = localStorage.getItem('energy-dashboard-entity-toggle-states');
       return stored ? JSON.parse(stored) : null;
     } catch (e) {
       console.error('Failed to load toggle states:', e);
@@ -210,7 +210,7 @@ class PowerEntitiesCard extends LitElement {
 
   _saveToggleStates() {
     try {
-      localStorage.setItem('power-entities-toggle-states', 
+      localStorage.setItem('energy-dashboard-entity-toggle-states', 
         JSON.stringify(this.entityToggleStates));
     } catch (e) {
       console.error('Failed to save toggle states:', e);
@@ -285,11 +285,11 @@ class PowerEntitiesCard extends LitElement {
   }
 }
 
-customElements.define('power-entities-card', PowerEntitiesCard);
+customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "power-entities-card",
-  name: "Power Entities Card",
+  type: "energy-dashboard-entity-card",
+  name: "Energy Dashboard Entity Card",
   description: "Card that displays all entities with power measurements (W)"
 });

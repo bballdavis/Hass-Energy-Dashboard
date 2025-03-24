@@ -1,8 +1,8 @@
 {
-  "name": "power-entities-card",
+  "name": "energy-dashboard-entity-card",
   "version": "1.0.0",
   "description": "A Home Assistant card that displays all power measurement entities",
-  "main": "power-entities-card.js",
+  "main": "energy-dashboard-entity-card.js",
   "scripts": {
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -13,7 +13,9 @@
     "hass",
     "automation",
     "lovelace",
-    "custom-cards"
+    "custom-cards",
+    "energy",
+    "dashboard"
   ],
   "repository": {
     "type": "git",
