@@ -1,8 +1,12 @@
 {
-  "name": "Energy Dashboard",
-  "content_in_root": false,
-  "domains": ["energy_dashboard"],
-  "country": "global",
-  "homeassistant": "2023.1.0",
-  "render_readme": true
+  "name": "Hass Energy Dashboard",
+  "description": "A custom dashboard for managing energy usage, installed via HACS.",
+  "homeassistant": "2022.0",
+  "domains": [],
+  "render_readme": true,
+  "zip_release": false,
+  "filename": "hass_energy_dashboard.js",
+  "iot_class": "local_push",
+  "country": "US",
+  "type": "dashboard"
 }

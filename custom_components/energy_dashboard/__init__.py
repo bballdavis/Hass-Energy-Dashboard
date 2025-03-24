@@ -11,6 +11,9 @@ async def async_setup(hass: HomeAssistant, config: dict):
     return True
 
 async def create_energy_dashboard_if_missing(hass: HomeAssistant):
+    if not hass.services.has_service("lovelace", "set_config"):
+        # Optionally log a warning or just return
+        return
     dashboard_config = await generate_dashboard(hass)
     # Example logic to see if a "Energy Dashboard" exists
     # ...your logic to find existing dashboard...
