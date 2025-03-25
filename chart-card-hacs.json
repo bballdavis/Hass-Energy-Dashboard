@@ -1,0 +1,7 @@
+{
+  "name": "Energy Dashboard Chart Card",
+  "content_in_root": true,
+  "render_readme": true,
+  "filename": "energy-dashboard-chart-card.js",
+  "requirements": ["apex-charts-card"]
+}

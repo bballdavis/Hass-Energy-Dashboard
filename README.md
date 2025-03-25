@@ -45,6 +45,33 @@ If you're only seeing one card type in Lovelace, try these steps:
 3. Check that all 3 JavaScript files are in the same directory
 4. Verify that the main `energy-dashboard-cards.js` file imports both cards
 
+## Troubleshooting Loading Issues 
+
+If one or both cards aren't showing up in the card picker, try this approach:
+
+### Add Each Card Individually to Resources
+
+1. Go to **Configuration** → **Dashboards** → **Resources**
+2. Click **Add Resource** and add these entries one by one:
+
+```yaml
+# First resource - Entity Card
+url: /local/energy-dashboard-entity-card.js
+type: module
+
+# Second resource - Chart Card
+url: /local/energy-dashboard-chart-card.js
+type: module
+```
+
+3. Restart your browser and Home Assistant
+
+### Check the Console for Errors
+
+If you're still having issues, check the browser console (F12) for errors related to the cards.
+
+For Chart Card: Make sure you have ApexCharts Card installed and that the chart card can find it.
+
 ## Detailed Troubleshooting
 
 If you're experiencing issues with the cards not showing up or loading properly:
