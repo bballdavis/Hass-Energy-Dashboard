@@ -1,8 +1,8 @@
 # Energy Dashboard Cards
 
 A custom Home Assistant solution that includes two cards:
-1. **Entity Card**: Displays and manages power and energy entities
-2. **Chart Card**: Visualizes selected entities in interactive charts
+1. **Entity Card** – Displays and manages power and energy entities.
+2. **Chart Card** – Visualizes selected entities using interactive charts.
 
 ## Features
 
@@ -22,21 +22,24 @@ A custom Home Assistant solution that includes two cards:
 1. Add this repository to HACS as a custom repository:
    - URL: `https://github.com/yourusername/hass-energy-dashboard`
    - Category: `Lovelace`
-2. Search for "Energy Dashboard Cards" in HACS and install it
-3. That's it! HACS will automatically register the resources and both cards will be available in your Lovelace editor
+2. Search for "Energy Dashboard Cards" in HACS and install it.
+3. Both cards will automatically be registered in your Lovelace editor.
+   (No manual resource setup is necessary.)
 
 ### Manual Installation (Alternative)
-If you prefer to install manually:
-
-1. Download the files from the latest release
-2. Upload them to your Home Assistant `/config/www/` directory
-3. Add the resources manually in Configuration → Dashboards → Resources:
+If you prefer manual installation:
+1. Download the latest release files.
+2. Upload the following two files to your Home Assistant `/config/www/` directory:
+   - `energy-dashboard-entity-card.js`
+   - `energy-dashboard-chart-card.js`
+3. In Home Assistant go to **Configuration → Dashboards → Resources** and add:
 ```yaml
 - url: /local/energy-dashboard-entity-card.js
   type: module
 - url: /local/energy-dashboard-chart-card.js
   type: module
 ```
+4. Restart Home Assistant.
 
 ## Required Dependencies
 
