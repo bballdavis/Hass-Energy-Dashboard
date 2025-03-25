@@ -996,15 +996,19 @@ EnergyDashboardEntityCard.getStubConfig = function() {
 
 EnergyDashboardEntityCard.info = info;
 
-if (!customElements.get('energy-dashboard-entity-card')) {
-  customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
-  
-  window.customCards = window.customCards || [];
-  window.customCards.push({
-    type: "energy-dashboard-entity-card",
-    name: info.name,
-    description: info.description,
-    preview: false,
-    documentationURL: info.documentationURL
-  });
+try {
+  if (!customElements.get('energy-dashboard-entity-card')) {
+    customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
+    
+    window.customCards = window.customCards || [];
+    window.customCards.push({
+      type: "energy-dashboard-entity-card",
+      name: info.name,
+      description: info.description,
+      preview: false,
+      documentationURL: info.documentationURL
+    });
+  }
+} catch (error) {
+  console.error("Error defining Energy Dashboard Entity Card:", error);
 }

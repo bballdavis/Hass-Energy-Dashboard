@@ -631,16 +631,19 @@ console.info(
 
 EnergyDashboardChartCard.info = info;
 
-// This ensures HACS detects the file as a proper card
-if (!customElements.get('energy-dashboard-chart-card')) {
-  customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
-  
-  window.customCards = window.customCards || [];
-  window.customCards.push({
-    type: "energy-dashboard-chart-card",
-    name: info.name,
-    description: info.description,
-    preview: false,
-    documentationURL: info.documentationURL
-  });
+try {
+  if (!customElements.get('energy-dashboard-chart-card')) {
+    customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
+    
+    window.customCards = window.customCards || [];
+    window.customCards.push({
+      type: "energy-dashboard-chart-card",
+      name: info.name,
+      description: info.description,
+      preview: false,
+      documentationURL: info.documentationURL
+    });
+  }
+} catch (error) {
+  console.error("Error defining Energy Dashboard Chart Card:", error);
 }
