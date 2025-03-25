@@ -45,6 +45,53 @@ If you're only seeing one card type in Lovelace, try these steps:
 3. Check that all 3 JavaScript files are in the same directory
 4. Verify that the main `energy-dashboard-cards.js` file imports both cards
 
+## Detailed Troubleshooting
+
+If you're experiencing issues with the cards not showing up or loading properly:
+
+### Check Browser Console for Errors
+1. Open your Home Assistant dashboard
+2. Open browser developer tools (F12 or Ctrl+Shift+I)
+3. Go to the Console tab
+4. Look for any errors related to the Energy Dashboard cards
+
+### Verify Files in Home Assistant
+1. Go to the File Editor in Home Assistant
+2. Navigate to your `/config/www/` directory (or wherever you placed the files)
+3. Confirm that all three files are present:
+   - `energy-dashboard-cards.js` (main loader)
+   - `energy-dashboard-entity-card.js` 
+   - `energy-dashboard-chart-card.js`
+
+### Verify Resource Configuration
+1. Go to Configuration → Dashboards → Resources
+2. Ensure you have an entry pointing to `/local/energy-dashboard-cards.js` with type `module`
+3. Try adding each card file separately as a resource:
+   ```yaml
+   - url: /local/energy-dashboard-cards.js
+     type: module
+   - url: /local/energy-dashboard-entity-card.js
+     type: module
+   - url: /local/energy-dashboard-chart-card.js
+     type: module
+   ```
+
+### Check ApexCharts Card Installation
+1. Make sure you have installed ApexCharts Card from HACS
+2. Verify it appears in your HACS → Frontend → Installed list
+3. The chart card requires this dependency to work
+
+### Clear Cache and Restart
+1. Clear your browser cache completely
+2. Restart Home Assistant (Settings → System → Server Controls → Restart)
+3. Refresh your browser with a hard reload (Ctrl+Shift+R or Cmd+Shift+R)
+
+If issues persist, please open a GitHub issue with:
+- Screenshots of any error messages
+- Your browser console log
+- Home Assistant version
+- Browser type and version
+
 ## Usage
 
 ### Entity Card

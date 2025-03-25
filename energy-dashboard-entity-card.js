@@ -996,19 +996,10 @@ EnergyDashboardEntityCard.getStubConfig = function() {
 
 EnergyDashboardEntityCard.info = info;
 
-try {
-  if (!customElements.get('energy-dashboard-entity-card')) {
-    customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
-    
-    window.customCards = window.customCards || [];
-    window.customCards.push({
-      type: "energy-dashboard-entity-card",
-      name: info.name,
-      description: info.description,
-      preview: false,
-      documentationURL: info.documentationURL
-    });
-  }
-} catch (error) {
-  console.error("Error defining Energy Dashboard Entity Card:", error);
+// Don't push to window.customCards here - let the main file handle it
+if (!customElements.get('energy-dashboard-entity-card')) {
+  customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
+  console.info(`%c ${info.name} %c Registered successfully `, 
+    "color: orange; font-weight: bold; background: black",
+    "color: green; font-weight: bold; background: dimgray");
 }

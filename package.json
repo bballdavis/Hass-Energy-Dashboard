@@ -1,8 +1,8 @@
 {
-  "name": "energy-dashboard-entity-card",
+  "name": "energy-dashboard-cards",
   "version": "1.0.0",
-  "description": "A Home Assistant card that displays all power measurement entities",
-  "main": "energy-dashboard-entity-card.js",
+  "description": "Energy Dashboard Cards for Home Assistant - Entity and Chart cards",
+  "main": "energy-dashboard-cards.js",
   "scripts": {
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -19,9 +19,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/hass-energy-dashboard"
+    "url": "https://github.com/bballdavis/hass-energy-dashboard"
   },
-  "author": "Your Name",
+  "author": "Philip Davis",
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {

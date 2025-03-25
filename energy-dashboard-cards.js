@@ -4,58 +4,63 @@
  * Version: 1.0.0
  */
 
-(async () => {
-  try {
-    // Dynamically import the entity card
-    if (!customElements.get('energy-dashboard-entity-card')) {
-      await import('./energy-dashboard-entity-card.js');
-    }
+console.info(
+  "%c ENERGY-DASHBOARD-CARDS %c Loading cards... ",
+  "color: orange; font-weight: bold; background: black",
+  "color: white; font-weight: bold; background: dimgray"
+);
 
-    // Dynamically import the chart card
-    if (!customElements.get('energy-dashboard-chart-card')) {
-      await import('./energy-dashboard-chart-card.js');
-    }
+// Create a simple script loader function
+const loadScript = (url) => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = url;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
 
-    // Register metadata for the package
-    const info = {
-      name: "Energy Dashboard Cards",
-      version: "1.0.0",
-      description: "Power and Energy visualization cards for Home Assistant",
-      documentationURL: "https://github.com/yourusername/hass-energy-dashboard"
-    };
+// Define the paths relative to where this script is loaded
+const basePath = new URL(import.meta.url).pathname.replace('energy-dashboard-cards.js', '');
+const entityCardPath = `${basePath}energy-dashboard-entity-card.js`;
+const chartCardPath = `${basePath}energy-dashboard-chart-card.js`;
 
-    console.info(
-      "%c ENERGY-DASHBOARD-CARDS %c Version " + info.version + " ",
-      "color: orange; font-weight: bold; background: black",
-      "color: white; font-weight: bold; background: dimgray"
-    );
+// Load the cards sequentially
+Promise.all([
+  loadScript(entityCardPath).catch(e => console.error("Failed to load entity card:", e)),
+  loadScript(chartCardPath).catch(e => console.error("Failed to load chart card:", e))
+]).then(() => {
+  console.info(
+    "%c ENERGY-DASHBOARD-CARDS %c All cards loaded successfully ",
+    "color: orange; font-weight: bold; background: black",
+    "color: green; font-weight: bold; background: dimgray"
+  );
+}).catch(error => {
+  console.error("Error loading Energy Dashboard Cards:", error);
+});
 
-    // Make sure we register this as a card set that's available
-    const registeredCards = [
-      {
-        type: "energy-dashboard-entity-card",
-        name: "Energy Dashboard Entity Card",
-        description: "Card that displays power (W/kW) and energy (Wh/kWh) measurement entities"
-      },
-      {
-        type: "energy-dashboard-chart-card",
-        name: "Energy Dashboard Chart Card",
-        description: "Chart card that automatically displays entities selected in the Entity Card"
-      }
-    ];
+// Register the cards for HACS and Lovelace
+window.customCards = window.customCards || [];
 
-    // Register all card types in the window.customCards array
-    if (!window.customCards) {
-      window.customCards = [];
-    }
+// Only add if not already registered
+if (!window.customCards.some(card => card.type === "energy-dashboard-entity-card")) {
+  window.customCards.push({
+    type: "energy-dashboard-entity-card",
+    name: "Energy Dashboard Entity Card",
+    description: "Card that displays power (W/kW) and energy (Wh/kWh) measurement entities",
+    preview: false,
+    documentationURL: "https://github.com/yourusername/hass-energy-dashboard"
+  });
+}
 
-    // Filter out any duplicate entries before pushing
-    registeredCards.forEach(card => {
-      if (!window.customCards.some(existingCard => existingCard.type === card.type)) {
-        window.customCards.push(card);
-      }
-    });
-  } catch (error) {
-    console.error("Error loading Energy Dashboard Cards:", error);
-  }
-})();
+if (!window.customCards.some(card => card.type === "energy-dashboard-chart-card")) {
+  window.customCards.push({
+    type: "energy-dashboard-chart-card",
+    name: "Energy Dashboard Chart Card",
+    description: "Chart card that automatically displays entities selected in the Entity Card",
+    preview: false,
+    documentationURL: "https://github.com/yourusername/hass-energy-dashboard"
+  });
+}
