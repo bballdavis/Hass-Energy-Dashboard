@@ -23,20 +23,27 @@ A custom Home Assistant solution that includes two cards:
    - URL: `https://github.com/yourusername/hass-energy-dashboard`
    - Category: `Lovelace`
 2. Search for "Energy Dashboard Cards" in HACS and install it
-3. Both cards will be installed together (entity card and chart card)
-4. Add them to your dashboard
+3. After installation, BOTH cards will be available in your Lovelace editor
 
 ### Manual Installation
-1. Download the `energy-dashboard-entity-card.js` and `energy-dashboard-chart-card.js` files from the latest release
-2. Upload them to your Home Assistant instance using the file editor
-3. Add the references to the cards in your Lovelace resources:
+1. Download these three files from the release:
+   - `energy-dashboard-cards.js` (main entry point)
+   - `energy-dashboard-entity-card.js`
+   - `energy-dashboard-chart-card.js`
+2. Upload them to your Home Assistant `/config/www/` directory
+3. Add the reference in your Lovelace resources:
 ```yaml
 resources:
-  - url: /local/energy-dashboard-entity-card.js
-    type: module
-  - url: /local/energy-dashboard-chart-card.js
+  - url: /local/energy-dashboard-cards.js
     type: module
 ```
+
+### Troubleshooting
+If you're only seeing one card type in Lovelace, try these steps:
+1. Clear your browser cache
+2. Reload Home Assistant (Settings → System → Server Controls → Restart)
+3. Check that all 3 JavaScript files are in the same directory
+4. Verify that the main `energy-dashboard-cards.js` file imports both cards
 
 ## Usage
 
