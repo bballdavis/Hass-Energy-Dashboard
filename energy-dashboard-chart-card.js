@@ -638,10 +638,18 @@ EnergyDashboardChartCard.getStubConfig = function() {
 
 EnergyDashboardChartCard.info = info;
 
-// Register the chart card
-if (!customElements.get('energy-dashboard-chart-card')) {
+// Simplify element registration
+try {
+  // Register the element with Home Assistant
   customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
-  console.info(`%c ${info.name} %c Registered successfully `, 
+  
+  // Log successful registration
+  console.info(
+    `%c ${info.name} %c Registered successfully `,
     "color: orange; font-weight: bold; background: black",
-    "color: green; font-weight: bold; background: dimgray");
+    "color: green; font-weight: bold; background: dimgray"
+  );
+} catch (error) {
+  // Log any errors with registration
+  console.error(`Failed to register ${info.name}:`, error);
 }

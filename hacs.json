@@ -2,7 +2,7 @@
   "name": "Energy Dashboard Cards",
   "content_in_root": true,
   "render_readme": true,
-  "domains": ["sensor", "switch", "light"],
+  "domains": ["sensor"],
   "homeassistant": "2023.8.0",
   "filename": "energy-dashboard-cards.js",
   "hide_default_branch": false

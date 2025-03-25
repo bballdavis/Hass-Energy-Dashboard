@@ -473,7 +473,7 @@ class EnergyDashboardEntityCard extends LitElement {
     // Update the UI
     this.powerEntities = this.powerEntities.map(entity => 
       entity.entityId === entityId 
-        ? { ...entity, isOn: this.entityToggleStates[entityId] } 
+        ? { ...entity, isOn: this.entityToggleStates[entity.entityId] } 
         : entity
     );
     
@@ -497,7 +497,7 @@ class EnergyDashboardEntityCard extends LitElement {
     // Update the UI
     this.energyEntities = this.energyEntities.map(entity => 
       entity.entityId === entityId 
-        ? { ...entity, isOn: this.energyEntityToggleStates[entityId] } 
+        ? { ...entity, isOn: this.energyEntityToggleStates[entity.entityId] } 
         : entity
     );
     
@@ -996,10 +996,18 @@ EnergyDashboardEntityCard.getStubConfig = function() {
 
 EnergyDashboardEntityCard.info = info;
 
-// Don't push to window.customCards here - let the main file handle it
-if (!customElements.get('energy-dashboard-entity-card')) {
+// Simplify element registration
+try {
+  // Register the element with Home Assistant
   customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
-  console.info(`%c ${info.name} %c Registered successfully `, 
+  
+  // Log successful registration
+  console.info(
+    `%c ${info.name} %c Registered successfully `,
     "color: orange; font-weight: bold; background: black",
-    "color: green; font-weight: bold; background: dimgray");
+    "color: green; font-weight: bold; background: dimgray"
+  );
+} catch (error) {
+  // Log any errors with registration
+  console.error(`Failed to register ${info.name}:`, error);
 }
