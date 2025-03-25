@@ -1,6 +1,8 @@
-# Energy Dashboard Entity Card
+# Energy Dashboard Cards
 
-A custom Home Assistant card that displays all entities with power measurements (W).
+A custom Home Assistant solution that includes two cards:
+1. **Entity Card**: Displays and manages power and energy entities
+2. **Chart Card**: Visualizes selected entities in interactive charts
 
 ## Features
 
@@ -20,8 +22,9 @@ A custom Home Assistant card that displays all entities with power measurements 
 1. Add this repository to HACS as a custom repository:
    - URL: `https://github.com/yourusername/hass-energy-dashboard`
    - Category: `Lovelace`
-2. Search for "Energy Dashboard Entity Card" in HACS and install it
-3. Add the card to your dashboard
+2. Search for "Energy Dashboard Cards" in HACS and install it
+3. Both cards will be installed together (entity card and chart card)
+4. Add them to your dashboard
 
 ### Manual Installation
 1. Download the `energy-dashboard-entity-card.js` and `energy-dashboard-chart-card.js` files from the latest release

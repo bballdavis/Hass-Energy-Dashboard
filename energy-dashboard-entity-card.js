@@ -1,4 +1,16 @@
-//
+const info = {
+  name: "Energy Dashboard Entity Card",
+  version: "1.0.0",
+  description: "Card that displays power (W/kW) and energy (Wh/kWh) measurement entities",
+  documentationURL: "https://github.com/yourusername/hass-energy-dashboard"
+};
+
+console.info(
+  `%c ${info.name} %c ${info.version} `,
+  "color: orange; font-weight: bold; background: black",
+  "color: white; font-weight: bold; background: dimgray"
+);
+
 const LitElement = Object.getPrototypeOf(customElements.get("ha-panel-lovelace"));
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
@@ -982,13 +994,17 @@ EnergyDashboardEntityCard.getStubConfig = function() {
   };
 };
 
-customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
+EnergyDashboardEntityCard.info = info;
 
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "energy-dashboard-entity-card",
-  name: "Energy Dashboard Entity Card",
-  description: "Card that displays power (W/kW) and energy (Wh/kWh) measurement entities",
-  preview: false,
-  documentationURL: "https://github.com/yourusername/Hass-Energy-Dashboard"
-});
+if (!customElements.get('energy-dashboard-entity-card')) {
+  customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
+  
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "energy-dashboard-entity-card",
+    name: info.name,
+    description: info.description,
+    preview: false,
+    documentationURL: info.documentationURL
+  });
+}

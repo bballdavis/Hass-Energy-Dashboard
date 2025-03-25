@@ -615,13 +615,32 @@ EnergyDashboardChartCard.getStubConfig = function() {
   };
 };
 
-customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
-
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "energy-dashboard-chart-card",
+// Add version and info metadata
+const info = {
   name: "Energy Dashboard Chart Card",
+  version: "1.0.0",
   description: "Chart card that automatically displays entities selected in the Energy Dashboard Entity Card",
-  preview: false,
-  documentationURL: "https://github.com/yourusername/Hass-Energy-Dashboard"
-});
+  documentationURL: "https://github.com/yourusername/hass-energy-dashboard"
+};
+
+console.info(
+  `%c ${info.name} %c ${info.version} `,
+  "color: orange; font-weight: bold; background: black",
+  "color: white; font-weight: bold; background: dimgray"
+);
+
+EnergyDashboardChartCard.info = info;
+
+// This ensures HACS detects the file as a proper card
+if (!customElements.get('energy-dashboard-chart-card')) {
+  customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
+  
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "energy-dashboard-chart-card",
+    name: info.name,
+    description: info.description,
+    preview: false,
+    documentationURL: info.documentationURL
+  });
+}
