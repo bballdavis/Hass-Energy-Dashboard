@@ -12,25 +12,6 @@ A custom Home Assistant card that displays all entities with power measurements 
 - Responsive design that works on both mobile and desktop
 - Visual editor support for easy configuration
 
-## Installation
-
-### HACS Installation
-1. Add this repository to HACS as a custom repository:
-   - URL: `https://github.com/yourusername/hass-energy-dashboard`
-   - Category: `Lovelace`
-2. Search for "Energy Dashboard Entity Card" in HACS and install it
-3. Add the card to your dashboard
-
-### Manual Installation
-1. Download the `energy-dashboard-entity-card.js` file from the latest release
-2. Upload it to your Home Assistant instance using the file editor
-3. Add the reference to the card in your Lovelace resources:
-```yaml
-resources:
-  - url: /local/energy-dashboard-entity-card.js
-    type: module
-```
-
 ## Usage
 
 Add the card to your dashboard with the following configuration:
@@ -58,9 +39,3 @@ The card includes three control buttons for managing entity selections:
 - **Reset**: Clears all selections and enables the top N entities (based on auto_select_count)
 - **Clear**: Turns off all entity selections
 - **Select All**: Turns on all entity selections
-
-## Support
-
-If you find this card helpful and would like to support its development:
-- Consider starring the repository on GitHub
-- Report any issues or feature requests through GitHub issues
