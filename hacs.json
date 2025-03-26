@@ -1,11 +1,7 @@
 {
-  "name": "Energy Dashboard Cards",
+  "name": "Energy Dashboard Card",
   "render_readme": true,
-  "multi_file": true,
-  "assets": [
-    "energy-dashboard-entity-card.js",
-    "energy-dashboard-chart-card.js"
-  ],
+  "filename": "energy-dashboard-card.js",
   "domains": ["sensor"],
   "homeassistant": "2023.8.0",
   "hide_default_branch": false
