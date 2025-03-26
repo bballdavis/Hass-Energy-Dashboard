@@ -1,8 +1,5 @@
 {
   "name": "Energy Dashboard Card",
   "render_readme": true,
-  "filename": "energy-dashboard-card.js",
-  "domains": ["sensor"],
-  "homeassistant": "2023.8.0",
-  "hide_default_branch": false
+  "filename": "energy-dashboard-card.js"
 }
