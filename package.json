@@ -1,0 +1,12 @@
+{
+  "name": "hass-energy-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "install-build": "npm install && node build.js"
+  },
+  "dependencies": {
+    "lit": "^2.3.1"
+  }
+}

@@ -38,6 +38,26 @@ If you prefer manual installation:
 ```
 4. Restart Home Assistant.
 
+## TypeScript Workflow
+1. Make sure Node.js is properly installed:
+   - Download from https://nodejs.org/
+   - When installing, check "Automatically install the necessary tools" 
+   - Verify installation by running `node --version` in Command Prompt
+
+2. Development Process:
+   ```bash
+   # Install dependencies
+   npm install
+
+   # Build the project
+   npm run build
+
+   # Watch for changes during development
+   npm run watch
+   ```
+
+3. After building, the output file will be in `dist/energy-dashboard-card.js`
+
 ## Required Dependencies
 
 The chart mode requires the [ApexCharts Card](https://github.com/RomRider/apexcharts-card) to be installed from HACS.
