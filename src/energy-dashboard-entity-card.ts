@@ -514,3 +514,6 @@ export class EnergyDashboardEntityCard extends LitElement {
     `;
   }
 }
+
+// Register the card with the custom elements registry
+customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
