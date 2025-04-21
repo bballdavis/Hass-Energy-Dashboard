@@ -3,5 +3,5 @@ declare global {
         customCards: any[];
     }
 }
-import './energy-dashboard-entity-card';
-import './energy-dashboard-entity-card-editor';
+export * from './energy-dashboard-entity-card';
+export * from './energy-dashboard-entity-card-editor';

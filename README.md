@@ -1,10 +1,16 @@
-# Energy Dashboard Entity Card
+# Energy Dashboard
 
-A custom Home Assistant card that displays all entities with power measurements (W).
+A collection of custom Home Assistant cards for energy monitoring and visualization.
 
-## Features
+## Cards Included
 
-- Automatically finds all entities with power unit of measurement (W)
+### Energy Dashboard Entity Card
+A card that displays power (W/kW) and energy (Wh/kWh) measurement entities.
+
+#### Features
+
+- Automatically finds all entities with power unit of measurement (W/kW)
+- Shows energy measurement entities (Wh/kWh)
 - Modern UI with rounded corners and visual feedback
 - Click on entities to toggle their state
 - Control buttons for quick selection management (Reset, Clear, Select All)
@@ -16,22 +22,24 @@ A custom Home Assistant card that displays all entities with power measurements 
 
 ### HACS Installation
 1. Add this repository to HACS as a custom repository:
-   - URL: `https://github.com/yourusername/hass-energy-dashboard`
+   - URL: `https://github.com/bballdavis/Hass-Energy-Dashboard`
    - Category: `Lovelace`
-2. Search for "Energy Dashboard Entity Card" in HACS and install it
-3. Add the card to your dashboard
+2. Search for "Energy Dashboard" in HACS and install it
+3. Add any of the available cards to your dashboard
 
 ### Manual Installation
-1. Download the `energy-dashboard-entity-card.js` file from the latest release
+1. Download the `energy-dashboard.js` file from the latest release
 2. Upload it to your Home Assistant instance using the file editor
-3. Add the reference to the card in your Lovelace resources:
+3. Add the reference to the package in your Lovelace resources:
 ```yaml
 resources:
-  - url: /local/energy-dashboard-entity-card.js
+  - url: /local/energy-dashboard.js
     type: module
 ```
 
 ## Usage
+
+### Energy Dashboard Entity Card
 
 Add the card to your dashboard with the following configuration:
 
@@ -40,7 +48,7 @@ type: custom:energy-dashboard-entity-card
 title: Energy Dashboard
 ```
 
-## Options
+#### Options
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
@@ -48,10 +56,12 @@ title: Energy Dashboard
 | show_header | boolean | true | Show card header |
 | show_state | boolean | true | Show entity state |
 | show_toggle | boolean | true | Allow toggling entities |
-| auto_select_count | number | 6 | Number of entities to auto-select by default |
+| auto_select_count | number | 6 | Number of power entities to auto-select by default |
+| energy_auto_select_count | number | 6 | Number of energy entities to auto-select by default |
 | max_height | number | 400 | Maximum height in pixels (0 = no limit) |
+| show_energy_section | boolean | true | Show energy section with energy entities (Wh/kWh) |
 
-## Control Buttons
+#### Control Buttons
 
 The card includes three control buttons for managing entity selections:
 
@@ -61,6 +71,6 @@ The card includes three control buttons for managing entity selections:
 
 ## Support
 
-If you find this card helpful and would like to support its development:
+If you find these cards helpful and would like to support their development:
 - Consider starring the repository on GitHub
 - Report any issues or feature requests through GitHub issues

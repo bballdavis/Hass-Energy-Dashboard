@@ -5,10 +5,10 @@ declare global {
   }
 }
 
-// Using import type with side effects to prevent 'unused import' warnings
-// These imports are needed to ensure the web components are registered
-import './energy-dashboard-entity-card';
-import './energy-dashboard-entity-card-editor';
+// Import the components and their implementations
+// This ensures they are included in the final bundle
+export * from './energy-dashboard-entity-card';
+export * from './energy-dashboard-entity-card-editor';
 
 window.customCards = window.customCards || [];
 
@@ -22,12 +22,3 @@ window.customCards.push({
 });
 
 // Additional cards can be registered here as they're developed
-// Each will show up separately in the Add Card menu of Home Assistant
-// For example:
-// window.customCards.push({
-//   type: "energy-dashboard-chart-card",
-//   name: "Energy Dashboard: Chart Card",
-//   description: "Card that visualizes energy usage over time",
-//   preview: false,
-//   documentationURL: "https://github.com/bballdavis/Hass-Energy-Dashboard"
-// });
