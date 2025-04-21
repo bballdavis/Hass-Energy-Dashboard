@@ -6,9 +6,8 @@ declare global {
 }
 
 // Import the components and their implementations
-// This ensures they are included in the final bundle
-export * from './energy-dashboard-entity-card';
-export * from './energy-dashboard-entity-card-editor';
+import './energy-dashboard-entity-card';
+import './energy-dashboard-entity-card-editor';
 
 window.customCards = window.customCards || [];
 
