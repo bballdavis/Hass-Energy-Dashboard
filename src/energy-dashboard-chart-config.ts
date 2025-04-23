@@ -6,6 +6,8 @@ export interface ChartSeries {
   color?: string;
   type?: string; // 'line', 'area', etc.
   stroke_width?: number;
+  curve?: string; // 'smooth', 'straight'
+  show_points?: boolean;
 }
 
 export interface ChartAxisOptions {
@@ -35,6 +37,7 @@ export interface EnergyDashboardChartConfig extends EnergyDashboardConfig {
     x_axis?: ChartAxisOptions;
   };
   use_custom_colors: boolean;
+  show_legend: boolean;
 }
 
 export function getDefaultChartConfig(): Partial<EnergyDashboardChartConfig> {
@@ -62,6 +65,7 @@ export function getDefaultChartConfig(): Partial<EnergyDashboardChartConfig> {
         unit: 'kWh'
       }
     },
-    use_custom_colors: false
+    use_custom_colors: false,
+    show_legend: true
   };
 }

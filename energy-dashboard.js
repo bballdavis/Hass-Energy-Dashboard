@@ -935,7 +935,8 @@ function getDefaultChartConfig() {
                 unit: 'kWh'
             }
         },
-        use_custom_colors: false
+        use_custom_colors: false,
+        show_legend: true
     };
 }
 
@@ -1069,7 +1070,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = isEnergy
@@ -1089,17 +1090,18 @@ class EnergyDashboardChartCard extends HTMLElement {
                 entity: entityId,
                 name: name,
                 type: chartType,
-                smoothing: smooth ? 'cubic' : false,
+                curve: smooth ? 'smooth' : 'straight',
                 show_points: showPoints,
                 stroke_width: 2
             };
         });
-        const chartConfig = {
+        return {
             type: 'custom:apexcharts-card',
             header: {
                 show: false,
                 title: isEnergy ? 'Energy Consumption' : 'Power Consumption'
             },
+            chart_type: chartType,
             apex_config: {
                 chart: {
                     height: this.config.chart_height || 300,
@@ -1118,24 +1120,24 @@ class EnergyDashboardChartCard extends HTMLElement {
                 },
             },
             series: series,
-            graph_span: `${hoursToShow}h`,
+            hours_to_show: hoursToShow,
             span: {
                 start: `now-${hoursToShow}h`,
                 end: 'now'
             },
-            now: {
-                show: true,
-                label: 'Now'
-            },
+            show_legend: true,
             yaxis: [{
                     min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
                     max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
-                    tickAmount: (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.tickAmount,
-                    decimals: (_e = (_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.decimals) !== null && _e !== void 0 ? _e : (isEnergy ? 2 : 1),
-                    title: ((_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.title) || (isEnergy ? 'Energy' : 'Power'),
+                    decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
                     apex: {
+                        title: {
+                            text: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power')
+                        },
                         labels: {
-                            formatter: `function (val) {return val.toFixed(${(_h = (_g = options === null || options === void 0 ? void 0 : options.y_axis) === null || _g === void 0 ? void 0 : _g.decimals) !== null && _h !== void 0 ? _h : (isEnergy ? 2 : 1)}) + ' ${((_j = options === null || options === void 0 ? void 0 : options.y_axis) === null || _j === void 0 ? void 0 : _j.unit) || (isEnergy ? 'kWh' : 'W')}'}`
+                            formatter: {
+                                function: `(val) => { return val.toFixed(${(_g = (_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.decimals) !== null && _g !== void 0 ? _g : (isEnergy ? 2 : 1)}) + ' ${((_h = options === null || options === void 0 ? void 0 : options.y_axis) === null || _h === void 0 ? void 0 : _h.unit) || (isEnergy ? 'kWh' : 'W')}'; }`
+                            }
                         }
                     }
                 }],
@@ -1146,9 +1148,9 @@ class EnergyDashboardChartCard extends HTMLElement {
             },
             cache: true,
             stacked: false,
-            aggregate_func: aggregateFunc
+            update_interval: this.config.update_interval || 60,
+            group_by: aggregateFunc
         };
-        return chartConfig;
     }
     _createChart(isEnergy) {
         const entities = isEnergy ? this._energyEntities : this._powerEntities;
@@ -1161,14 +1163,36 @@ class EnergyDashboardChartCard extends HTMLElement {
         chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
         chartElement.style.width = '100%';
         chartElement.style.marginBottom = '16px';
-        // Create the apexcharts-card element
-        const apexCard = document.createElement('custom:apexcharts-card');
-        // Set card config for apexcharts-card
-        // This will be handled by the apexcharts-card element
-        apexCard.setConfig(chartConfig);
-        // Pass hass object to the chart
-        apexCard.hass = this._hass;
-        chartElement.appendChild(apexCard);
+        try {
+            // Check if apexcharts-card is registered
+            if (!customElements.get('apexcharts-card')) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'error-message';
+                errorMsg.style.color = 'var(--error-color, red)';
+                errorMsg.style.padding = '16px';
+                errorMsg.style.textAlign = 'center';
+                errorMsg.textContent = 'Error: apexcharts-card is not installed or registered. Please make sure the integration is installed.';
+                chartElement.appendChild(errorMsg);
+                return chartElement;
+            }
+            // Create the apexcharts-card element
+            const apexCard = document.createElement('apexcharts-card');
+            // Set card config for apexcharts-card
+            apexCard.setConfig(chartConfig);
+            // Pass hass object to the chart
+            apexCard.hass = this._hass;
+            chartElement.appendChild(apexCard);
+        }
+        catch (err) {
+            console.error('Error creating apexcharts-card:', err);
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'error-message';
+            errorMsg.style.color = 'var(--error-color, red)';
+            errorMsg.style.padding = '16px';
+            errorMsg.style.textAlign = 'center';
+            errorMsg.textContent = `Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`;
+            chartElement.appendChild(errorMsg);
+        }
         return chartElement;
     }
     _createEmptyCard(isEnergy) {
@@ -1343,7 +1367,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         this._updateForm();
     }
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         // Apply default chart config values 
         const defaultConfig = getDefaultChartConfig();
         // Create a merged config object
@@ -1376,6 +1400,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
             max_height: (_k = config.max_height) !== null && _k !== void 0 ? _k : 400,
             show_energy_section: (_l = config.show_energy_section) !== null && _l !== void 0 ? _l : true,
             energy_auto_select_count: (_m = config.energy_auto_select_count) !== null && _m !== void 0 ? _m : 6,
+            show_legend: (_o = config.show_legend) !== null && _o !== void 0 ? _o : true,
         };
         this._updateForm();
     }
@@ -1504,6 +1529,17 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         smoothCurveRow.appendChild(smoothCurveSwitch);
         smoothCurveRow.appendChild(smoothCurveLabel);
         form.appendChild(smoothCurveRow);
+        // Show Legend toggle
+        const showLegendRow = this._createRow();
+        const showLegendSwitch = document.createElement('ha-switch');
+        showLegendSwitch.checked = this.config.show_legend !== false;
+        showLegendSwitch.configValue = 'show_legend';
+        showLegendSwitch.addEventListener('change', this.valueChanged);
+        const showLegendLabel = document.createElement('div');
+        showLegendLabel.textContent = 'Show Legend';
+        showLegendRow.appendChild(showLegendSwitch);
+        showLegendRow.appendChild(showLegendLabel);
+        form.appendChild(showLegendRow);
         // Use Custom Colors toggle
         const customColorsRow = this._createRow();
         const customColorsSwitch = document.createElement('ha-switch');

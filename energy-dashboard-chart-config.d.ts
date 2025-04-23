@@ -5,6 +5,8 @@ export interface ChartSeries {
     color?: string;
     type?: string;
     stroke_width?: number;
+    curve?: string;
+    show_points?: boolean;
 }
 export interface ChartAxisOptions {
     min?: number;
@@ -31,5 +33,6 @@ export interface EnergyDashboardChartConfig extends EnergyDashboardConfig {
         x_axis?: ChartAxisOptions;
     };
     use_custom_colors: boolean;
+    show_legend: boolean;
 }
 export declare function getDefaultChartConfig(): Partial<EnergyDashboardChartConfig>;

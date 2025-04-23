@@ -77,6 +77,7 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
       max_height: config.max_height ?? 400,
       show_energy_section: config.show_energy_section ?? true,
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
+      show_legend: config.show_legend ?? true,
     } as EnergyDashboardChartConfig;
     
     this._updateForm();
@@ -273,6 +274,18 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     smoothCurveRow.appendChild(smoothCurveSwitch);
     smoothCurveRow.appendChild(smoothCurveLabel);
     form.appendChild(smoothCurveRow);
+
+    // Show Legend toggle
+    const showLegendRow = this._createRow();
+    const showLegendSwitch = document.createElement('ha-switch') as HaFormElement;
+    showLegendSwitch.checked = this.config.show_legend !== false;
+    showLegendSwitch.configValue = 'show_legend';
+    showLegendSwitch.addEventListener('change', this.valueChanged);
+    const showLegendLabel = document.createElement('div');
+    showLegendLabel.textContent = 'Show Legend';
+    showLegendRow.appendChild(showLegendSwitch);
+    showLegendRow.appendChild(showLegendLabel);
+    form.appendChild(showLegendRow);
 
     // Use Custom Colors toggle
     const customColorsRow = this._createRow();

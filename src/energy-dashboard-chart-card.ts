@@ -185,18 +185,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
         entity: entityId,
         name: name,
         type: chartType,
-        smoothing: smooth ? 'cubic' : false,
+        curve: smooth ? 'smooth' : 'straight',
         show_points: showPoints,
         stroke_width: 2
       };
     });
     
-    const chartConfig = {
+    return {
       type: 'custom:apexcharts-card',
       header: {
         show: false,
         title: isEnergy ? 'Energy Consumption' : 'Power Consumption'
       },
+      chart_type: chartType,
       apex_config: {
         chart: {
           height: this.config.chart_height || 300,
@@ -215,24 +216,24 @@ export class EnergyDashboardChartCard extends HTMLElement {
         },
       },
       series: series,
-      graph_span: `${hoursToShow}h`,
+      hours_to_show: hoursToShow,
       span: {
         start: `now-${hoursToShow}h`,
         end: 'now'
       },
-      now: {
-        show: true,
-        label: 'Now'
-      },
+      show_legend: true,
       yaxis: [{
         min: options?.y_axis?.min,
         max: options?.y_axis?.max,
-        tickAmount: options?.y_axis?.tickAmount,
         decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1),
-        title: options?.y_axis?.title || (isEnergy ? 'Energy' : 'Power'),
         apex: {
+          title: {
+            text: options?.y_axis?.title || (isEnergy ? 'Energy' : 'Power')
+          },
           labels: {
-            formatter: `function (val) {return val.toFixed(${options?.y_axis?.decimals ?? (isEnergy ? 2 : 1)}) + ' ${options?.y_axis?.unit || (isEnergy ? 'kWh' : 'W')}'}` 
+            formatter: {
+              function: `(val) => { return val.toFixed(${options?.y_axis?.decimals ?? (isEnergy ? 2 : 1)}) + ' ${options?.y_axis?.unit || (isEnergy ? 'kWh' : 'W')}'; }`
+            }
           }
         }
       }],
@@ -243,10 +244,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       },
       cache: true,
       stacked: false,
-      aggregate_func: aggregateFunc
+      update_interval: this.config.update_interval || 60,
+      group_by: aggregateFunc
     };
-    
-    return chartConfig;
   }
 
   private _createChart(isEnergy: boolean) {
@@ -263,17 +263,40 @@ export class EnergyDashboardChartCard extends HTMLElement {
     chartElement.style.width = '100%';
     chartElement.style.marginBottom = '16px';
     
-    // Create the apexcharts-card element
-    const apexCard = document.createElement('custom:apexcharts-card') as HTMLElement;
+    try {
+      // Check if apexcharts-card is registered
+      if (!customElements.get('apexcharts-card')) {
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'error-message';
+        errorMsg.style.color = 'var(--error-color, red)';
+        errorMsg.style.padding = '16px';
+        errorMsg.style.textAlign = 'center';
+        errorMsg.textContent = 'Error: apexcharts-card is not installed or registered. Please make sure the integration is installed.';
+        chartElement.appendChild(errorMsg);
+        return chartElement;
+      }
+      
+      // Create the apexcharts-card element
+      const apexCard = document.createElement('apexcharts-card') as HTMLElement;
+      
+      // Set card config for apexcharts-card
+      (apexCard as any).setConfig(chartConfig);
+      
+      // Pass hass object to the chart
+      (apexCard as any).hass = this._hass;
+      
+      chartElement.appendChild(apexCard);
+    } catch (err) {
+      console.error('Error creating apexcharts-card:', err);
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'error-message';
+      errorMsg.style.color = 'var(--error-color, red)';
+      errorMsg.style.padding = '16px';
+      errorMsg.style.textAlign = 'center';
+      errorMsg.textContent = `Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`;
+      chartElement.appendChild(errorMsg);
+    }
     
-    // Set card config for apexcharts-card
-    // This will be handled by the apexcharts-card element
-    (apexCard as any).setConfig(chartConfig);
-    
-    // Pass hass object to the chart
-    (apexCard as any).hass = this._hass;
-    
-    chartElement.appendChild(apexCard);
     return chartElement;
   }
 

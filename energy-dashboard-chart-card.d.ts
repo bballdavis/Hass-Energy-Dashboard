@@ -37,6 +37,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
             x_axis?: import("./energy-dashboard-chart-config").ChartAxisOptions;
         } | undefined;
         use_custom_colors?: boolean | undefined;
+        show_legend?: boolean | undefined;
         show_state?: boolean | undefined;
         show_toggle?: boolean | undefined;
         auto_select_count?: number | undefined;
