@@ -1,0 +1,58 @@
+import { EnergyDashboardChartConfig } from './energy-dashboard-chart-config';
+export declare class EnergyDashboardChartCard extends HTMLElement {
+    private _hass;
+    config?: EnergyDashboardChartConfig;
+    private _root;
+    private _powerChartEl;
+    private _energyChartEl;
+    private _updateTimer;
+    private _powerEntities;
+    private _energyEntities;
+    static get cardType(): string;
+    static get displayName(): string;
+    static get description(): string;
+    static get icon(): string;
+    constructor();
+    connectedCallback(): void;
+    disconnectedCallback(): void;
+    setConfig(config: Partial<EnergyDashboardChartConfig>): void;
+    static getConfigElement(): HTMLElement;
+    static getStubConfig(): {
+        title: string;
+        show_header: boolean;
+        show_energy_section: boolean;
+        chart_type?: string | undefined;
+        chart_height?: number | undefined;
+        show_points?: boolean | undefined;
+        smooth_curve?: boolean | undefined;
+        update_interval?: number | undefined;
+        hours_to_show?: number | undefined;
+        aggregate_func?: string | undefined;
+        power_chart_options?: {
+            y_axis: import("./energy-dashboard-chart-config").ChartAxisOptions;
+            x_axis?: import("./energy-dashboard-chart-config").ChartAxisOptions;
+        } | undefined;
+        energy_chart_options?: {
+            y_axis: import("./energy-dashboard-chart-config").ChartAxisOptions;
+            x_axis?: import("./energy-dashboard-chart-config").ChartAxisOptions;
+        } | undefined;
+        use_custom_colors?: boolean | undefined;
+        show_state?: boolean | undefined;
+        show_toggle?: boolean | undefined;
+        auto_select_count?: number | undefined;
+        max_height?: number | undefined;
+        energy_auto_select_count?: number | undefined;
+    };
+    getCardSize(): number;
+    set hass(hass: any);
+    get hass(): any;
+    private _loadSelectedEntities;
+    private _startUpdateInterval;
+    private _stopUpdateInterval;
+    private _generateApexchartsConfig;
+    private _createChart;
+    private _createEmptyCard;
+    private _updateCharts;
+    private _renderSectionTitle;
+    private _updateContent;
+}

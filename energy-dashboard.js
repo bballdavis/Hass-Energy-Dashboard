@@ -910,12 +910,387 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
 // Register the editor with the custom elements registry
 customElements.define('energy-dashboard-entity-card-editor', EnergyDashboardEntityCardEditor);
 
+function getDefaultChartConfig() {
+    return {
+        chart_type: 'line',
+        chart_height: 300,
+        show_points: false,
+        smooth_curve: true,
+        update_interval: 60,
+        hours_to_show: 24,
+        aggregate_func: 'avg',
+        power_chart_options: {
+            y_axis: {
+                min: 0,
+                decimals: 1,
+                title: 'Power',
+                unit: 'W'
+            }
+        },
+        energy_chart_options: {
+            y_axis: {
+                min: 0,
+                decimals: 2,
+                title: 'Energy',
+                unit: 'kWh'
+            }
+        },
+        use_custom_colors: false
+    };
+}
+
+class EnergyDashboardChartCard extends HTMLElement {
+    // Define card name and icon for card picker
+    static get cardType() {
+        return 'energy-dashboard-chart-card';
+    }
+    static get displayName() {
+        return 'Energy Dashboard Chart';
+    }
+    static get description() {
+        return 'Chart companion for the Energy Dashboard Entity Card';
+    }
+    static get icon() {
+        return 'mdi:chart-line';
+    }
+    constructor() {
+        super();
+        this._powerChartEl = null;
+        this._energyChartEl = null;
+        this._updateTimer = null;
+        this._powerEntities = [];
+        this._energyEntities = [];
+        this._root = this.attachShadow({ mode: 'open' });
+        this._root.appendChild(createStyles(cardStyles));
+        // Create the card element
+        const card = document.createElement('ha-card');
+        this._root.appendChild(card);
+    }
+    // Called when the element is added to the DOM
+    connectedCallback() {
+        this._loadSelectedEntities();
+        this._updateContent();
+        this._startUpdateInterval();
+    }
+    disconnectedCallback() {
+        this._stopUpdateInterval();
+    }
+    // Home Assistant specific method to set config
+    setConfig(config) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        if (!config) {
+            throw new Error("Invalid configuration");
+        }
+        // Apply default chart config values 
+        const defaultConfig = getDefaultChartConfig();
+        // Create a merged config object
+        this.config = {
+            ...defaultConfig,
+            ...config,
+            // Handle nested objects properly
+            power_chart_options: {
+                ...defaultConfig.power_chart_options,
+                ...(config.power_chart_options || {}),
+                y_axis: {
+                    ...(_a = defaultConfig.power_chart_options) === null || _a === void 0 ? void 0 : _a.y_axis,
+                    ...(((_b = config.power_chart_options) === null || _b === void 0 ? void 0 : _b.y_axis) || {})
+                }
+            },
+            energy_chart_options: {
+                ...defaultConfig.energy_chart_options,
+                ...(config.energy_chart_options || {}),
+                y_axis: {
+                    ...(_c = defaultConfig.energy_chart_options) === null || _c === void 0 ? void 0 : _c.y_axis,
+                    ...(((_d = config.energy_chart_options) === null || _d === void 0 ? void 0 : _d.y_axis) || {})
+                }
+            },
+            // Add base EnergyDashboardConfig properties
+            title: (_e = config.title) !== null && _e !== void 0 ? _e : 'Energy Dashboard Chart',
+            show_header: (_f = config.show_header) !== null && _f !== void 0 ? _f : true,
+            show_state: (_g = config.show_state) !== null && _g !== void 0 ? _g : true,
+            show_toggle: (_h = config.show_toggle) !== null && _h !== void 0 ? _h : true,
+            auto_select_count: (_j = config.auto_select_count) !== null && _j !== void 0 ? _j : 6,
+            max_height: (_k = config.max_height) !== null && _k !== void 0 ? _k : 400,
+            show_energy_section: (_l = config.show_energy_section) !== null && _l !== void 0 ? _l : true,
+            energy_auto_select_count: (_m = config.energy_auto_select_count) !== null && _m !== void 0 ? _m : 6,
+        };
+        this._loadSelectedEntities();
+        this._updateContent();
+    }
+    // Home Assistant specific methods
+    static getConfigElement() {
+        return document.createElement('energy-dashboard-chart-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            ...getDefaultChartConfig(),
+            title: 'Energy Dashboard Chart',
+            show_header: true,
+            show_energy_section: true,
+        };
+    }
+    getCardSize() {
+        var _a;
+        return ((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) ? Math.ceil(this.config.chart_height / 50) : 6;
+    }
+    // Called when Home Assistant updates
+    set hass(hass) {
+        this._hass = hass;
+        // Only update charts when hass is updated, entity list comes from localStorage
+        this._updateCharts();
+    }
+    get hass() {
+        return this._hass;
+    }
+    _loadSelectedEntities() {
+        // Load the toggle states from localStorage to get the entities selected in the entity card
+        const powerToggleStates = loadToggleStates('energy-dashboard-power-toggle-states');
+        const energyToggleStates = loadToggleStates('energy-dashboard-energy-toggle-states');
+        if (powerToggleStates) {
+            this._powerEntities = Object.keys(powerToggleStates).filter(entityId => powerToggleStates[entityId]);
+        }
+        if (energyToggleStates) {
+            this._energyEntities = Object.keys(energyToggleStates).filter(entityId => energyToggleStates[entityId]);
+        }
+    }
+    _startUpdateInterval() {
+        var _a;
+        if (this._updateTimer !== null) {
+            window.clearInterval(this._updateTimer);
+        }
+        if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.update_interval) {
+            this._updateTimer = window.setInterval(() => this._updateCharts(), this.config.update_interval * 1000);
+        }
+    }
+    _stopUpdateInterval() {
+        if (this._updateTimer !== null) {
+            window.clearInterval(this._updateTimer);
+            this._updateTimer = null;
+        }
+    }
+    _generateApexchartsConfig(entities, isEnergy) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        if (!this.config || !entities.length || !this._hass)
+            return null;
+        const options = isEnergy
+            ? this.config.energy_chart_options
+            : this.config.power_chart_options;
+        const chartType = this.config.chart_type || 'line';
+        const smooth = this.config.smooth_curve !== false;
+        const hoursToShow = this.config.hours_to_show || 24;
+        const showPoints = this.config.show_points || false;
+        const aggregateFunc = this.config.aggregate_func || 'avg';
+        // Build series configuration for apexcharts-card
+        const series = entities.map(entityId => {
+            var _a;
+            const entityState = this._hass.states[entityId];
+            const name = ((_a = entityState === null || entityState === void 0 ? void 0 : entityState.attributes) === null || _a === void 0 ? void 0 : _a.friendly_name) || entityId;
+            return {
+                entity: entityId,
+                name: name,
+                type: chartType,
+                smoothing: smooth ? 'cubic' : false,
+                show_points: showPoints,
+                stroke_width: 2
+            };
+        });
+        const chartConfig = {
+            type: 'custom:apexcharts-card',
+            header: {
+                show: false,
+                title: isEnergy ? 'Energy Consumption' : 'Power Consumption'
+            },
+            apex_config: {
+                chart: {
+                    height: this.config.chart_height || 300,
+                    toolbar: {
+                        show: true,
+                        tools: {
+                            download: true,
+                            selection: true,
+                            zoom: true,
+                            zoomin: true,
+                            zoomout: true,
+                            pan: true,
+                            reset: true
+                        }
+                    },
+                },
+            },
+            series: series,
+            graph_span: `${hoursToShow}h`,
+            span: {
+                start: `now-${hoursToShow}h`,
+                end: 'now'
+            },
+            now: {
+                show: true,
+                label: 'Now'
+            },
+            yaxis: [{
+                    min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
+                    max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
+                    tickAmount: (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.tickAmount,
+                    decimals: (_e = (_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.decimals) !== null && _e !== void 0 ? _e : (isEnergy ? 2 : 1),
+                    title: ((_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.title) || (isEnergy ? 'Energy' : 'Power'),
+                    apex: {
+                        labels: {
+                            formatter: `function (val) {return val.toFixed(${(_h = (_g = options === null || options === void 0 ? void 0 : options.y_axis) === null || _g === void 0 ? void 0 : _g.decimals) !== null && _h !== void 0 ? _h : (isEnergy ? 2 : 1)}) + ' ${((_j = options === null || options === void 0 ? void 0 : options.y_axis) === null || _j === void 0 ? void 0 : _j.unit) || (isEnergy ? 'kWh' : 'W')}'}`
+                        }
+                    }
+                }],
+            all_series_config: {
+                stroke_width: 2,
+                show_points: showPoints,
+                type: chartType,
+            },
+            cache: true,
+            stacked: false,
+            aggregate_func: aggregateFunc
+        };
+        return chartConfig;
+    }
+    _createChart(isEnergy) {
+        const entities = isEnergy ? this._energyEntities : this._powerEntities;
+        const chartConfig = this._generateApexchartsConfig(entities, isEnergy);
+        if (!chartConfig || !entities.length) {
+            return this._createEmptyCard(isEnergy);
+        }
+        // Create the chart
+        const chartElement = document.createElement('div');
+        chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
+        chartElement.style.width = '100%';
+        chartElement.style.marginBottom = '16px';
+        // Create the apexcharts-card element
+        const apexCard = document.createElement('custom:apexcharts-card');
+        // Set card config for apexcharts-card
+        // This will be handled by the apexcharts-card element
+        apexCard.setConfig(chartConfig);
+        // Pass hass object to the chart
+        apexCard.hass = this._hass;
+        chartElement.appendChild(apexCard);
+        return chartElement;
+    }
+    _createEmptyCard(isEnergy) {
+        var _a;
+        const container = document.createElement('div');
+        container.className = 'empty-chart-container';
+        container.style.padding = '16px';
+        container.style.textAlign = 'center';
+        container.style.color = 'var(--secondary-text-color)';
+        container.style.height = `${(((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) || 300) - 32}px`;
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.flexDirection = 'column';
+        container.style.border = '1px dashed var(--divider-color)';
+        container.style.borderRadius = '8px';
+        container.style.margin = '8px 16px';
+        const icon = document.createElement('ha-icon');
+        icon.setAttribute('icon', 'mdi:chart-line-variant');
+        icon.style.marginBottom = '8px';
+        icon.style.color = 'var(--secondary-text-color)';
+        icon.style.width = '48px';
+        icon.style.height = '48px';
+        const message = document.createElement('div');
+        message.textContent = `No ${isEnergy ? 'energy' : 'power'} entities selected. Please select entities in the Energy Dashboard Entity Card.`;
+        container.appendChild(icon);
+        container.appendChild(message);
+        return container;
+    }
+    _updateCharts() {
+        var _a;
+        // Check if we need to reload selected entities
+        this._loadSelectedEntities();
+        // Power chart section
+        if (this._powerChartEl) {
+            const parent = this._powerChartEl.parentNode;
+            if (parent) {
+                const newPowerChart = this._createChart(false);
+                parent.replaceChild(newPowerChart, this._powerChartEl);
+                this._powerChartEl = newPowerChart;
+            }
+        }
+        // Energy chart section
+        if (((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_energy_section) && this._energyChartEl) {
+            const parent = this._energyChartEl.parentNode;
+            if (parent) {
+                const newEnergyChart = this._createChart(true);
+                parent.replaceChild(newEnergyChart, this._energyChartEl);
+                this._energyChartEl = newEnergyChart;
+            }
+        }
+    }
+    _renderSectionTitle(title) {
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'section-title';
+        sectionTitle.textContent = title;
+        sectionTitle.style.padding = '8px 16px';
+        sectionTitle.style.fontSize = 'var(--section-title-font-size, 1rem)';
+        sectionTitle.style.fontWeight = '500';
+        return sectionTitle;
+    }
+    _updateContent() {
+        if (!this.config) {
+            const card = this._root.querySelector('ha-card');
+            if (card) {
+                card.innerHTML = '<div class="empty-message">Card not configured</div>';
+            }
+            return;
+        }
+        // Get the ha-card element
+        const card = this._root.querySelector('ha-card');
+        if (!card)
+            return;
+        // Clear previous content
+        card.innerHTML = '';
+        // Header
+        if (this.config.show_header) {
+            const header = document.createElement('div');
+            header.className = 'card-header';
+            header.textContent = this.config.title;
+            card.appendChild(header);
+        }
+        // Container for both charts
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+        chartContainer.style.width = '100%';
+        chartContainer.style.display = 'flex';
+        chartContainer.style.flexDirection = 'column';
+        // Power chart section
+        chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
+        this._powerChartEl = this._createChart(false);
+        chartContainer.appendChild(this._powerChartEl);
+        // Energy chart section (if enabled)
+        if (this.config.show_energy_section) {
+            const separator = document.createElement('div');
+            separator.className = 'section-separator';
+            separator.style.margin = '16px 8px';
+            chartContainer.appendChild(separator);
+            chartContainer.appendChild(this._renderSectionTitle('Energy Consumption'));
+            this._energyChartEl = this._createChart(true);
+            chartContainer.appendChild(this._energyChartEl);
+        }
+        card.appendChild(chartContainer);
+    }
+}
+// Register the card with the custom elements registry
+customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
+
 // Provide card information to the Home Assistant card catalog
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'energy-dashboard-entity-card',
     name: EnergyDashboardEntityCard.displayName,
     description: EnergyDashboardEntityCard.description,
+    preview: false,
+    documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
+});
+// Add the chart card to the Home Assistant card catalog
+window.customCards.push({
+    type: 'energy-dashboard-chart-card',
+    name: EnergyDashboardChartCard.displayName,
+    description: EnergyDashboardChartCard.description,
     preview: false,
     documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
 });
