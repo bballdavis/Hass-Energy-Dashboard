@@ -14,6 +14,23 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _energyInitialized: boolean = false;
   private _root: ShadowRoot;
 
+  // Define card name and icon for card picker
+  static get cardType() {
+    return 'energy-dashboard-entity-card';
+  }
+
+  static get displayName() {
+    return 'Energy Dashboard Entity Card';
+  }
+
+  static get description() {
+    return 'Card that displays power and energy consumption entities';
+  }
+
+  static get icon() {
+    return 'mdi:lightning-bolt';
+  }
+
   constructor() {
     super();
     this._root = this.attachShadow({ mode: 'open' });

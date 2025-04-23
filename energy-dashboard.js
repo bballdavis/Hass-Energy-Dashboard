@@ -291,6 +291,19 @@ const editorStyles = `
 `;
 
 class EnergyDashboardEntityCard extends HTMLElement {
+    // Define card name and icon for card picker
+    static get cardType() {
+        return 'energy-dashboard-entity-card';
+    }
+    static get displayName() {
+        return 'Energy Dashboard Entity Card';
+    }
+    static get description() {
+        return 'Card that displays power and energy consumption entities';
+    }
+    static get icon() {
+        return 'mdi:lightning-bolt';
+    }
     constructor() {
         super();
         this.powerEntities = [];
@@ -896,4 +909,14 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
 }
 // Register the editor with the custom elements registry
 customElements.define('energy-dashboard-entity-card-editor', EnergyDashboardEntityCardEditor);
+
+// Provide card information to the Home Assistant card catalog
+window.customCards = window.customCards || [];
+window.customCards.push({
+    type: 'energy-dashboard-entity-card',
+    name: EnergyDashboardEntityCard.displayName,
+    description: EnergyDashboardEntityCard.description,
+    preview: false,
+    documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
+});
 //# sourceMappingURL=energy-dashboard.js.map

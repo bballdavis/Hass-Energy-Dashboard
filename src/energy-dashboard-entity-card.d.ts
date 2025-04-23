@@ -11,6 +11,12 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _energyInitialized: boolean;
     private _root: ShadowRoot;
 
+    // Card picker properties
+    static get cardType(): string;
+    static get displayName(): string;
+    static get description(): string;
+    static get icon(): string;
+
     constructor();
     connectedCallback(): void;
     setConfig(config: EnergyDashboardConfig): void;
