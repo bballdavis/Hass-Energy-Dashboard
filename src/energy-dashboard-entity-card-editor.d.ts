@@ -1,19 +1,31 @@
-import { LitElement } from 'lit';
 import { EnergyDashboardConfig } from './types';
-export declare class EnergyDashboardEntityCardEditor extends LitElement {
+
+// Interface for custom form elements
+interface CustomHTMLInputElement extends HTMLInputElement {
+  configValue?: string;
+}
+
+interface HaFormElement extends HTMLElement {
+  label?: string;
+  value?: string | number | boolean;
+  type?: string;
+  min?: string;
+  max?: string;
+  configValue?: string;
+  checked?: boolean;
+  helperText?: string;
+  helperPersistent?: boolean;
+}
+
+export declare class EnergyDashboardEntityCardEditor extends HTMLElement {
     hass: any;
     config: EnergyDashboardConfig;
-    static get properties(): {
-        hass: {
-            type: ObjectConstructor;
-        };
-        config: {
-            type: ObjectConstructor;
-        };
-    };
+    private _root: ShadowRoot;
+    
     constructor();
-    static get styles(): import("lit").CSSResult;
+    connectedCallback(): void;
     setConfig(config: EnergyDashboardConfig): void;
-    valueChanged(ev: Event): void;
-    render(): import("lit-html").TemplateResult<1>;
+    valueChanged: (ev: Event) => void;
+    private _updateForm(): void;
+    private _createRow(): HTMLDivElement;
 }

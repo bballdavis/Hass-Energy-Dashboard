@@ -1,53 +1,49 @@
-import { LitElement, html, css } from "lit-element";
 import { EnergyDashboardConfig } from './types';
+import { createStyles, editorStyles } from './styles';
 
 // Extend HTMLInputElement to include the configValue property
 interface CustomHTMLInputElement extends HTMLInputElement {
   configValue?: string;
 }
 
-export class EnergyDashboardEntityCardEditor extends LitElement {
-  // Explicit property declarations for TypeScript
+// Define a type for HA elements used in the editor
+interface HaFormElement extends HTMLElement {
+  label?: string;
+  value?: string | number | boolean;
+  type?: string;
+  min?: string;
+  max?: string;
+  configValue?: string;
+  checked?: boolean;
+  helperText?: string;
+  helperPersistent?: boolean;
+  addEventListener(event: string, handler: (event: Event) => void): void;
+}
+
+export class EnergyDashboardEntityCardEditor extends HTMLElement {
+  // Properties
   hass: any;
   config: EnergyDashboardConfig;
-
-  static get properties() {
-    return {
-      hass: { type: Object },
-      config: { type: Object }
-    };
-  }
+  private _root: ShadowRoot;
 
   constructor() {
     super();
+    this._root = this.attachShadow({ mode: 'open' });
+    this._root.appendChild(createStyles(editorStyles));
+    
+    // Initialize properties
     this.hass = undefined;
     this.config = undefined as unknown as EnergyDashboardConfig;
+
+    // Create the form container
+    const form = document.createElement('div');
+    form.className = 'form';
+    this._root.appendChild(form);
   }
 
-  static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-      }
-      .row {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        padding: 8px 16px;
-      }
-      .title {
-        padding-left: 16px;
-        margin-top: 8px;
-        font-weight: 500;
-      }
-      .value {
-        width: 100%;
-      }
-      ha-switch {
-        margin-right: 16px;
-      }
-    `;
+  // Called when the element is added to the DOM
+  connectedCallback() {
+    this._updateForm();
   }
 
   setConfig(config: EnergyDashboardConfig) {
@@ -64,10 +60,12 @@ export class EnergyDashboardEntityCardEditor extends LitElement {
       energy_auto_select_count: config.energy_auto_select_count !== undefined ? config.energy_auto_select_count : 6,
       title: config.title !== undefined ? config.title : 'Energy Dashboard',
     };
+    this._updateForm();
   }
 
-  valueChanged(ev: Event) {
+  valueChanged = (ev: Event) => {
     if (!this.config) return;
+    
     const target = ev.target as CustomHTMLInputElement;
     const configValue = target.configValue;
     if (!configValue) return;
@@ -97,102 +95,134 @@ export class EnergyDashboardEntityCardEditor extends LitElement {
     }));
   }
 
-  render() {
-    if (!this.config) return html``;
+  private _updateForm() {
+    if (!this.config) return;
 
-    return html`
-      <div class="form">
-        <div class="title">Card Settings</div>
+    // Get or create the form element
+    let form = this._root.querySelector('.form');
+    if (!form) {
+      form = document.createElement('div');
+      form.className = 'form';
+      this._root.appendChild(form);
+    }
+    form.innerHTML = '';
 
-        <div class="row">
-          <ha-textfield
-            label="Title"
-            .value="${this.config.title || ''}"
-            .configValue="title"
-            @change="${this.valueChanged}"
-            class="value"
-          ></ha-textfield>
-        </div>
+    // Create title
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = 'Card Settings';
+    form.appendChild(title);
 
-        <div class="row">
-          <ha-switch
-            .checked=${this.config.show_header !== false}
-            .configValue="show_header"
-            @change="${this.valueChanged}"
-          ></ha-switch>
-          <div>Show Header</div>
-        </div>
+    // Title field
+    const titleRow = this._createRow();
+    const titleField = document.createElement('ha-textfield') as HaFormElement;
+    titleField.className = 'value';
+    titleField.label = 'Title';
+    titleField.value = this.config.title || '';
+    titleField.configValue = 'title';
+    titleField.addEventListener('change', this.valueChanged);
+    titleRow.appendChild(titleField);
+    form.appendChild(titleRow);
 
-        <div class="row">
-          <ha-switch
-            .checked=${this.config.show_state !== false}
-            .configValue="show_state"
-            @change="${this.valueChanged}"
-          ></ha-switch>
-          <div>Show State</div>
-        </div>
+    // Show Header toggle
+    const headerRow = this._createRow();
+    const headerSwitch = document.createElement('ha-switch') as HaFormElement;
+    headerSwitch.checked = this.config.show_header !== false;
+    headerSwitch.configValue = 'show_header';
+    headerSwitch.addEventListener('change', this.valueChanged);
+    const headerLabel = document.createElement('div');
+    headerLabel.textContent = 'Show Header';
+    headerRow.appendChild(headerSwitch);
+    headerRow.appendChild(headerLabel);
+    form.appendChild(headerRow);
 
-        <div class="row">
-          <ha-switch
-            .checked=${this.config.show_toggle !== false}
-            .configValue="show_toggle"
-            @change="${this.valueChanged}"
-          ></ha-switch>
-          <div>Allow Toggling</div>
-        </div>
+    // Show State toggle
+    const stateRow = this._createRow();
+    const stateSwitch = document.createElement('ha-switch') as HaFormElement;
+    stateSwitch.checked = this.config.show_state !== false;
+    stateSwitch.configValue = 'show_state';
+    stateSwitch.addEventListener('change', this.valueChanged);
+    const stateLabel = document.createElement('div');
+    stateLabel.textContent = 'Show State';
+    stateRow.appendChild(stateSwitch);
+    stateRow.appendChild(stateLabel);
+    form.appendChild(stateRow);
 
-        <div class="row">
-          <ha-textfield
-            label="Auto-select Count"
-            type="number"
-            min="0"
-            max="50"
-            .value="${String(this.config.auto_select_count || 6)}"
-            .configValue="auto_select_count"
-            @change="${this.valueChanged}"
-            class="value"
-          ></ha-textfield>
-        </div>
+    // Allow Toggling toggle
+    const toggleRow = this._createRow();
+    const toggleSwitch = document.createElement('ha-switch') as HaFormElement;
+    toggleSwitch.checked = this.config.show_toggle !== false;
+    toggleSwitch.configValue = 'show_toggle';
+    toggleSwitch.addEventListener('change', this.valueChanged);
+    const toggleLabel = document.createElement('div');
+    toggleLabel.textContent = 'Allow Toggling';
+    toggleRow.appendChild(toggleSwitch);
+    toggleRow.appendChild(toggleLabel);
+    form.appendChild(toggleRow);
 
-        <div class="row">
-          <ha-textfield
-            label="Energy Auto-select Count"
-            type="number"
-            min="0"
-            max="50"
-            .value="${String(this.config.energy_auto_select_count || 6)}"
-            .configValue="energy_auto_select_count"
-            @change="${this.valueChanged}"
-            class="value"
-          ></ha-textfield>
-        </div>
+    // Auto-select Count field
+    const autoSelectRow = this._createRow();
+    const autoSelectField = document.createElement('ha-textfield') as HaFormElement;
+    autoSelectField.className = 'value';
+    autoSelectField.label = 'Auto-select Count';
+    autoSelectField.type = 'number';
+    autoSelectField.min = '0';
+    autoSelectField.max = '50';
+    autoSelectField.value = String(this.config.auto_select_count || 6);
+    autoSelectField.configValue = 'auto_select_count';
+    autoSelectField.addEventListener('change', this.valueChanged);
+    autoSelectRow.appendChild(autoSelectField);
+    form.appendChild(autoSelectRow);
 
-        <div class="row">
-          <ha-switch
-            .checked=${this.config.show_energy_section !== false}
-            .configValue="show_energy_section"
-            @change="${this.valueChanged}"
-          ></ha-switch>
-          <div>Show Energy Section</div>
-        </div>
+    // Energy Auto-select Count field
+    const energyAutoSelectRow = this._createRow();
+    const energyAutoSelectField = document.createElement('ha-textfield') as HaFormElement;
+    energyAutoSelectField.className = 'value';
+    energyAutoSelectField.label = 'Energy Auto-select Count';
+    energyAutoSelectField.type = 'number';
+    energyAutoSelectField.min = '0';
+    energyAutoSelectField.max = '50';
+    energyAutoSelectField.value = String(this.config.energy_auto_select_count || 6);
+    energyAutoSelectField.configValue = 'energy_auto_select_count';
+    energyAutoSelectField.addEventListener('change', this.valueChanged);
+    energyAutoSelectRow.appendChild(energyAutoSelectField);
+    form.appendChild(energyAutoSelectRow);
 
-        <div class="row">
-          <ha-textfield
-            label="Max Height (0 for no limit)"
-            type="number"
-            min="0"
-            max="1000"
-            .value="${String(this.config.max_height || 0)}"
-            .configValue="max_height"
-            @change="${this.valueChanged}"
-            class="value"
-            helper-persistent
-            helper-text="Set maximum height in pixels (0 = no limit)"
-          ></ha-textfield>
-        </div>
-      </div>
-    `;
+    // Show Energy Section toggle
+    const energySectionRow = this._createRow();
+    const energySectionSwitch = document.createElement('ha-switch') as HaFormElement;
+    energySectionSwitch.checked = this.config.show_energy_section !== false;
+    energySectionSwitch.configValue = 'show_energy_section';
+    energySectionSwitch.addEventListener('change', this.valueChanged);
+    const energySectionLabel = document.createElement('div');
+    energySectionLabel.textContent = 'Show Energy Section';
+    energySectionRow.appendChild(energySectionSwitch);
+    energySectionRow.appendChild(energySectionLabel);
+    form.appendChild(energySectionRow);
+
+    // Max Height field
+    const maxHeightRow = this._createRow();
+    const maxHeightField = document.createElement('ha-textfield') as HaFormElement;
+    maxHeightField.className = 'value';
+    maxHeightField.label = 'Max Height (0 for no limit)';
+    maxHeightField.type = 'number';
+    maxHeightField.min = '0';
+    maxHeightField.max = '1000';
+    maxHeightField.value = String(this.config.max_height || 0);
+    maxHeightField.configValue = 'max_height';
+    maxHeightField.addEventListener('change', this.valueChanged);
+    maxHeightField.helperText = 'Set maximum height in pixels (0 = no limit)';
+    maxHeightField.helperPersistent = true;
+    maxHeightRow.appendChild(maxHeightField);
+    form.appendChild(maxHeightRow);
+  }
+
+  private _createRow(): HTMLDivElement {
+    const row = document.createElement('div');
+    row.className = 'row';
+    return row;
   }
 }
 
+// Register the editor with the custom elements registry
 customElements.define('energy-dashboard-entity-card-editor', EnergyDashboardEntityCardEditor);

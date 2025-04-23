@@ -1,36 +1,18 @@
-import { LitElement, PropertyValues } from 'lit';
 import { EntityInfo, EnergyDashboardConfig } from './types';
-export declare class EnergyDashboardEntityCard extends LitElement {
-    hass: any;
+
+export declare class EnergyDashboardEntityCard extends HTMLElement {
+    private _hass: any;
     config?: EnergyDashboardConfig;
     powerEntities: EntityInfo[];
     energyEntities: EntityInfo[];
     entityToggleStates: Record<string, boolean>;
     energyEntityToggleStates: Record<string, boolean>;
-    private _initialized;
-    private _energyInitialized;
-    static get properties(): {
-        hass: {
-            type: ObjectConstructor;
-        };
-        config: {
-            type: ObjectConstructor;
-        };
-        powerEntities: {
-            type: ArrayConstructor;
-        };
-        energyEntities: {
-            type: ArrayConstructor;
-        };
-        entityToggleStates: {
-            type: ObjectConstructor;
-        };
-        energyEntityToggleStates: {
-            type: ObjectConstructor;
-        };
-    };
-    static get styles(): import("lit").CSSResult;
+    private _initialized: boolean;
+    private _energyInitialized: boolean;
+    private _root: ShadowRoot;
+
     constructor();
+    connectedCallback(): void;
     setConfig(config: EnergyDashboardConfig): void;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): {
@@ -44,21 +26,24 @@ export declare class EnergyDashboardEntityCard extends LitElement {
         energy_auto_select_count: number;
     };
     getCardSize(): number;
-    updated(changedProps: PropertyValues): void;
-    _updateEntities(): void;
-    _updatePowerEntities(): void;
-    _updateEnergyEntities(): void;
-    _initializePowerToggleStates(entities: EntityInfo[]): void;
-    _initializeEnergyToggleStates(entities: EntityInfo[]): void;
-    _savePowerToggleStates(): void;
-    _saveEnergyToggleStates(): void;
-    _resetToPowerDefaultEntities(): void;
-    _clearAllPowerEntities(): void;
-    _selectAllPowerEntities(): void;
-    _togglePowerEntity(e: Event): void;
-    _resetToEnergyDefaultEntities(): void;
-    _clearAllEnergyEntities(): void;
-    _selectAllEnergyEntities(): void;
-    _toggleEnergyEntity(e: Event): void;
-    render(): import("lit-html").TemplateResult<1>;
+    set hass(hass: any);
+    get hass(): any;
+    private _updateEntities(): void;
+    private _updatePowerEntities(): void;
+    private _updateEnergyEntities(): void;
+    private _initializePowerToggleStates(entities: EntityInfo[]): void;
+    private _initializeEnergyToggleStates(entities: EntityInfo[]): void;
+    private _savePowerToggleStates(): void;
+    private _saveEnergyToggleStates(): void;
+    private _resetToPowerDefaultEntities: () => void;
+    private _clearAllPowerEntities: () => void;
+    private _selectAllPowerEntities: () => void;
+    private _togglePowerEntity: (e: Event) => void;
+    private _resetToEnergyDefaultEntities: () => void;
+    private _clearAllEnergyEntities: () => void;
+    private _selectAllEnergyEntities: () => void;
+    private _toggleEnergyEntity: (e: Event) => void;
+    private _renderPowerSection(): HTMLElement;
+    private _renderEnergySection(): HTMLElement;
+    private _updateContent(): void;
 }

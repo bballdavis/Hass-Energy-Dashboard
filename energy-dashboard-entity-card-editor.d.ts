@@ -1,19 +1,12 @@
-import { LitElement } from 'lit';
 import { EnergyDashboardConfig } from './types';
-export declare class EnergyDashboardEntityCardEditor extends LitElement {
+export declare class EnergyDashboardEntityCardEditor extends HTMLElement {
     hass: any;
     config: EnergyDashboardConfig;
-    static get properties(): {
-        hass: {
-            type: ObjectConstructor;
-        };
-        config: {
-            type: ObjectConstructor;
-        };
-    };
+    private _root;
     constructor();
-    static get styles(): import("lit").CSSResult;
+    connectedCallback(): void;
     setConfig(config: EnergyDashboardConfig): void;
-    valueChanged(ev: Event): void;
-    render(): import("lit-html").TemplateResult<1>;
+    valueChanged: (ev: Event) => void;
+    private _updateForm;
+    private _createRow;
 }

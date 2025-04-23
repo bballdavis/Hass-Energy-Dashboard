@@ -1,10 +1,10 @@
-import { LitElement, html, css, PropertyValues } from "lit-element";
 import { EntityInfo, EnergyDashboardConfig } from './types';
 import { getPowerEntities, getEnergyEntities, loadToggleStates, saveToggleStates } from './entity-utils';
+import { createStyles, cardStyles } from './styles';
 
-export class EnergyDashboardEntityCard extends LitElement {
-  // Add explicit property declarations to resolve TypeScript errors
-  hass: any;
+export class EnergyDashboardEntityCard extends HTMLElement {
+  // Properties
+  private _hass: any;
   config?: EnergyDashboardConfig;
   powerEntities: EntityInfo[] = [];
   energyEntities: EntityInfo[] = [];
@@ -12,198 +12,33 @@ export class EnergyDashboardEntityCard extends LitElement {
   energyEntityToggleStates: Record<string, boolean> = {};
   private _initialized: boolean = false;
   private _energyInitialized: boolean = false;
-
-  static get properties() {
-    return {
-      hass: { type: Object },
-      config: { type: Object },
-      powerEntities: { type: Array },
-      energyEntities: { type: Array },
-      entityToggleStates: { type: Object },
-      energyEntityToggleStates: { type: Object }
-    };
-  }
-
-  static get styles() {
-    return css`
-      :host {
-        --card-padding: 16px;
-        --entity-height: 12px;
-        --entity-width: 240px;
-        --button-height: 32px;
-        --entity-font-size: 0.95em;
-        --section-title-font-size: 0.9975em;
-      }
-      .card-header {
-        padding: var(--card-padding);
-        font-family: var(--paper-font-headline_-_font-family);
-        -webkit-font-smoothing: var(--paper-font-headline_-_-webkit-font-smoothing);
-        font-size: var(--paper-font-headline_-_font-size);
-        font-weight: var(--paper-font-headline_-_font-weight);
-        letter-spacing: var(--paper-font-headline_-_letter-spacing);
-        line-height: var(--paper-font-headline_-_line-height);
-        color: var(--ha-card-header-color, --primary-text-color);
-      }
-      .control-buttons {
-        padding: 0 var(--card-padding) 8px;
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .control-button {
-        background-color: var(--secondary-background-color);
-        border: none;
-        border-radius: 8px;
-        padding: 6px 12px;
-        color: var(--primary-text-color);
-        font-size: 0.9em;
-        font-weight: 500;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.3s ease;
-        flex: 1;
-        margin: 0 4px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-        height: var(--button-height);
-        min-height: var(--button-height);
-        box-sizing: border-box;
-      }
-      .control-button:first-child {
-        margin-left: 0;
-      }
-      .control-button:last-child {
-        margin-right: 0;
-      }
-      .control-button:hover {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-      }
-      .control-button ha-icon {
-        margin-right: 4px;
-        --mdc-icon-size: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .section-title {
-        padding: 6px var(--card-padding);
-        font-size: var(--section-title-font-size);
-        font-weight: 500;
-        color: var(--primary-text-color);
-        display: flex;
-        align-items: center;
-      }
-      .entities-container {
-        padding: 0 var(--card-padding) var(--card-padding);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        justify-content: flex-start;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: var(--scrollbar-thumb-color) transparent;
-        width: calc(100% - (var(--card-padding) * 2));
-        box-sizing: border-box;
-        min-width: 100%;
-      }
-      .entities-container::-webkit-scrollbar {
-        width: 6px;
-      }
-      .entities-container::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .entities-container::-webkit-scrollbar-thumb {
-        background-color: var(--scrollbar-thumb-color, var(--divider-color, #e0e0e0));
-        border-radius: 3px;
-      }
-      .entity-item {
-        background-color: var(--ha-card-background, var(--card-background-color, white));
-        border-radius: 12px;
-        padding: 8px 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        height: auto;
-        min-height: var(--entity-height);
-        width: 100%;
-        box-sizing: border-box;
-        flex-grow: 1;
-        flex-shrink: 0;
-        min-width: 100%;
-        max-width: 100%;
-        margin-bottom: 2px;
-      }
-      .entity-item:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateY(-1px);
-      }
-      .entity-item.on {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-      }
-      .entity-left {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        flex: 3;
-        min-width: 0;
-        margin-top: -1px;
-        margin-bottom: -1px;
-      }
-      .entity-name {
-        font-weight: bold;
-        font-size: 0.95em;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        flex: 1;
-        margin-right: 16px;
-      }
-      .entity-state {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        min-width: 85px;
-        max-width: 85px;
-        white-space: nowrap;
-        flex: 0 0 auto;
-        font-size: 0.95em;
-      }
-      .power-value {
-        font-weight: 500;
-      }
-      .empty-message {
-        padding: var(--card-padding);
-        text-align: center;
-        color: var(--secondary-text-color);
-      }
-      .section-separator {
-        height: 1px;
-        background-color: var(--divider-color, #e0e0e0);
-        margin: 12px var(--card-padding) 8px;
-        opacity: 0.6;
-      }
-    `;
-  }
+  private _root: ShadowRoot;
 
   constructor() {
     super();
+    this._root = this.attachShadow({ mode: 'open' });
+    this._root.appendChild(createStyles(cardStyles));
+    
+    // Initialize properties
+    this._hass = undefined;
     this.powerEntities = [];
     this.energyEntities = [];
     this.entityToggleStates = {};
     this.energyEntityToggleStates = {};
     this._initialized = false;
     this._energyInitialized = false;
+    
+    // Create the card element
+    const card = document.createElement('ha-card');
+    this._root.appendChild(card);
   }
 
+  // Called when the element is added to the DOM
+  connectedCallback() {
+    this._updateContent();
+  }
+
+  // Home Assistant specific method to set config
   setConfig(config: EnergyDashboardConfig) {
     if (!config) {
       throw new Error("Invalid configuration");
@@ -221,8 +56,11 @@ export class EnergyDashboardEntityCard extends LitElement {
       show_energy_section: config.show_energy_section ?? true,
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
     };
+    
+    this._updateContent();
   }
 
+  // Home Assistant specific methods
   static getConfigElement() {
     return document.createElement('energy-dashboard-entity-card-editor');
   }
@@ -256,14 +94,19 @@ export class EnergyDashboardEntityCard extends LitElement {
     return rows > 0 ? rows : 1;
   }
 
-  updated(changedProps: PropertyValues) {
-    if (changedProps.has('hass')) {
-      this._updateEntities();
-    }
+  // Called when Home Assistant updates
+  set hass(hass: any) {
+    this._hass = hass;
+    this._updateEntities();
+    this._updateContent();
+  }
+
+  get hass() {
+    return this._hass;
   }
 
   _updateEntities() {
-    if (!this.hass) return;
+    if (!this._hass) return;
 
     try {
       this._updatePowerEntities();
@@ -276,7 +119,7 @@ export class EnergyDashboardEntityCard extends LitElement {
   }
 
   _updatePowerEntities() {
-    const newPowerEntities = getPowerEntities(this.hass);
+    const newPowerEntities = getPowerEntities(this._hass);
     if (!this._initialized || Object.keys(this.entityToggleStates).length === 0) {
       this._initializePowerToggleStates(newPowerEntities);
       this._initialized = true;
@@ -289,7 +132,7 @@ export class EnergyDashboardEntityCard extends LitElement {
   }
 
   _updateEnergyEntities() {
-    const newEnergyEntities = getEnergyEntities(this.hass);
+    const newEnergyEntities = getEnergyEntities(this._hass);
     if (!this._energyInitialized || Object.keys(this.energyEntityToggleStates).length === 0) {
       this._initializeEnergyToggleStates(newEnergyEntities);
       this._energyInitialized = true;
@@ -307,7 +150,6 @@ export class EnergyDashboardEntityCard extends LitElement {
       this.entityToggleStates = savedStates;
     } else {
       const toggleStates: Record<string, boolean> = {};
-      // Safely handle potentially undefined config or auto_select_count
       const count = this.config?.auto_select_count ?? 6;
       entities.slice(0, count).forEach(entity => {
         toggleStates[entity.entityId] = true;
@@ -322,7 +164,6 @@ export class EnergyDashboardEntityCard extends LitElement {
       this.energyEntityToggleStates = savedStates;
     } else {
       const toggleStates: Record<string, boolean> = {};
-      // Safely handle potentially undefined config or energy_auto_select_count
       const count = this.config?.energy_auto_select_count ?? 6;
       entities.slice(0, count).forEach(entity => {
         toggleStates[entity.entityId] = true;
@@ -339,179 +180,316 @@ export class EnergyDashboardEntityCard extends LitElement {
     saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
   }
 
-  _resetToPowerDefaultEntities() {
-    // reset power entities to default selection
-    this._initializePowerToggleStates(getPowerEntities(this.hass));
+  _resetToPowerDefaultEntities = () => {
+    this._initializePowerToggleStates(getPowerEntities(this._hass));
     this._updatePowerEntities();
+    this._updateContent();
   }
 
-  _clearAllPowerEntities() {
-    // clear power entity selection
+  _clearAllPowerEntities = () => {
     this.entityToggleStates = {};
     this._updatePowerEntities();
+    this._updateContent();
   }
 
-  _selectAllPowerEntities() {
-    // select all power entities
-    const entities = getPowerEntities(this.hass);
+  _selectAllPowerEntities = () => {
+    const entities = getPowerEntities(this._hass);
     entities.forEach(entity => {
       this.entityToggleStates[entity.entityId] = true;
     });
     this._updatePowerEntities();
+    this._updateContent();
   }
 
-  _togglePowerEntity(e: Event) {
+  _togglePowerEntity = (e: Event) => {
     const target = e.currentTarget as HTMLElement;
     const entityId = target.dataset.entity;
     if (entityId) {
       this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
       this._updatePowerEntities();
+      this._updateContent();
     }
   }
 
-  _resetToEnergyDefaultEntities() {
-    // reset energy entities to default selection
-    this._initializeEnergyToggleStates(getEnergyEntities(this.hass));
+  _resetToEnergyDefaultEntities = () => {
+    this._initializeEnergyToggleStates(getEnergyEntities(this._hass));
     this._updateEnergyEntities();
+    this._updateContent();
   }
 
-  _clearAllEnergyEntities() {
-    // clear energy entity selection
+  _clearAllEnergyEntities = () => {
     this.energyEntityToggleStates = {};
     this._updateEnergyEntities();
+    this._updateContent();
   }
 
-  _selectAllEnergyEntities() {
-    // select all energy entities
-    const entities = getEnergyEntities(this.hass);
+  _selectAllEnergyEntities = () => {
+    const entities = getEnergyEntities(this._hass);
     entities.forEach(entity => {
       this.energyEntityToggleStates[entity.entityId] = true;
     });
     this._updateEnergyEntities();
+    this._updateContent();
   }
 
-  _toggleEnergyEntity(e: Event) {
+  _toggleEnergyEntity = (e: Event) => {
     const target = e.currentTarget as HTMLElement;
     const entityId = target.dataset.entity;
     if (entityId) {
       this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
       this._updateEnergyEntities();
+      this._updateContent();
     }
   }
 
-  render() {
-    if (!this.hass || !this.config) {
-      return html`<ha-card><div class="empty-message">Card not configured</div></ha-card>`;
+  _renderPowerSection(): HTMLElement {
+    const section = document.createElement('div');
+
+    if (this.powerEntities.length > 0) {
+      // Control buttons
+      const controlButtons = document.createElement('div');
+      controlButtons.className = 'control-buttons';
+      
+      const resetButton = document.createElement('button');
+      resetButton.className = 'control-button';
+      resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+      resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
+      
+      const clearButton = document.createElement('button');
+      clearButton.className = 'control-button';
+      clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+      clearButton.addEventListener('click', this._clearAllPowerEntities);
+      
+      const selectAllButton = document.createElement('button');
+      selectAllButton.className = 'control-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+      selectAllButton.addEventListener('click', this._selectAllPowerEntities);
+      
+      controlButtons.appendChild(resetButton);
+      controlButtons.appendChild(clearButton);
+      controlButtons.appendChild(selectAllButton);
+      section.appendChild(controlButtons);
+      
+      // Section title
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Power Entities';
+      section.appendChild(sectionTitle);
+      
+      // Container
+      const containerWrapper = document.createElement('div');
+      containerWrapper.style.width = '100%';
+      containerWrapper.style.boxSizing = 'border-box';
+      
+      const entitiesContainer = document.createElement('div');
+      entitiesContainer.className = 'entities-container';
+      
+      if (this.config?.max_height && this.config.max_height > 0) {
+        entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
+        entitiesContainer.style.overflowY = 'auto';
+      }
+      
+      // Add entities
+      this.powerEntities.forEach(entity => {
+        const entityItem = document.createElement('div');
+        entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
+        entityItem.dataset.entity = entity.entityId;
+        entityItem.style.gap = '4px';
+        entityItem.addEventListener('click', this._togglePowerEntity);
+        
+        const entityLeft = document.createElement('div');
+        entityLeft.className = 'entity-left';
+        
+        const entityName = document.createElement('div');
+        entityName.className = 'entity-name';
+        entityName.title = entity.name;
+        entityName.textContent = entity.name;
+        
+        entityLeft.appendChild(entityName);
+        entityItem.appendChild(entityLeft);
+        
+        const entityState = document.createElement('div');
+        entityState.className = 'entity-state';
+        
+        const statusIndicator = document.createElement('div');
+        statusIndicator.className = 'status-indicator';
+        statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+        
+        const powerValue = document.createElement('div');
+        powerValue.className = 'power-value';
+        
+        if (this.config?.show_state) {
+          powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+        }
+        
+        entityState.appendChild(statusIndicator);
+        entityState.appendChild(powerValue);
+        entityItem.appendChild(entityState);
+        
+        entitiesContainer.appendChild(entityItem);
+      });
+      
+      containerWrapper.appendChild(entitiesContainer);
+      section.appendChild(containerWrapper);
+    } else {
+      // Empty message
+      const emptyMessage = document.createElement('div');
+      emptyMessage.className = 'empty-message';
+      emptyMessage.textContent = 'No power entities found. Make sure you have entities with unit set to W or kW.';
+      section.appendChild(emptyMessage);
+    }
+    
+    return section;
+  }
+
+  _renderEnergySection(): HTMLElement {
+    const section = document.createElement('div');
+
+    // Only render if energy section is enabled
+    if (!this.config?.show_energy_section) {
+      return section;
+    }
+    
+    const separator = document.createElement('div');
+    separator.className = 'section-separator';
+    section.appendChild(separator);
+
+    if (this.energyEntities.length > 0) {
+      // Control buttons for energy section
+      const controlButtons = document.createElement('div');
+      controlButtons.className = 'control-buttons';
+      
+      const resetButton = document.createElement('button');
+      resetButton.className = 'control-button';
+      resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+      resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
+      
+      const clearButton = document.createElement('button');
+      clearButton.className = 'control-button';
+      clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+      clearButton.addEventListener('click', this._clearAllEnergyEntities);
+      
+      const selectAllButton = document.createElement('button');
+      selectAllButton.className = 'control-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+      selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
+      
+      controlButtons.appendChild(resetButton);
+      controlButtons.appendChild(clearButton);
+      controlButtons.appendChild(selectAllButton);
+      section.appendChild(controlButtons);
+      
+      // Section title
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Energy Entities';
+      section.appendChild(sectionTitle);
+      
+      // Container
+      const containerWrapper = document.createElement('div');
+      containerWrapper.style.width = '100%';
+      containerWrapper.style.boxSizing = 'border-box';
+      
+      const entitiesContainer = document.createElement('div');
+      entitiesContainer.className = 'entities-container';
+      
+      if (this.config?.max_height && this.config.max_height > 0) {
+        entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
+        entitiesContainer.style.overflowY = 'auto';
+      }
+      
+      // Add entities
+      this.energyEntities.forEach(entity => {
+        const entityItem = document.createElement('div');
+        entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
+        entityItem.dataset.entity = entity.entityId;
+        entityItem.style.gap = '4px';
+        entityItem.addEventListener('click', this._toggleEnergyEntity);
+        
+        const entityLeft = document.createElement('div');
+        entityLeft.className = 'entity-left';
+        
+        const entityName = document.createElement('div');
+        entityName.className = 'entity-name';
+        entityName.title = entity.name;
+        entityName.textContent = entity.name;
+        
+        entityLeft.appendChild(entityName);
+        entityItem.appendChild(entityLeft);
+        
+        const entityState = document.createElement('div');
+        entityState.className = 'entity-state';
+        
+        const statusIndicator = document.createElement('div');
+        statusIndicator.className = 'status-indicator';
+        statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+        
+        const powerValue = document.createElement('div');
+        powerValue.className = 'power-value';
+        
+        if (this.config?.show_state) {
+          powerValue.textContent = `${entity.state} ${entity.unit}`;
+        }
+        
+        entityState.appendChild(statusIndicator);
+        entityState.appendChild(powerValue);
+        entityItem.appendChild(entityState);
+        
+        entitiesContainer.appendChild(entityItem);
+      });
+      
+      containerWrapper.appendChild(entitiesContainer);
+      section.appendChild(containerWrapper);
+    } else {
+      // Section title
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Energy Entities';
+      section.appendChild(sectionTitle);
+      
+      // Empty message
+      const emptyMessage = document.createElement('div');
+      emptyMessage.className = 'empty-message';
+      emptyMessage.textContent = 'No energy entities found. Make sure you have entities with unit set to Wh or kWh.';
+      section.appendChild(emptyMessage);
+    }
+    
+    return section;
+  }
+
+  _updateContent() {
+    if (!this.config) {
+      const card = this._root.querySelector('ha-card');
+      if (card) {
+        card.innerHTML = '<div class="empty-message">Card not configured</div>';
+      }
+      return;
     }
 
-    const containerStyle = this.config.max_height > 0 ? 
-      `max-height: ${Math.min(this.config.max_height, 400)}px; overflow-y: auto;` : '';
+    // Get the ha-card element
+    const card = this._root.querySelector('ha-card');
+    if (!card) return;
 
-    return html`
-      <ha-card>
-        ${this.config.show_header ? html`
-          <div class="card-header">${this.config.title}</div>
-        ` : ''}
-        
-        ${this.powerEntities.length > 0 ? html`
-          <div class="control-buttons">
-            <button class="control-button" @click="${this._resetToPowerDefaultEntities}">
-              <ha-icon icon="mdi:refresh"></ha-icon>
-              <span>Reset</span>
-            </button>
-            <button class="control-button" @click="${this._clearAllPowerEntities}">
-              <ha-icon icon="mdi:close-circle-outline"></ha-icon>
-              <span>Clear</span>
-            </button>
-            <button class="control-button" @click="${this._selectAllPowerEntities}">
-              <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-              <span>Select All</span>
-            </button>
-          </div>
-          
-          <div class="section-title">Power Entities</div>
-          
-          <div style="width: 100%; box-sizing: border-box;">
-            <div class="entities-container" style="${containerStyle}">
-              ${this.powerEntities.map(entity => html`
-                <div 
-                  class="entity-item ${entity.isOn ? 'on' : 'off'}"
-                  data-entity="${entity.entityId}"
-                  @click="${this._togglePowerEntity}"
-                  style="gap: 4px;"
-                >
-                  <div class="entity-left">
-                    <div class="entity-name" title="${entity.name}">${entity.name}</div>
-                  </div>
-                  <div class="entity-state">
-                    <div class="status-indicator">${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
-                    <div class="power-value">${this.config?.show_state ? 
-                      `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}` : 
-                      ''}
-                    </div>
-                  </div>
-                </div>
-              `)}
-            </div>
-          </div>
-        ` : html`
-          <div class="empty-message">
-            No power entities found. Make sure you have entities with unit set to W or kW.
-          </div>
-        `}
+    // Clear previous content
+    card.innerHTML = '';
 
-        ${this.config?.show_energy_section && this.energyEntities.length > 0 ? html`
-          <div class="section-separator"></div>
+    // Header
+    if (this.config.show_header) {
+      const header = document.createElement('div');
+      header.className = 'card-header';
+      header.textContent = this.config.title;
+      card.appendChild(header);
+    }
 
-          <div class="control-buttons">
-            <button class="control-button" @click="${this._resetToEnergyDefaultEntities}">
-              <ha-icon icon="mdi:refresh"></ha-icon>
-              <span>Reset</span>
-            </button>
-            <button class="control-button" @click="${this._clearAllEnergyEntities}">
-              <ha-icon icon="mdi:close-circle-outline"></ha-icon>
-              <span>Clear</span>
-            </button>
-            <button class="control-button" @click="${this._selectAllEnergyEntities}">
-              <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-              <span>Select All</span>
-            </button>
-          </div>
-          
-          <div class="section-title">Energy Entities</div>
-          
-          <div style="width: 100%; box-sizing: border-box;">
-            <div class="entities-container" style="${containerStyle}">
-              ${this.energyEntities.map(entity => html`
-                <div 
-                  class="entity-item ${entity.isOn ? 'on' : 'off'}"
-                  data-entity="${entity.entityId}"
-                  @click="${this._toggleEnergyEntity}"
-                  style="gap: 4px;"
-                >
-                  <div class="entity-left">
-                    <div class="entity-name" title="${entity.name}">${entity.name}</div>
-                  </div>
-                  <div class="entity-state">
-                    <div class="status-indicator">${entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : ''}</div>
-                    <div class="power-value">${this.config?.show_state ? 
-                      `${entity.state} ${entity.unit}` : 
-                      ''}
-                    </div>
-                  </div>
-                </div>
-              `)}
-            </div>
-          </div>
-        ` : this.config?.show_energy_section ? html`
-          <div class="section-separator"></div>
-          <div class="section-title">Energy Entities</div>
-          <div class="empty-message">
-            No energy entities found. Make sure you have entities with unit set to Wh or kWh.
-          </div>
-        ` : ''}
-      </ha-card>
-    `;
+    // Power section
+    const powerSection = this._renderPowerSection();
+    card.appendChild(powerSection);
+
+    // Energy section (if enabled)
+    if (this.config.show_energy_section) {
+      const energySection = this._renderEnergySection();
+      card.appendChild(energySection);
+    }
   }
 }
 
