@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css } from "lit-element";
 import { EnergyDashboardConfig } from './types';
 
 // Extend HTMLInputElement to include the configValue property
