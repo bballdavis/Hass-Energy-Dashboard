@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyValues } from 'lit';
+import { LitElement, html, css, PropertyValues } from "lit";
 import { EntityInfo, EnergyDashboardConfig } from './types';
 import { getPowerEntities, getEnergyEntities, loadToggleStates, saveToggleStates } from './entity-utils';
 
