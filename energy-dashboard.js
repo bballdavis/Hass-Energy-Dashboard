@@ -775,16 +775,4 @@ class EnergyDashboardEntityCardEditor extends LitElement {
     }
 }
 customElements.define('energy-dashboard-entity-card-editor', EnergyDashboardEntityCardEditor);
-
-// Import the components and their implementations
-window.customCards = window.customCards || [];
-// Register the Energy Dashboard Entity Card
-window.customCards.push({
-    type: "energy-dashboard-entity-card",
-    name: "Energy Dashboard: Entity Card",
-    description: "Card that displays power (W/kW) and energy (Wh/kWh) measurement entities",
-    preview: false,
-    documentationURL: "https://github.com/bballdavis/Hass-Energy-Dashboard"
-});
-// Additional cards can be registered here as they're developed
 //# sourceMappingURL=energy-dashboard.js.map
