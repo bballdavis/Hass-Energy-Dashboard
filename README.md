@@ -26,7 +26,7 @@ A lightweight card that displays power (W/kW) and energy (Wh/kWh) measurement en
 ### HACS Installation
 1. Add this repository to HACS as a custom repository:
    - URL: `https://github.com/bballdavis/Hass-Energy-Dashboard`
-   - Category: `Lovelace`
+   - Category: `Dashboard`
 2. Search for "Energy Dashboard" in HACS and install it
 3. Add the card to your dashboard either manually or through the card picker UI:
    - Click "Edit Dashboard"
