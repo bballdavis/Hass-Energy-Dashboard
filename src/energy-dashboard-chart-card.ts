@@ -5,6 +5,7 @@ import { EnergyDashboardChartConfig, getDefaultChartConfig } from './energy-dash
 export class EnergyDashboardChartCard extends HTMLElement {
   // Properties
   private _hass: any;
+  private _lastHassState: any = null; // Store the last hass state to detect changes
   config?: EnergyDashboardChartConfig;
   private _root: ShadowRoot;
   private _powerChartEl: HTMLElement | null = null;
@@ -123,12 +124,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   // Called when Home Assistant updates
   set hass(hass: any) {
-    // Only store hass, don't trigger full redraw here
-    // Let the interval or storage change handle updates
-    this._hass = hass;
-    // If charts exist, update their internal hass for data refresh
-    if (!this._isInitialRender) { // Avoid updating hass before initial render completes
+    // Only update if the state has actually changed
+    if (JSON.stringify(this._lastHassState) !== JSON.stringify(hass)) {
+      this._lastHassState = hass;
+      this._hass = hass;
+      // If charts exist, update their internal hass for data refresh
+      if (!this._isInitialRender) {
         this._updateApexCardHass();
+      }
     }
   }
 
@@ -162,8 +165,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const intervalSeconds = this.config?.update_interval || 30;
     if (intervalSeconds > 0) {
       this._updateTimer = window.setInterval(
-        // Pass false to indicate a timed update, not forced by entity change
-        () => this._updateCharts(false),
+        this._debounce(() => this._updateCharts(false), 500), // Debounce updates
         intervalSeconds * 1000
       );
     }
@@ -174,6 +176,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
       window.clearInterval(this._updateTimer);
       this._updateTimer = null;
     }
+  }
+
+  // Debounce function to limit the rate of updates
+  private _debounce(func: Function, wait: number) {
+    let timeout: number | null = null;
+    return (...args: any[]) => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      timeout = window.setTimeout(() => {
+        func(...args);
+      }, wait);
+    };
   }
 
   // Handle storage events to detect changes in selected entities
