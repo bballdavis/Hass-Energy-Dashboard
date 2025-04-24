@@ -15,9 +15,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _updateTimer: number | null = null;
   private _powerEntities: string[] = [];
   private _energyEntities: string[] = [];
-  private _isInitialRender = true;
-  private _updateScheduled = false;
-  private _pendingUpdate = false;
 
   // Define card name and icon for card picker
   static get cardType() {
@@ -49,16 +46,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
   // Called when the element is added to the DOM
   connectedCallback() {
     this._loadSelectedEntities();
-    this._updateContent(); // Initial render
-    
-    // Set up storage event listener first before starting interval
-    window.addEventListener('storage', this._handleStorageChange);
-    
-    // Delay starting interval until after initial render completes
-    setTimeout(() => {
-      this._isInitialRender = false;
-      this._startUpdateInterval();
-    }, 1000);
+    this._updateContent();
+    this._startUpdateInterval();
   }
 
   disconnectedCallback() {
@@ -132,21 +121,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   // Called when Home Assistant updates
   set hass(hass: any) {
+    // Only store hass, don't trigger full redraw here
+    // Let the interval or storage change handle updates
     this._hass = hass;
-    
-    // Don't update during initial render
-    if (this._isInitialRender) {
-      return;
-    }
-    
-    // Only propagate updates to the chart when explicitly checking for changes
-    // We'll let our update interval handle regular updates instead of
-    // responding to every Home Assistant state change
-    if (this._pendingUpdate) {
-      this._pendingUpdate = false;
-      this._lastHassUpdate = Date.now();
-      this._safeUpdateApexCardHass();
-    }
+    // Only update charts when hass is updated, entity list comes from localStorage
+    this._updateCharts();
   }
 
   get hass() {
@@ -178,20 +157,15 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _startUpdateInterval() {
-    this._stopUpdateInterval();
-    
-    // Minimum interval of 30 seconds
-    const intervalSeconds = Math.max(this.config?.update_interval || 60, 30);
-    
-    if (intervalSeconds > 0) {
-      // Set interval to check for entity changes periodically
-      this._updateTimer = window.setInterval(() => {
-        // Instead of checking for entity changes every interval,
-        // just signal that we want to update on the next hass state change
-        this._pendingUpdate = true;
-      }, intervalSeconds * 1000);
-      
-      console.log(`Chart update interval started: ${intervalSeconds}s`);
+    if (this._updateTimer !== null) {
+      window.clearInterval(this._updateTimer);
+    }
+
+    if (this.config?.update_interval) {
+      this._updateTimer = window.setInterval(
+        () => this._updateCharts(),
+        this.config.update_interval * 1000
+      );
     }
   }
 
@@ -201,41 +175,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
       this._updateTimer = null;
     }
   }
-
-  // Check if entities have changed and only update if they have
-  private _checkForEntityChanges() {
-    if (!this._hass) return;
-    
-    // Store current entities hash
-    const oldHash = this._lastEntitiesHash;
-    
-    // Load updated entities
-    this._loadSelectedEntities();
-    
-    // Only trigger a full re-render if entities changed
-    if (oldHash !== this._lastEntitiesHash) {
-      console.log('Entities changed - rebuilding charts');
-      this._rebuildCharts();
-    } else {
-      // If no entity changes, just update the chart data
-      this._pendingUpdate = true;
-    }
-  }
-
-  // Handle storage events to detect changes in selected entities
-  private _handleStorageChange = (event: StorageEvent) => {
-    if (event.key === 'energy-dashboard-power-toggle-states' || 
-        event.key === 'energy-dashboard-energy-toggle-states') {
-      // Don't immediately update - throttle the update
-      if (!this._updateScheduled) {
-        this._updateScheduled = true;
-        setTimeout(() => {
-          this._updateScheduled = false;
-          this._checkForEntityChanges();
-        }, 500);
-      }
-    }
-  };
 
   private _generateApexchartsConfig(entities: string[], isEnergy: boolean) {
     if (!this.config || !entities.length || !this._hass) return null;
@@ -462,11 +401,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
     return container;
   }
 
-  // Complete rebuild of the charts (called when entities change)
-  private _rebuildCharts() {
-    if (!this._hass) return;
+  private _updateCharts() {
+    // Check if we need to reload selected entities
+    this._loadSelectedEntities();
     
-    // Only rebuild if we have elements to rebuild
+    // Power chart section
     if (this._powerChartEl) {
       const parent = this._powerChartEl.parentNode;
       if (parent) {
@@ -476,6 +415,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       }
     }
     
+    // Energy chart section
     if (this.config?.show_energy_section && this._energyChartEl) {
       const parent = this._energyChartEl.parentNode;
       if (parent) {
@@ -551,6 +491,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
     this._powerChartEl = this._createChart(false);
     chartContainer.appendChild(this._powerChartEl);
+    this._renderedPowerEntities = [...this._powerEntities]; // Initialize rendered list
     
     // Energy chart section (if enabled)
     if (this.config.show_energy_section) {
@@ -562,9 +503,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
       chartContainer.appendChild(this._renderSectionTitle('Energy Consumption'));
       this._energyChartEl = this._createChart(true);
       chartContainer.appendChild(this._energyChartEl);
+      this._renderedEnergyEntities = [...this._energyEntities]; // Initialize rendered list
     }
     
     card.appendChild(chartContainer);
+
+    // Mark initial render as complete
+    // Use setTimeout to ensure this runs after the current event loop cycle
+    setTimeout(() => { this._isInitialRender = false; }, 0);
   }
 }
 
