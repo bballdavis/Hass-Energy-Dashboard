@@ -171,7 +171,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
       : this.config.power_chart_options;
     
     const chartType = this.config.chart_type || 'line';
-    const smooth = this.config.smooth_curve !== false;
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
     const aggregateFunc = this.config.aggregate_func || 'avg';
@@ -185,13 +184,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
         entity: entityId,
         name: name,
         type: chartType,
-        // apexcharts-card expects 'smooth' only as a boolean
-        smooth: smooth,
-        // don't include show_points in the series config
+        // Remove 'smooth' property as it's not supported
         stroke_width: 2
       };
     });
     
+    // Create the correct configuration format for apexcharts-card
     return {
       type: 'custom:apexcharts-card',
       header: {
@@ -217,36 +215,29 @@ export class EnergyDashboardChartCard extends HTMLElement {
         },
       },
       series: series,
-      // Convert hours_to_show to a string with "h" suffix
       hours_to_show: hoursToShow.toString(),
+      // Fix span format to use proper start/end values
       span: {
-        start: `now-${hoursToShow}h`,
-        end: 'now'
+        // Use hours instead of now-Xh format
+        start: "hour",
+        offset: -hoursToShow
       },
       show_legend: this.config.show_legend !== false,
       yaxis: [{
         min: options?.y_axis?.min,
         max: options?.y_axis?.max,
         decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1),
-        apex: {
-          title: {
-            text: options?.y_axis?.title || (isEnergy ? 'Energy' : 'Power')
-          },
-          labels: {
-            formatter: {
-              function: `(val) => { return val.toFixed(${options?.y_axis?.decimals ?? (isEnergy ? 2 : 1)}) + ' ${options?.y_axis?.unit || (isEnergy ? 'kWh' : 'W')}'; }`
-            }
-          }
-        }
+        // Remove apex property and use direct properties instead
+        title: options?.y_axis?.title || (isEnergy ? 'Energy' : 'Power'),
+        unit: options?.y_axis?.unit || (isEnergy ? 'kWh' : 'W')
       }],
-      // Remove all_series_config since it's causing errors
       cache: true,
       stacked: false,
-      // Convert update_interval to a string
       update_interval: (this.config.update_interval || 60).toString(),
       group_by: aggregateFunc,
-      // Add show_points at the top level instead of in all_series_config
-      show_points: showPoints
+      show_points: showPoints,
+      // Add curve_type if smoothing is enabled
+      curve_type: this.config.smooth_curve ? 'smooth' : 'straight'
     };
   }
 

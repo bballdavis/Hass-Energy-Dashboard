@@ -1070,14 +1070,13 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f;
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = isEnergy
             ? this.config.energy_chart_options
             : this.config.power_chart_options;
         const chartType = this.config.chart_type || 'line';
-        const smooth = this.config.smooth_curve !== false;
         const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
         const aggregateFunc = this.config.aggregate_func || 'avg';
@@ -1090,12 +1089,11 @@ class EnergyDashboardChartCard extends HTMLElement {
                 entity: entityId,
                 name: name,
                 type: chartType,
-                // apexcharts-card expects 'smooth' only as a boolean
-                smooth: smooth,
-                // don't include show_points in the series config
+                // Remove 'smooth' property as it's not supported
                 stroke_width: 2
             };
         });
+        // Create the correct configuration format for apexcharts-card
         return {
             type: 'custom:apexcharts-card',
             header: {
@@ -1121,36 +1119,29 @@ class EnergyDashboardChartCard extends HTMLElement {
                 },
             },
             series: series,
-            // Convert hours_to_show to a string with "h" suffix
             hours_to_show: hoursToShow.toString(),
+            // Fix span format to use proper start/end values
             span: {
-                start: `now-${hoursToShow}h`,
-                end: 'now'
+                // Use hours instead of now-Xh format
+                start: "hour",
+                offset: -hoursToShow
             },
             show_legend: this.config.show_legend !== false,
             yaxis: [{
                     min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
                     max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
                     decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
-                    apex: {
-                        title: {
-                            text: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power')
-                        },
-                        labels: {
-                            formatter: {
-                                function: `(val) => { return val.toFixed(${(_g = (_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.decimals) !== null && _g !== void 0 ? _g : (isEnergy ? 2 : 1)}) + ' ${((_h = options === null || options === void 0 ? void 0 : options.y_axis) === null || _h === void 0 ? void 0 : _h.unit) || (isEnergy ? 'kWh' : 'W')}'; }`
-                            }
-                        }
-                    }
+                    // Remove apex property and use direct properties instead
+                    title: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power'),
+                    unit: ((_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.unit) || (isEnergy ? 'kWh' : 'W')
                 }],
-            // Remove all_series_config since it's causing errors
             cache: true,
             stacked: false,
-            // Convert update_interval to a string
             update_interval: (this.config.update_interval || 60).toString(),
             group_by: aggregateFunc,
-            // Add show_points at the top level instead of in all_series_config
-            show_points: showPoints
+            show_points: showPoints,
+            // Add curve_type if smoothing is enabled
+            curve_type: this.config.smooth_curve ? 'smooth' : 'straight'
         };
     }
     _createChart(isEnergy) {
