@@ -47,8 +47,24 @@ export class EnergyDashboardChartCard extends HTMLElement {
   connectedCallback() {
     this._loadSelectedEntities();
     this._checkApexChartsRegistration();
+    
+    // First update the content without starting the timer
     this._updateContent();
-    this._startUpdateInterval();
+    
+    // Cancel and reset any existing timers and configuration
+    this._stopUpdateInterval();
+    
+    // Wait until the content is fully loaded before starting timers
+    // This ensures all chart elements have properly initialized
+    setTimeout(() => {
+      // Apply our refresh setting and disable any automatic updates from ApexCharts card itself
+      this._disableApexChartsAutoUpdate();
+      
+      // Only start the update timer if explicitly set
+      if (this._currentRefreshInterval > 0) {
+        this._startUpdateInterval();
+      }
+    }, 1000); // Longer timeout to ensure everything is properly loaded
   }
 
   disconnectedCallback() {
@@ -343,6 +359,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
       try {
         (apexCard as any).setConfig(chartConfig);
         (apexCard as any).hass = this._hass;
+        
+        // Stop any potential auto-refresh by overriding the update method if it exists
+        if (typeof (apexCard as any)._updateChart === 'function') {
+          const originalUpdateChart = (apexCard as any)._updateChart;
+          (apexCard as any)._updateChart = function(...args: any[]) {
+            // Only call the original update if explicitly requested
+            if (args[0] === 'manual-update') {
+              return originalUpdateChart.apply(this, args.slice(1));
+            }
+            // Otherwise prevent automatic updates
+            return;
+          };
+        }
       } catch (configError) {
         console.error('Error configuring apexcharts-card:', configError);
         return this._createErrorMessage(
@@ -677,6 +706,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
     refreshButton.addEventListener('click', () => this._manualRefresh());
     refreshButton.style.minWidth = '36px';
     refreshButton.style.width = '36px';
+
+    // Off button (disable automatic refresh)
+    const offButton = document.createElement('button');
+    offButton.className = 'interval-button control-button';
+    offButton.innerText = 'Off';
+    offButton.title = 'Disable automatic refresh';
+    offButton.dataset.seconds = '0';
+    offButton.addEventListener('click', () => this._setRefreshInterval(0));
     
     // 15 seconds button
     const sec15Button = document.createElement('button');
@@ -703,6 +740,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     sec60Button.addEventListener('click', () => this._setRefreshInterval(60));
     
     buttonsContainer.appendChild(refreshButton);
+    buttonsContainer.appendChild(offButton);
     buttonsContainer.appendChild(sec15Button);
     buttonsContainer.appendChild(sec30Button);
     buttonsContainer.appendChild(sec60Button);
@@ -736,6 +774,34 @@ export class EnergyDashboardChartCard extends HTMLElement {
       activeButton.style.backgroundColor = 'var(--primary-color)';
       activeButton.style.color = 'var(--text-primary-color)';
     }
+  }
+
+  // Helper method to disable auto-updates in all ApexCharts instances
+  private _disableApexChartsAutoUpdate() {
+    // Find all apexcharts-card elements in our shadow root
+    const chartElements = this._root.querySelectorAll('apexcharts-card');
+    
+    chartElements.forEach(chart => {
+      // Try to access the chart's internal methods
+      if (chart && (chart as any)._updateConfig) {
+        try {
+          // Override any existing update_interval with 0
+          const currentConfig = (chart as any)._config || {};
+          (chart as any)._config = {
+            ...currentConfig,
+            update_interval: '0'
+          };
+          
+          // If the chart has an update timer, try to clear it
+          if ((chart as any)._updateTimer) {
+            window.clearInterval((chart as any)._updateTimer);
+            (chart as any)._updateTimer = null;
+          }
+        } catch (e) {
+          console.warn('Failed to disable auto-update for chart element', e);
+        }
+      }
+    });
   }
 }
 
