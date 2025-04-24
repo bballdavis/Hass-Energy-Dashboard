@@ -350,42 +350,78 @@ export class EnergyDashboardChartCard extends HTMLElement {
     chartElement.style.marginBottom = '16px';
     
     try {
-      // Check if apexcharts-card is registered
-      if (!customElements.get('apexcharts-card')) {
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'error-message';
-        errorMsg.style.color = 'var(--error-color, red)';
-        errorMsg.style.padding = '16px';
-        errorMsg.style.textAlign = 'center';
-        errorMsg.textContent = 'Error: apexcharts-card is not installed or registered. Please make sure the integration is installed.';
-        chartElement.appendChild(errorMsg);
-        return chartElement;
-      }
-      
-      // Create the apexcharts-card element
+      // First try to create the element regardless of whether customElements.get succeeds
+      // This is more reliable than checking if it's registered
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
       
-      // Set card config for apexcharts-card
-      (apexCard as any).setConfig(chartConfig);
-      
-      // Pass hass object to the chart
-      if (this._hass) {
-        (apexCard as any).hass = this._hass;
+      // If we got here, the element is available, set its config
+      try {
+        // Set card config for apexcharts-card
+        (apexCard as any).setConfig(chartConfig);
+        
+        // Pass hass object to the chart
+        if (this._hass) {
+          (apexCard as any).hass = this._hass;
+        }
+        
+        chartElement.appendChild(apexCard);
+      } catch (configError) {
+        console.error('Error configuring apexcharts-card:', configError);
+        chartElement.appendChild(this._createErrorMessage(
+          'Error configuring chart. Please check your browser console for details.'
+        ));
       }
-      
-      chartElement.appendChild(apexCard);
     } catch (err) {
       console.error('Error creating apexcharts-card:', err);
-      const errorMsg = document.createElement('div');
-      errorMsg.className = 'error-message';
-      errorMsg.style.color = 'var(--error-color, red)';
-      errorMsg.style.padding = '16px';
-      errorMsg.style.textAlign = 'center';
-      errorMsg.textContent = `Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`;
-      chartElement.appendChild(errorMsg);
+      
+      // Create a more helpful error message with installation instructions
+      chartElement.appendChild(this._createErrorMessage(
+        'The apexcharts-card custom component is required but not available. ' +
+        'Please make sure you have installed the "apexcharts-card" from HACS and ' +
+        'refreshed your browser.'
+      ));
     }
     
     return chartElement;
+  }
+  
+  // Utility method to create consistent error messages
+  private _createErrorMessage(message: string): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'chart-error-container';
+    container.style.padding = '16px';
+    container.style.textAlign = 'center';
+    container.style.color = 'var(--error-color, red)';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.border = '1px solid var(--error-color, red)';
+    container.style.borderRadius = '8px';
+    container.style.margin = '8px 16px';
+    container.style.minHeight = '150px';
+    
+    const icon = document.createElement('ha-icon');
+    icon.setAttribute('icon', 'mdi:alert-circle-outline');
+    icon.style.marginBottom = '8px';
+    icon.style.color = 'var(--error-color, red)';
+    icon.style.width = '40px';
+    icon.style.height = '40px';
+    
+    const errorMsg = document.createElement('div');
+    errorMsg.textContent = message;
+    
+    const helpText = document.createElement('div');
+    helpText.style.marginTop = '8px';
+    helpText.style.fontSize = '0.9rem';
+    helpText.style.color = 'var(--secondary-text-color)';
+    helpText.innerHTML = 'Installation: <a href="https://github.com/RomRider/apexcharts-card" target="_blank" rel="noopener">apexcharts-card documentation</a>';
+    
+    container.appendChild(icon);
+    container.appendChild(errorMsg);
+    container.appendChild(helpText);
+    
+    return container;
   }
 
   private _createEmptyCard(isEnergy: boolean) {
