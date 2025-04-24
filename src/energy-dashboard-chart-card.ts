@@ -174,7 +174,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const chartType = this.config.chart_type || 'line';
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
-    const aggregateFunc = this.config.aggregate_func || 'avg';
+    const aggregateFunc = this.config.aggregate_func || 'avg'; // Keep aggregate func
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
     const updateInterval = (this.config.update_interval || 60).toString();
@@ -188,6 +188,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
         name: name,
         type: chartType,
         stroke_width: 2,
+        group_by: {
+          func: aggregateFunc,
+          duration: '1h' // Adjust duration as needed
+        }
       };
     });
 
@@ -199,13 +203,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         show: false,
       },
       graph_span: `${hoursToShow}h`, // Use graph_span
-      group_by: {
-        func: aggregateFunc,
-        duration: '1h' // Adjust duration as needed
-      },
-      show: {
-        legend_value: showLegend // Use show.legend_value
-      },
       chart_type: chartType,
       cache: true,
       stacked: false, // Set based on config if needed
@@ -214,10 +211,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       // --- Top-level yaxis configuration ---
       yaxis: [
         {
-          // Properties apexcharts-card might expect at the top level
           min: options?.y_axis?.min,
           max: options?.y_axis?.max,
-          decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1), // Use 'decimals' instead of 'decimalsInFloat'
+          decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1),
         }
       ],
 
@@ -239,6 +235,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
         markers: {
           size: showPoints ? 4 : 0
         },
+        legend: {
+          show: showLegend
+        }
       },
 
       // --- Series Data ---

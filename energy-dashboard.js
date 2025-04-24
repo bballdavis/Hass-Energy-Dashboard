@@ -1080,7 +1080,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         const chartType = this.config.chart_type || 'line';
         const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
-        const aggregateFunc = this.config.aggregate_func || 'avg';
+        const aggregateFunc = this.config.aggregate_func || 'avg'; // Keep aggregate func
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
         const updateInterval = (this.config.update_interval || 60).toString();
@@ -1094,6 +1094,10 @@ class EnergyDashboardChartCard extends HTMLElement {
                 name: name,
                 type: chartType,
                 stroke_width: 2,
+                group_by: {
+                    func: aggregateFunc,
+                    duration: '1h' // Adjust duration as needed
+                }
             };
         });
         // Create the configuration format for apexcharts-card
@@ -1104,13 +1108,6 @@ class EnergyDashboardChartCard extends HTMLElement {
                 show: false,
             },
             graph_span: `${hoursToShow}h`, // Use graph_span
-            group_by: {
-                func: aggregateFunc,
-                duration: '1h' // Adjust duration as needed
-            },
-            show: {
-                legend_value: showLegend // Use show.legend_value
-            },
             chart_type: chartType,
             cache: true,
             stacked: false, // Set based on config if needed
@@ -1118,10 +1115,9 @@ class EnergyDashboardChartCard extends HTMLElement {
             // --- Top-level yaxis configuration ---
             yaxis: [
                 {
-                    // Properties apexcharts-card might expect at the top level
                     min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
                     max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
-                    decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1), // Use 'decimals' instead of 'decimalsInFloat'
+                    decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
                 }
             ],
             // --- Standard ApexCharts options nested under apex_config ---
@@ -1142,6 +1138,9 @@ class EnergyDashboardChartCard extends HTMLElement {
                 markers: {
                     size: showPoints ? 4 : 0
                 },
+                legend: {
+                    show: showLegend
+                }
             },
             // --- Series Data ---
             series: series,
