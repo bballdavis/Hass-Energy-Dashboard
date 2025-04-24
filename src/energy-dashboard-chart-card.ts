@@ -235,13 +235,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       if (values.length > 0) {
         const minVal = Math.min(...values);
         const maxVal = Math.max(...values);
-        // Always start at 0 for power, or min rounded down to nearest 100 for energy
         yMin = isEnergy ? Math.floor(minVal / 100) * 100 : 0;
-        // Always round up to next 100 for max
         yMax = Math.ceil(maxVal / 100) * 100;
-        // If range is too small, ensure at least 100
         if (yMax - yMin < 100) yMax = yMin + 100;
-        // Intervals of 50, major of 100
         tickAmount = Math.round((yMax - yMin) / 50);
         if (tickAmount < 2) tickAmount = 2;
       } else {
@@ -263,10 +259,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       yaxis: [{
         min: yMin,
         max: yMax,
-        decimals,
-        tickAmount,
-        title: { text: yTitle },
-        labels: { formatter: (val: number) => val.toFixed(0) }
+        decimals
       }],
       apex_config: {
         chart: {
@@ -285,6 +278,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
             }
           }
         },
+        yaxis: [{
+          tickAmount,
+          title: { text: yTitle },
+          labels: { formatter: (val: number) => val.toFixed(0) }
+        }],
         markers: { size: showPoints ? 4 : 0 },
         stroke: { curve: smoothCurve ? 'smooth' : 'straight', width: 2 },
         legend: { show: showLegend }
