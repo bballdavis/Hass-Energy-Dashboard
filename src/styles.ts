@@ -32,8 +32,8 @@ export const cardStyles = `
     gap: min(4px, 1%); /* Use dynamic gap that shrinks with card size */
   }
   .control-button {
-    background-color: var(--secondary-background-color);
-    border: none;
+    background-color: var(--card-background-color, white);
+    border: 1px solid var(--primary-color);
     border-radius: 8px;
     padding: 6px min(12px, 2%); /* Reduce padding on smaller screens */
     color: var(--primary-text-color);
@@ -43,10 +43,10 @@ export const cardStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
     flex: 1;
     margin: 0; /* Remove margin in favor of gap on the parent */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     height: var(--button-height);
     min-height: var(--button-height);
     box-sizing: border-box;
