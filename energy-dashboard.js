@@ -1070,7 +1070,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = isEnergy
@@ -1089,7 +1089,7 @@ class EnergyDashboardChartCard extends HTMLElement {
                 entity: entityId,
                 name: name,
                 type: chartType,
-                // Remove 'smooth' property as it's not supported
+                // Ensure 'smooth' is not here
                 stroke_width: 2
             };
         });
@@ -1117,31 +1117,41 @@ class EnergyDashboardChartCard extends HTMLElement {
                         }
                     },
                 },
+                // Move curve smoothing setting here if needed by apexcharts itself
+                stroke: {
+                    curve: this.config.smooth_curve ? 'smooth' : 'straight'
+                },
+                markers: {
+                    // Control points visibility via apex_config.markers
+                    size: showPoints ? 4 : 0
+                }
             },
             series: series,
+            // Use hours_to_show directly, remove span object
             hours_to_show: hoursToShow.toString(),
-            // Fix span format to use proper start/end values
-            span: {
-                // Use hours instead of now-Xh format
-                start: "hour",
-                offset: -hoursToShow
-            },
             show_legend: this.config.show_legend !== false,
             yaxis: [{
                     min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
                     max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
                     decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
-                    // Remove apex property and use direct properties instead
-                    title: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power'),
-                    unit: ((_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.unit) || (isEnergy ? 'kWh' : 'W')
+                    // Restructure yaxis according to apexcharts-card schema
+                    title: {
+                        text: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power')
+                    },
+                    labels: {
+                        formatter: `(val) => { 
+              if (val === null || val === undefined) return val;
+              return val.toFixed(${(_g = (_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.decimals) !== null && _g !== void 0 ? _g : (isEnergy ? 2 : 1)}) + ' ${((_h = options === null || options === void 0 ? void 0 : options.y_axis) === null || _h === void 0 ? void 0 : _h.unit) || (isEnergy ? 'kWh' : 'W')}'; 
+            }`
+                    }
+                    // Removed unit property, handled by formatter
                 }],
             cache: true,
             stacked: false,
             update_interval: (this.config.update_interval || 60).toString(),
-            group_by: aggregateFunc,
-            show_points: showPoints,
-            // Add curve_type if smoothing is enabled
-            curve_type: this.config.smooth_curve ? 'smooth' : 'straight'
+            group_by: aggregateFunc
+            // Removed show_points from top level, handled by apex_config.markers
+            // Removed curve_type from top level, handled by apex_config.stroke.curve
         };
     }
     _createChart(isEnergy) {

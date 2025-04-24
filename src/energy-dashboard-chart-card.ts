@@ -184,7 +184,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
         entity: entityId,
         name: name,
         type: chartType,
-        // Remove 'smooth' property as it's not supported
+        // Ensure 'smooth' is not here
         stroke_width: 2
       };
     });
@@ -213,31 +213,42 @@ export class EnergyDashboardChartCard extends HTMLElement {
             }
           },
         },
+        // Move curve smoothing setting here if needed by apexcharts itself
+        stroke: {
+          curve: this.config.smooth_curve ? 'smooth' : 'straight'
+        },
+        markers: {
+          // Control points visibility via apex_config.markers
+          size: showPoints ? 4 : 0
+        }
       },
       series: series,
-      hours_to_show: hoursToShow.toString(),
-      // Fix span format to use proper start/end values
-      span: {
-        // Use hours instead of now-Xh format
-        start: "hour",
-        offset: -hoursToShow
-      },
+      // Use hours_to_show directly, remove span object
+      hours_to_show: hoursToShow.toString(), 
       show_legend: this.config.show_legend !== false,
       yaxis: [{
         min: options?.y_axis?.min,
         max: options?.y_axis?.max,
         decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1),
-        // Remove apex property and use direct properties instead
-        title: options?.y_axis?.title || (isEnergy ? 'Energy' : 'Power'),
-        unit: options?.y_axis?.unit || (isEnergy ? 'kWh' : 'W')
+        // Restructure yaxis according to apexcharts-card schema
+        title: {
+          text: options?.y_axis?.title || (isEnergy ? 'Energy' : 'Power')
+        },
+        labels: {
+          formatter: 
+            `(val) => { 
+              if (val === null || val === undefined) return val;
+              return val.toFixed(${options?.y_axis?.decimals ?? (isEnergy ? 2 : 1)}) + ' ${options?.y_axis?.unit || (isEnergy ? 'kWh' : 'W')}'; 
+            }`
+        }
+        // Removed unit property, handled by formatter
       }],
       cache: true,
       stacked: false,
       update_interval: (this.config.update_interval || 60).toString(),
-      group_by: aggregateFunc,
-      show_points: showPoints,
-      // Add curve_type if smoothing is enabled
-      curve_type: this.config.smooth_curve ? 'smooth' : 'straight'
+      group_by: aggregateFunc
+      // Removed show_points from top level, handled by apex_config.markers
+      // Removed curve_type from top level, handled by apex_config.stroke.curve
     };
   }
 
