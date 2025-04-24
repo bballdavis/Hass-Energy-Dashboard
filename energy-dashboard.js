@@ -1800,27 +1800,27 @@ class EnergyDashboardChartCard extends HTMLElement {
         const charts = this._findAllApexChartsCards();
         charts.forEach(chart => {
             try {
-                if (chart._originalUpdateChart) {
+                if (typeof chart._originalUpdateChart === 'function') {
                     chart._originalUpdateChart.call(chart, 'manual-refresh');
                     return;
                 }
-                if (chart._updateChart) {
+                if (typeof chart._updateChart === 'function') {
                     chart._updateChart.call(chart, 'manual-refresh');
                     return;
                 }
-                if (chart.updateChart) {
+                if (typeof chart.updateChart === 'function') {
                     chart.updateChart('manual-refresh');
                     return;
                 }
-                if (chart.update) {
+                if (typeof chart.update === 'function') {
                     chart.update('manual-refresh');
                     return;
                 }
-                if (chart._originalUpdateData) {
+                if (typeof chart._originalUpdateData === 'function') {
                     chart._originalUpdateData.call(chart, 'manual-refresh');
                     return;
                 }
-                if (chart._updateData) {
+                if (typeof chart._updateData === 'function') {
                     chart._updateData.call(chart, 'manual-refresh');
                     return;
                 }
