@@ -10,10 +10,9 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _updateTimer;
     private _powerEntities;
     private _energyEntities;
-    private _renderedPowerEntities;
-    private _renderedEnergyEntities;
     private _isInitialRender;
     private _updateScheduled;
+    private _pendingUpdate;
     static get cardType(): string;
     static get displayName(): string;
     static get description(): string;
@@ -61,8 +60,8 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _generateApexchartsConfig;
     private _createChart;
     private _createEmptyCard;
-    private _updateCharts;
-    private _updateApexCardHass;
+    private _rebuildCharts;
+    private _safeUpdateApexCardHass;
     private _renderSectionTitle;
     private _updateContent;
 }

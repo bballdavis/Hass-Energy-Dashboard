@@ -14,10 +14,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _updateTimer: number | null = null;
   private _powerEntities: string[] = [];
   private _energyEntities: string[] = [];
-  private _renderedPowerEntities: string[] = [];
-  private _renderedEnergyEntities: string[] = [];
   private _isInitialRender = true;
   private _updateScheduled = false;
+  private _pendingUpdate = false;
 
   // Define card name and icon for card picker
   static get cardType() {
@@ -50,9 +49,15 @@ export class EnergyDashboardChartCard extends HTMLElement {
   connectedCallback() {
     this._loadSelectedEntities();
     this._updateContent(); // Initial render
-    this._startUpdateInterval();
-    // Listen for storage changes to detect entity selection updates
+    
+    // Set up storage event listener first before starting interval
     window.addEventListener('storage', this._handleStorageChange);
+    
+    // Delay starting interval until after initial render completes
+    setTimeout(() => {
+      this._isInitialRender = false;
+      this._startUpdateInterval();
+    }, 1000);
   }
 
   disconnectedCallback() {
@@ -128,25 +133,30 @@ export class EnergyDashboardChartCard extends HTMLElement {
   set hass(hass: any) {
     this._hass = hass;
     
-    // Only check for updates at reasonable intervals
-    const now = Date.now();
-    if (now - this._lastHassUpdate < 2000) {
-      // Skip frequent updates to prevent continuous refreshing
+    // Don't update during initial render
+    if (this._isInitialRender) {
       return;
     }
     
-    // Only schedule an update if not already pending
-    if (!this._updateScheduled) {
-      this._updateScheduled = true;
-      // Use requestAnimationFrame for better performance
-      window.requestAnimationFrame(() => {
-        this._updateScheduled = false;
-        this._lastHassUpdate = now;
-        // Only update the chart with new hass data, not recreate it
-        if (!this._isInitialRender) {
-          this._updateApexCardHass();
-        }
-      });
+    // Skip updates that happen too frequently
+    const now = Date.now();
+    const timeSinceLastUpdate = now - this._lastHassUpdate;
+    
+    if (timeSinceLastUpdate < 2000 && !this._pendingUpdate) {
+      this._pendingUpdate = true;
+      setTimeout(() => {
+        this._lastHassUpdate = Date.now();
+        this._pendingUpdate = false;
+        this._safeUpdateApexCardHass();
+      }, 2000 - timeSinceLastUpdate);
+      return;
+    }
+    
+    // Update immediately if we have a pending update or it's been long enough
+    if (this._pendingUpdate || timeSinceLastUpdate >= 2000) {
+      this._pendingUpdate = false;
+      this._lastHassUpdate = now;
+      this._safeUpdateApexCardHass();
     }
   }
 
@@ -179,18 +189,18 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _startUpdateInterval() {
-    if (this._updateTimer !== null) {
-      window.clearInterval(this._updateTimer);
-      this._updateTimer = null;
-    }
-
-    const intervalSeconds = this.config?.update_interval || 30;
+    this._stopUpdateInterval();
+    
+    // Minimum interval of 30 seconds
+    const intervalSeconds = Math.max(this.config?.update_interval || 30, 30);
+    
     if (intervalSeconds > 0) {
-      // Use a much longer minimum interval (at least 10 seconds)
-      const actualInterval = Math.max(intervalSeconds, 10) * 1000;
+      // Set interval to check for entity changes periodically
       this._updateTimer = window.setInterval(() => {
         this._checkForEntityChanges();
-      }, actualInterval);
+      }, intervalSeconds * 1000);
+      
+      console.log(`Chart update interval started: ${intervalSeconds}s`);
     }
   }
 
@@ -205,19 +215,16 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _checkForEntityChanges() {
     if (!this._hass) return;
     
-    // Store current entities
+    // Store current entities hash
     const oldHash = this._lastEntitiesHash;
     
     // Load updated entities
     this._loadSelectedEntities();
     
-    // Only trigger an update if entities changed
+    // Only trigger a full re-render if entities changed
     if (oldHash !== this._lastEntitiesHash) {
-      console.log('Scheduled update - entities changed');
-      this._updateCharts(true);
-    } else {
-      // Just refresh chart data without rebuilding
-      this._updateApexCardHass();
+      console.log('Entities changed - rebuilding charts');
+      this._rebuildCharts();
     }
   }
 
@@ -225,13 +232,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _handleStorageChange = (event: StorageEvent) => {
     if (event.key === 'energy-dashboard-power-toggle-states' || 
         event.key === 'energy-dashboard-energy-toggle-states') {
-      console.log('Detected entity selection change via storage event.');
       // Don't immediately update - throttle the update
       if (!this._updateScheduled) {
         this._updateScheduled = true;
         setTimeout(() => {
           this._updateScheduled = false;
-          // Only update if entities actually changed
           this._checkForEntityChanges();
         }, 500);
       }
@@ -249,10 +254,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const chartType = this.config.chart_type || 'line';
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
-    const aggregateFunc = this.config.aggregate_func || 'avg'; // Keep aggregate func
+    const aggregateFunc = this.config.aggregate_func || 'avg';
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
-    const updateInterval = (this.config.update_interval || 60).toString();
 
     // Build series configuration for apexcharts-card
     const series = entities.map(entityId => {
@@ -265,7 +269,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
         stroke_width: 2,
         group_by: {
           func: aggregateFunc,
-          duration: '1h' // Adjust duration as needed
+          duration: '1h'
         }
       };
     });
@@ -277,12 +281,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
       header: {
         show: false,
       },
-      graph_span: `${hoursToShow}h`, // Use graph_span
+      graph_span: `${hoursToShow}h`,
       chart_type: chartType,
       cache: true,
-      stacked: false, // Set based on config if needed
-      update_interval: updateInterval,
-
+      stacked: false,
+      // IMPORTANT: Set a very large update interval and handle updates ourselves
+      update_interval: '0', // Disable automatic updates completely
+      
       // --- Top-level yaxis configuration ---
       yaxis: [
         {
@@ -302,6 +307,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
               download: true, selection: true, zoom: true,
               zoomin: true, zoomout: true, pan: true, reset: true
             }
+          },
+          animations: {
+            enabled: false, // Disable animations for better performance
           },
         },
         stroke: {
@@ -357,17 +365,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
       // Create the apexcharts-card element
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
       
-      // Important: Disable the internal auto-update of apexcharts-card
-      // by setting a very long update interval (we'll handle updates ourselves)
-      if (chartConfig.update_interval) {
-        chartConfig.update_interval = '3600'; // Set to 1 hour
-      }
-      
       // Set card config for apexcharts-card
       (apexCard as any).setConfig(chartConfig);
       
       // Pass hass object to the chart
-      (apexCard as any).hass = this._hass;
+      if (this._hass) {
+        (apexCard as any).hass = this._hass;
+      }
       
       chartElement.appendChild(apexCard);
     } catch (err) {
@@ -414,62 +418,47 @@ export class EnergyDashboardChartCard extends HTMLElement {
     return container;
   }
 
-  private _updateCharts(forceRender: boolean = false) {
-    if (!this._hass) return; // Don't update if hass is not set
-
-    // Store currently rendered entities before loading new ones
-    const oldPowerEntities = [...this._renderedPowerEntities];
-    const oldEnergyEntities = [...this._renderedEnergyEntities];
-
-    // Load the latest selected entities from storage
-    this._loadSelectedEntities();
-
-    // Check if the entity lists have actually changed
-    const powerEntitiesChanged = JSON.stringify(this._powerEntities) !== JSON.stringify(oldPowerEntities);
-    const energyEntitiesChanged = JSON.stringify(this._energyEntities) !== JSON.stringify(oldEnergyEntities);
-    const entitiesChanged = powerEntitiesChanged || energyEntitiesChanged;
-
-    // Determine if a full re-render is needed - only for actual entity changes
-    const needsReRender = forceRender || entitiesChanged;
-
-    if (needsReRender) {
-      console.log(`Chart re-render triggered. Force: ${forceRender}, Entities Changed: ${entitiesChanged}`);
-      // --- Full Re-render Logic --- 
-      // Power chart section
-      if (this._powerChartEl) {
-        const parent = this._powerChartEl.parentNode;
-        if (parent) {
-          const newPowerChart = this._createChart(false);
-          parent.replaceChild(newPowerChart, this._powerChartEl);
-          this._powerChartEl = newPowerChart;
-          this._renderedPowerEntities = [...this._powerEntities]; // Update rendered list
-        }
+  // Complete rebuild of the charts (called when entities change)
+  private _rebuildCharts() {
+    if (!this._hass) return;
+    
+    // Only rebuild if we have elements to rebuild
+    if (this._powerChartEl) {
+      const parent = this._powerChartEl.parentNode;
+      if (parent) {
+        const newPowerChart = this._createChart(false);
+        parent.replaceChild(newPowerChart, this._powerChartEl);
+        this._powerChartEl = newPowerChart;
       }
-      
-      // Energy chart section
-      if (this.config?.show_energy_section && this._energyChartEl) {
-        const parent = this._energyChartEl.parentNode;
-        if (parent) {
-          const newEnergyChart = this._createChart(true);
-          parent.replaceChild(newEnergyChart, this._energyChartEl);
-          this._energyChartEl = newEnergyChart;
-          this._renderedEnergyEntities = [...this._energyEntities]; // Update rendered list
-        }
+    }
+    
+    if (this.config?.show_energy_section && this._energyChartEl) {
+      const parent = this._energyChartEl.parentNode;
+      if (parent) {
+        const newEnergyChart = this._createChart(true);
+        parent.replaceChild(newEnergyChart, this._energyChartEl);
+        this._energyChartEl = newEnergyChart;
       }
-    } else {
-      // No need to do anything - updates handled by _updateApexCardHass
     }
   }
 
-  // Helper to update hass on existing apexcharts-card elements
-  private _updateApexCardHass() {
-    const powerApexCard = this._powerChartEl?.querySelector('apexcharts-card');
-    if (powerApexCard) {
-      (powerApexCard as any).hass = this._hass;
-    }
-    const energyApexCard = this._energyChartEl?.querySelector('apexcharts-card');
-    if (energyApexCard) {
-      (energyApexCard as any).hass = this._hass;
+  // Safely update the hass object for ApexCharts cards
+  private _safeUpdateApexCardHass() {
+    // Only proceed if we're fully initialized
+    if (this._isInitialRender) return;
+    
+    try {
+      const powerApexCard = this._powerChartEl?.querySelector('apexcharts-card');
+      if (powerApexCard && this._hass) {
+        (powerApexCard as any).hass = this._hass;
+      }
+      
+      const energyApexCard = this._energyChartEl?.querySelector('apexcharts-card');
+      if (energyApexCard && this._hass) {
+        (energyApexCard as any).hass = this._hass;
+      }
+    } catch (e) {
+      console.error('Error updating apex chart hass:', e);
     }
   }
 
@@ -518,7 +507,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
     this._powerChartEl = this._createChart(false);
     chartContainer.appendChild(this._powerChartEl);
-    this._renderedPowerEntities = [...this._powerEntities]; // Initialize rendered list
     
     // Energy chart section (if enabled)
     if (this.config.show_energy_section) {
@@ -530,14 +518,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       chartContainer.appendChild(this._renderSectionTitle('Energy Consumption'));
       this._energyChartEl = this._createChart(true);
       chartContainer.appendChild(this._energyChartEl);
-      this._renderedEnergyEntities = [...this._energyEntities]; // Initialize rendered list
     }
     
     card.appendChild(chartContainer);
-
-    // Mark initial render as complete
-    // Use setTimeout to ensure this runs after the current event loop cycle
-    setTimeout(() => { this._isInitialRender = false; }, 0);
   }
 }
 
