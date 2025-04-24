@@ -1080,6 +1080,9 @@ class EnergyDashboardChartCard extends HTMLElement {
         const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
         const aggregateFunc = this.config.aggregate_func || 'avg';
+        const showLegend = this.config.show_legend !== false; // Get boolean value
+        const smoothCurve = this.config.smooth_curve !== false;
+        const updateInterval = (this.config.update_interval || 60).toString();
         // Build series configuration for apexcharts-card
         const series = entities.map(entityId => {
             var _a;
@@ -1088,71 +1091,81 @@ class EnergyDashboardChartCard extends HTMLElement {
             return {
                 entity: entityId,
                 name: name,
-                type: chartType,
-                // Ensure 'smooth' is not here
-                stroke_width: 2
+                type: chartType, // Series type if needed
+                stroke_width: 2,
+                // Removed group_by from series config
             };
         });
         // Create the correct configuration format for apexcharts-card
-        return {
+        const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
             header: {
                 show: false,
                 title: isEnergy ? 'Energy Consumption' : 'Power Consumption'
             },
-            chart_type: chartType,
+            // Use graph_span for time range
+            graph_span: `${hoursToShow}h`,
+            // Add group_by at the top level
+            group_by: {
+                func: aggregateFunc,
+                duration: '1h' // Adjust duration as needed, e.g., '10m', '1h'
+            },
+            // Control legend visibility via top-level 'show' object
+            show: {
+                legend_value: showLegend
+            },
+            chart_type: chartType, // Global chart type
             apex_config: {
                 chart: {
                     height: this.config.chart_height || 300,
                     toolbar: {
                         show: true,
                         tools: {
-                            download: true,
-                            selection: true,
-                            zoom: true,
-                            zoomin: true,
-                            zoomout: true,
-                            pan: true,
-                            reset: true
+                            download: true, selection: true, zoom: true,
+                            zoomin: true, zoomout: true, pan: true, reset: true
                         }
                     },
                 },
-                // Move curve smoothing setting here if needed by apexcharts itself
                 stroke: {
-                    curve: this.config.smooth_curve ? 'smooth' : 'straight'
+                    curve: smoothCurve ? 'smooth' : 'straight'
                 },
                 markers: {
-                    // Control points visibility via apex_config.markers
                     size: showPoints ? 4 : 0
+                },
+                // Keep legend config here for fine-tuning if needed (ApexCharts options)
+                legend: {
+                    show: showLegend // Standard ApexCharts legend control
+                },
+                // Keep yaxis config within apex_config, ensuring standard ApexCharts structure
+                yaxis: [{
+                        min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
+                        max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
+                        decimalsInFloat: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1), // ApexCharts uses decimalsInFloat
+                        title: {
+                            // Standard ApexCharts title object
+                            text: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power')
+                        },
+                        labels: {
+                            // Standard ApexCharts labels object
+                            formatter: `(val) => {
+                if (val === null || val === undefined) return val;
+                const decimals = ${(_g = (_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.decimals) !== null && _g !== void 0 ? _g : (isEnergy ? 2 : 1)};
+                const unit = '${((_h = options === null || options === void 0 ? void 0 : options.y_axis) === null || _h === void 0 ? void 0 : _h.unit) || (isEnergy ? 'kWh' : 'W')}';
+                // Ensure val is a number before calling toFixed
+                if (typeof val === 'number') {
+                   return val.toFixed(decimals) + ' ' + unit;
                 }
+                return val; // Return original value if not a number
+              }`
+                        }
+                    }]
             },
             series: series,
-            // Use hours_to_show directly, remove span object
-            hours_to_show: hoursToShow.toString(),
-            show_legend: this.config.show_legend !== false,
-            yaxis: [{
-                    min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
-                    max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
-                    decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
-                    // Restructure yaxis according to apexcharts-card schema
-                    title: {
-                        text: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power')
-                    },
-                    labels: {
-                        formatter: `(val) => { 
-              if (val === null || val === undefined) return val;
-              return val.toFixed(${(_g = (_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.decimals) !== null && _g !== void 0 ? _g : (isEnergy ? 2 : 1)}) + ' ${((_h = options === null || options === void 0 ? void 0 : options.y_axis) === null || _h === void 0 ? void 0 : _h.unit) || (isEnergy ? 'kWh' : 'W')}'; 
-            }`
-                    }
-                    // Removed unit property, handled by formatter
-                }],
             cache: true,
-            stacked: false,
-            update_interval: (this.config.update_interval || 60).toString(),
-            group_by: aggregateFunc
-            // Removed show_points from top level, handled by apex_config.markers
-            // Removed curve_type from top level, handled by apex_config.stroke.curve
+            stacked: false, // Set based on config if needed
+            update_interval: updateInterval
         };
+        return apexChartCardConfig;
     }
     _createChart(isEnergy) {
         const entities = isEnergy ? this._energyEntities : this._powerEntities;
