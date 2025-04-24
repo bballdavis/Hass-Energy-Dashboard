@@ -198,22 +198,51 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _resetToPowerDefaultEntities = () => {
-    this._initializePowerToggleStates(getPowerEntities(this._hass));
+    // Get current entities
+    const entities = getPowerEntities(this._hass);
+    
+    // Create a new toggle state object
+    const toggleStates: Record<string, boolean> = {};
+    const count = this.config?.auto_select_count ?? 6;
+    
+    // Set first 'count' entities to true, all others to false
+    entities.forEach((entity, index) => {
+      toggleStates[entity.entityId] = index < count;
+    });
+    
+    // Update the toggle states
+    this.entityToggleStates = toggleStates;
+    this._savePowerToggleStates();
     this._updatePowerEntities();
     this._updateContent();
   }
 
   _clearAllPowerEntities = () => {
-    this.entityToggleStates = {};
+    const entities = getPowerEntities(this._hass);
+    const newToggleStates: Record<string, boolean> = {};
+    
+    // Set all entity toggle states to false
+    entities.forEach(entity => {
+      newToggleStates[entity.entityId] = false;
+    });
+    
+    this.entityToggleStates = newToggleStates;
+    this._savePowerToggleStates();
     this._updatePowerEntities();
     this._updateContent();
   }
 
   _selectAllPowerEntities = () => {
     const entities = getPowerEntities(this._hass);
+    const newToggleStates: Record<string, boolean> = {};
+    
+    // Set all entity toggle states to true
     entities.forEach(entity => {
-      this.entityToggleStates[entity.entityId] = true;
+      newToggleStates[entity.entityId] = true;
     });
+    
+    this.entityToggleStates = newToggleStates;
+    this._savePowerToggleStates();
     this._updatePowerEntities();
     this._updateContent();
   }
@@ -229,22 +258,51 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _resetToEnergyDefaultEntities = () => {
-    this._initializeEnergyToggleStates(getEnergyEntities(this._hass));
+    // Get current energy entities
+    const entities = getEnergyEntities(this._hass);
+    
+    // Create a new toggle state object
+    const toggleStates: Record<string, boolean> = {};
+    const count = this.config?.energy_auto_select_count ?? 6;
+    
+    // Set first 'count' entities to true, all others to false
+    entities.forEach((entity, index) => {
+      toggleStates[entity.entityId] = index < count;
+    });
+    
+    // Update the toggle states
+    this.energyEntityToggleStates = toggleStates;
+    this._saveEnergyToggleStates();
     this._updateEnergyEntities();
     this._updateContent();
   }
 
   _clearAllEnergyEntities = () => {
-    this.energyEntityToggleStates = {};
+    const entities = getEnergyEntities(this._hass);
+    const newToggleStates: Record<string, boolean> = {};
+    
+    // Set all entity toggle states to false
+    entities.forEach(entity => {
+      newToggleStates[entity.entityId] = false;
+    });
+    
+    this.energyEntityToggleStates = newToggleStates;
+    this._saveEnergyToggleStates();
     this._updateEnergyEntities();
     this._updateContent();
   }
 
   _selectAllEnergyEntities = () => {
     const entities = getEnergyEntities(this._hass);
+    const newToggleStates: Record<string, boolean> = {};
+    
+    // Set all entity toggle states to true
     entities.forEach(entity => {
-      this.energyEntityToggleStates[entity.entityId] = true;
+      newToggleStates[entity.entityId] = true;
     });
+    
+    this.energyEntityToggleStates = newToggleStates;
+    this._saveEnergyToggleStates();
     this._updateEnergyEntities();
     this._updateContent();
   }
