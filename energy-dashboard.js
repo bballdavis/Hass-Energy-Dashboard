@@ -1445,6 +1445,8 @@ class EnergyDashboardChartCard extends HTMLElement {
                 const newPowerChart = this._createChart(false);
                 parent.replaceChild(newPowerChart, this._powerChartEl);
                 this._powerChartEl = newPowerChart;
+                // Immediately disable any auto-refresh in the newly created ApexCharts card
+                this._disableRefreshForApexChart(this._powerChartEl.querySelector('apexcharts-card'));
             }
         }
         // Energy chart section
@@ -1454,7 +1456,62 @@ class EnergyDashboardChartCard extends HTMLElement {
                 const newEnergyChart = this._createChart(true);
                 parent.replaceChild(newEnergyChart, this._energyChartEl);
                 this._energyChartEl = newEnergyChart;
+                // Immediately disable any auto-refresh in the newly created ApexCharts card
+                this._disableRefreshForApexChart(this._energyChartEl.querySelector('apexcharts-card'));
             }
+        }
+    }
+    _disableRefreshForApexChart(apexChart) {
+        if (!apexChart)
+            return;
+        try {
+            // Get access to the underlying ApexCharts instance
+            const card = apexChart;
+            // Method 1: Cancel any running timers directly
+            if (card._updateTimer) {
+                window.clearInterval(card._updateTimer);
+                card._updateTimer = null;
+            }
+            // Method 2: Override the update interval in the card's configuration
+            if (card._config) {
+                card._config.update_interval = 0; // Set to zero to disable automatic updates
+            }
+            // Method 3: Override the internal update method to prevent future refreshes
+            if (typeof card._updateData === 'function') {
+                const originalUpdateData = card._updateData;
+                card._updateData = function (...args) {
+                    // Only allow explicit manual updates
+                    if (args && args[0] === 'manual-refresh') {
+                        return originalUpdateData.apply(this);
+                    }
+                    console.log('Auto-refresh prevented in ApexCharts card');
+                    return Promise.resolve();
+                };
+            }
+            // Method 4: Check for and disable any ApexCharts auto-refresh options
+            if (card.ApexOptions && card.ApexOptions.chart) {
+                if (card.ApexOptions.chart.animations) {
+                    card.ApexOptions.chart.animations.enabled = false;
+                }
+                // Disable auto-update features if present
+                if (card._chart) {
+                    // Access the underlying ApexCharts instance and disable its auto-refresh
+                    const apexInstance = card._chart;
+                    if (apexInstance && apexInstance.updateOptions) {
+                        apexInstance.updateOptions({
+                            chart: {
+                                animations: {
+                                    enabled: false
+                                },
+                                autoUpdateSeries: false
+                            }
+                        }, false, false);
+                    }
+                }
+            }
+        }
+        catch (error) {
+            console.warn('Failed to disable ApexCharts auto-refresh:', error);
         }
     }
     _renderSectionTitle(title) {
