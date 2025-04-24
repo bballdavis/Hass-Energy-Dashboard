@@ -1013,6 +1013,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._energyEntities = [];
         this._isLoading = true;
         this._apexChartCardRegistered = null;
+        this._currentRefreshInterval = 30; // Default to 30 seconds
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
         // Create the card element
@@ -1068,6 +1069,10 @@ class EnergyDashboardChartCard extends HTMLElement {
             show_energy_section: (_l = config.show_energy_section) !== null && _l !== void 0 ? _l : true,
             energy_auto_select_count: (_m = config.energy_auto_select_count) !== null && _m !== void 0 ? _m : 6,
         };
+        // Set the current refresh interval from config
+        if (this.config.update_interval) {
+            this._currentRefreshInterval = this.config.update_interval;
+        }
         this._loadSelectedEntities();
         this._isLoading = true;
         this._checkApexChartsRegistration();
@@ -1122,8 +1127,13 @@ class EnergyDashboardChartCard extends HTMLElement {
         if (this._updateTimer !== null) {
             window.clearInterval(this._updateTimer);
         }
+        // Set the current refresh interval from config
         if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.update_interval) {
-            this._updateTimer = window.setInterval(() => this._updateCharts(), this.config.update_interval * 1000);
+            this._currentRefreshInterval = this.config.update_interval;
+        }
+        // Start the timer with the current refresh interval
+        if (this._currentRefreshInterval > 0) {
+            this._updateTimer = window.setInterval(() => this._updateCharts(), this._currentRefreshInterval * 1000);
         }
     }
     _stopUpdateInterval() {
@@ -1462,6 +1472,9 @@ class EnergyDashboardChartCard extends HTMLElement {
             card.appendChild(errorMessage);
             return;
         }
+        // Add refresh controls before the charts
+        const refreshControls = this._createRefreshControls();
+        card.appendChild(refreshControls);
         // Container for both charts
         const chartContainer = document.createElement('div');
         chartContainer.className = 'chart-container';
@@ -1495,6 +1508,86 @@ class EnergyDashboardChartCard extends HTMLElement {
             this._isLoading = false;
             this._updateContent();
         }, 500);
+    }
+    _setRefreshInterval(seconds) {
+        this._currentRefreshInterval = seconds;
+        this._stopUpdateInterval();
+        if (seconds > 0) {
+            this._updateTimer = window.setInterval(() => this._updateCharts(), seconds * 1000);
+        }
+        // Update the config so it persists
+        if (this.config) {
+            this.config.update_interval = seconds;
+        }
+        // Update the UI to reflect the current interval
+        this._updateRefreshControlsUI();
+    }
+    _manualRefresh() {
+        this._updateCharts();
+    }
+    _createRefreshControls() {
+        const controlsContainer = document.createElement('div');
+        controlsContainer.className = 'refresh-controls';
+        controlsContainer.style.display = 'flex';
+        controlsContainer.style.justifyContent = 'flex-end';
+        controlsContainer.style.padding = '0 16px 8px';
+        controlsContainer.style.gap = '8px';
+        // Manual refresh button
+        const refreshButton = document.createElement('button');
+        refreshButton.className = 'refresh-button control-button';
+        refreshButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
+        refreshButton.title = 'Refresh now';
+        refreshButton.addEventListener('click', () => this._manualRefresh());
+        refreshButton.style.minWidth = '36px';
+        refreshButton.style.width = '36px';
+        // 15 seconds button
+        const sec15Button = document.createElement('button');
+        sec15Button.className = 'interval-button control-button';
+        sec15Button.innerText = '15s';
+        sec15Button.title = 'Refresh every 15 seconds';
+        sec15Button.dataset.seconds = '15';
+        sec15Button.addEventListener('click', () => this._setRefreshInterval(15));
+        // 30 seconds button
+        const sec30Button = document.createElement('button');
+        sec30Button.className = 'interval-button control-button';
+        sec30Button.innerText = '30s';
+        sec30Button.title = 'Refresh every 30 seconds';
+        sec30Button.dataset.seconds = '30';
+        sec30Button.addEventListener('click', () => this._setRefreshInterval(30));
+        // 60 seconds button
+        const sec60Button = document.createElement('button');
+        sec60Button.className = 'interval-button control-button';
+        sec60Button.innerText = '60s';
+        sec60Button.title = 'Refresh every 60 seconds';
+        sec60Button.dataset.seconds = '60';
+        sec60Button.addEventListener('click', () => this._setRefreshInterval(60));
+        controlsContainer.appendChild(refreshButton);
+        controlsContainer.appendChild(sec15Button);
+        controlsContainer.appendChild(sec30Button);
+        controlsContainer.appendChild(sec60Button);
+        // Set initial active state
+        this._updateRefreshControlsUI(controlsContainer);
+        return controlsContainer;
+    }
+    _updateRefreshControlsUI(container) {
+        const controls = container || this._root.querySelector('.refresh-controls');
+        if (!controls)
+            return;
+        // Clear active state from all buttons
+        const buttons = controls.querySelectorAll('.interval-button');
+        buttons.forEach(btn => {
+            const button = btn;
+            button.classList.remove('active');
+            button.style.backgroundColor = 'var(--secondary-background-color)';
+            button.style.color = 'var(--primary-text-color)';
+        });
+        // Set active state for the current interval button
+        const activeButton = controls.querySelector(`.interval-button[data-seconds="${this._currentRefreshInterval}"]`);
+        if (activeButton) {
+            activeButton.classList.add('active');
+            activeButton.style.backgroundColor = 'var(--primary-color)';
+            activeButton.style.color = 'var(--text-primary-color)';
+        }
     }
 }
 // Register the card with the custom elements registry
