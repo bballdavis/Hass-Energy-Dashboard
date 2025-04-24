@@ -174,18 +174,6 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     headerRow.appendChild(headerLabel);
     form.appendChild(headerRow);
 
-    // Show Energy Section toggle
-    const energySectionRow = this._createRow();
-    const energySectionSwitch = document.createElement('ha-switch') as HaFormElement;
-    energySectionSwitch.checked = this.config.show_energy_section !== false;
-    energySectionSwitch.configValue = 'show_energy_section';
-    energySectionSwitch.addEventListener('change', this.valueChanged);
-    const energySectionLabel = document.createElement('div');
-    energySectionLabel.textContent = 'Show Energy Section';
-    energySectionRow.appendChild(energySectionSwitch);
-    energySectionRow.appendChild(energySectionLabel);
-    form.appendChild(energySectionRow);
-
     // SECTION: Chart Settings
     this._addSectionTitle(form as HTMLElement, 'Chart Settings');
 
@@ -371,73 +359,70 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     powerYMaxRow.appendChild(powerYMaxField);
     form.appendChild(powerYMaxRow);
 
-    // Only show Energy Chart settings if energy section is enabled
-    if (this.config.show_energy_section) {
-      // SECTION: Energy Chart Settings
-      this._addSectionTitle(form as HTMLElement, 'Energy Chart Y-Axis Settings');
+    // SECTION: Energy Chart Settings - Always shown now
+    this._addSectionTitle(form as HTMLElement, 'Energy Chart Y-Axis Settings');
 
-      // Energy Y-Axis Title
-      const energyYTitleRow = this._createRow();
-      const energyYTitleField = document.createElement('ha-textfield') as HaFormElement;
-      energyYTitleField.className = 'value';
-      energyYTitleField.label = 'Y-Axis Title';
-      energyYTitleField.value = this.config.energy_chart_options?.y_axis?.title || 'Energy';
-      energyYTitleField.configValue = 'energy_chart_options.y_axis.title';
-      energyYTitleField.addEventListener('change', this.valueChanged);
-      energyYTitleRow.appendChild(energyYTitleField);
-      form.appendChild(energyYTitleRow);
+    // Energy Y-Axis Title
+    const energyYTitleRow = this._createRow();
+    const energyYTitleField = document.createElement('ha-textfield') as HaFormElement;
+    energyYTitleField.className = 'value';
+    energyYTitleField.label = 'Y-Axis Title';
+    energyYTitleField.value = this.config.energy_chart_options?.y_axis?.title || 'Energy';
+    energyYTitleField.configValue = 'energy_chart_options.y_axis.title';
+    energyYTitleField.addEventListener('change', this.valueChanged);
+    energyYTitleRow.appendChild(energyYTitleField);
+    form.appendChild(energyYTitleRow);
 
-      // Energy Y-Axis Unit
-      const energyYUnitRow = this._createRow();
-      const energyYUnitField = document.createElement('ha-textfield') as HaFormElement;
-      energyYUnitField.className = 'value';
-      energyYUnitField.label = 'Y-Axis Unit';
-      energyYUnitField.value = this.config.energy_chart_options?.y_axis?.unit || 'kWh';
-      energyYUnitField.configValue = 'energy_chart_options.y_axis.unit';
-      energyYUnitField.addEventListener('change', this.valueChanged);
-      energyYUnitRow.appendChild(energyYUnitField);
-      form.appendChild(energyYUnitRow);
+    // Energy Y-Axis Unit
+    const energyYUnitRow = this._createRow();
+    const energyYUnitField = document.createElement('ha-textfield') as HaFormElement;
+    energyYUnitField.className = 'value';
+    energyYUnitField.label = 'Y-Axis Unit';
+    energyYUnitField.value = this.config.energy_chart_options?.y_axis?.unit || 'kWh';
+    energyYUnitField.configValue = 'energy_chart_options.y_axis.unit';
+    energyYUnitField.addEventListener('change', this.valueChanged);
+    energyYUnitRow.appendChild(energyYUnitField);
+    form.appendChild(energyYUnitRow);
 
-      // Energy Y-Axis Decimals
-      const energyYDecimalsRow = this._createRow();
-      const energyYDecimalsField = document.createElement('ha-textfield') as HaFormElement;
-      energyYDecimalsField.className = 'value';
-      energyYDecimalsField.label = 'Y-Axis Decimals';
-      energyYDecimalsField.type = 'number';
-      energyYDecimalsField.min = '0';
-      energyYDecimalsField.max = '5';
-      energyYDecimalsField.value = String(this.config.energy_chart_options?.y_axis?.decimals ?? 2);
-      energyYDecimalsField.configValue = 'energy_chart_options.y_axis.decimals';
-      energyYDecimalsField.addEventListener('change', this.valueChanged);
-      energyYDecimalsRow.appendChild(energyYDecimalsField);
-      form.appendChild(energyYDecimalsRow);
+    // Energy Y-Axis Decimals
+    const energyYDecimalsRow = this._createRow();
+    const energyYDecimalsField = document.createElement('ha-textfield') as HaFormElement;
+    energyYDecimalsField.className = 'value';
+    energyYDecimalsField.label = 'Y-Axis Decimals';
+    energyYDecimalsField.type = 'number';
+    energyYDecimalsField.min = '0';
+    energyYDecimalsField.max = '5';
+    energyYDecimalsField.value = String(this.config.energy_chart_options?.y_axis?.decimals ?? 2);
+    energyYDecimalsField.configValue = 'energy_chart_options.y_axis.decimals';
+    energyYDecimalsField.addEventListener('change', this.valueChanged);
+    energyYDecimalsRow.appendChild(energyYDecimalsField);
+    form.appendChild(energyYDecimalsRow);
 
-      // Energy Y-Axis Min
-      const energyYMinRow = this._createRow();
-      const energyYMinField = document.createElement('ha-textfield') as HaFormElement;
-      energyYMinField.className = 'value';
-      energyYMinField.label = 'Y-Axis Minimum (empty for auto)';
-      energyYMinField.type = 'number';
-      energyYMinField.value = this.config.energy_chart_options?.y_axis?.min !== undefined ? 
-        String(this.config.energy_chart_options.y_axis.min) : '';
-      energyYMinField.configValue = 'energy_chart_options.y_axis.min';
-      energyYMinField.addEventListener('change', this.valueChanged);
-      energyYMinRow.appendChild(energyYMinField);
-      form.appendChild(energyYMinRow);
+    // Energy Y-Axis Min
+    const energyYMinRow = this._createRow();
+    const energyYMinField = document.createElement('ha-textfield') as HaFormElement;
+    energyYMinField.className = 'value';
+    energyYMinField.label = 'Y-Axis Minimum (empty for auto)';
+    energyYMinField.type = 'number';
+    energyYMinField.value = this.config.energy_chart_options?.y_axis?.min !== undefined ? 
+      String(this.config.energy_chart_options.y_axis.min) : '';
+    energyYMinField.configValue = 'energy_chart_options.y_axis.min';
+    energyYMinField.addEventListener('change', this.valueChanged);
+    energyYMinRow.appendChild(energyYMinField);
+    form.appendChild(energyYMinRow);
 
-      // Energy Y-Axis Max
-      const energyYMaxRow = this._createRow();
-      const energyYMaxField = document.createElement('ha-textfield') as HaFormElement;
-      energyYMaxField.className = 'value';
-      energyYMaxField.label = 'Y-Axis Maximum (empty for auto)';
-      energyYMaxField.type = 'number';
-      energyYMaxField.value = this.config.energy_chart_options?.y_axis?.max !== undefined ? 
-        String(this.config.energy_chart_options.y_axis.max) : '';
-      energyYMaxField.configValue = 'energy_chart_options.y_axis.max';
-      energyYMaxField.addEventListener('change', this.valueChanged);
-      energyYMaxRow.appendChild(energyYMaxField);
-      form.appendChild(energyYMaxRow);
-    }
+    // Energy Y-Axis Max
+    const energyYMaxRow = this._createRow();
+    const energyYMaxField = document.createElement('ha-textfield') as HaFormElement;
+    energyYMaxField.className = 'value';
+    energyYMaxField.label = 'Y-Axis Maximum (empty for auto)';
+    energyYMaxField.type = 'number';
+    energyYMaxField.value = this.config.energy_chart_options?.y_axis?.max !== undefined ? 
+      String(this.config.energy_chart_options.y_axis.max) : '';
+    energyYMaxField.configValue = 'energy_chart_options.y_axis.max';
+    energyYMaxField.addEventListener('change', this.valueChanged);
+    energyYMaxRow.appendChild(energyYMaxField);
+    form.appendChild(energyYMaxRow);
   }
 
   private _createRow(): HTMLDivElement {
