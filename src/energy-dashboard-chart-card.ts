@@ -187,7 +187,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const chartType = this.config.chart_type || 'line';
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
-    const aggregateFunc = this.config.aggregate_func || 'avg';
+    const aggregateFunc = this.config.aggregate_func || 'avg'; // Keep aggregate func
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
 
@@ -204,6 +204,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
           func: aggregateFunc,
           duration: '1h'
         }
+        group_by: {
+          func: aggregateFunc,
+          duration: '1h' // Adjust duration as needed
+        }
       };
     });
 
@@ -215,6 +219,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
         show: false,
       },
       graph_span: `${hoursToShow}h`,
+      graph_span: `${hoursToShow}h`, // Use graph_span
       chart_type: chartType,
       cache: true,
       stacked: false,

@@ -1129,7 +1129,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         const chartType = this.config.chart_type || 'line';
         const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
-        const aggregateFunc = this.config.aggregate_func || 'avg';
+        const aggregateFunc = this.config.aggregate_func || 'avg'; // Keep aggregate func
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
         // Build series configuration for apexcharts-card
@@ -1144,7 +1144,7 @@ class EnergyDashboardChartCard extends HTMLElement {
                 stroke_width: 2,
                 group_by: {
                     func: aggregateFunc,
-                    duration: '1h'
+                    duration: '1h' // Adjust duration as needed
                 }
             };
         });
@@ -1155,7 +1155,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             header: {
                 show: false,
             },
-            graph_span: `${hoursToShow}h`,
+            graph_span: `${hoursToShow}h`, // Use graph_span
             chart_type: chartType,
             cache: true,
             stacked: false,
