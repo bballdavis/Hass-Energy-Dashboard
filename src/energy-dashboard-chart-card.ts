@@ -247,150 +247,25 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
     // --- Y Axis Auto-Range Logic ---
     let yMin = options?.y_axis?.min;
-    let yMax = options?.y_axis?.max;
     let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
     if (options?.y_axis?.title) yTitle = options.y_axis.title;
 
-    // Only auto-range if min/max are not set in config
-    if (typeof yMin === 'undefined' || typeof yMax === 'undefined') {
-      // Get current values for a baseline
-      let currentValues: number[] = [];
-      for (const entityId of entities) {
-        const state = this._hass.states[entityId]?.state;
-        const num = Number(state);
-        if (!isNaN(num)) currentValues.push(num);
-      }
-      
-      // No need to calculate time range since we're using entity attributes for historical data
-      // We can remove the 'now' variable that was causing the TypeScript error
-      
-      // Attempt to get history data for a more accurate Y-axis range
-      try {
-        let maxHistoricalValue = 0;
-        
-        // Check if the hass instance has the history API
-        if (this._hass.callWS && entities.length > 0) {
-          // Get history data for the entities over the specified time range
-          const historyData = this._hass.states;
-          
-          // If we have history data, find the maximum value
-          if (historyData) {
-            entities.forEach(entityId => {
-              // Access any available history in state attributes
-              const attributes = this._hass.states[entityId]?.attributes;
-              if (attributes) {
-                // Some entities store history in attributes like last_period, last_reset, etc.
-                // Looking for any numerical values that might represent historical peaks
-                const numericAttributeValues = Object.entries(attributes)
-                  .filter(([key, value]) => 
-                    typeof value === 'number' && 
-                    !key.includes('min') && // Avoid minimum values
-                    !isNaN(value as number)
-                  )
-                  .map(([_, value]) => value as number);
-                
-                // Find any potential peaks from attributes
-                const maxAttribute = numericAttributeValues.length > 0 ? 
-                  Math.max(...numericAttributeValues) : 0;
-                  
-                maxHistoricalValue = Math.max(maxHistoricalValue, maxAttribute);
-              }
-            });
-          }
-        }
-        
-        // Get the highest value from either current readings or history
-        const maxValue = currentValues.length > 0 ? 
-          Math.max(...currentValues, maxHistoricalValue) : 
-          (maxHistoricalValue > 0 ? maxHistoricalValue : 200); // Default if no data
-        
-        // Set minimum to 0 for power, or round down to nearest appropriate unit for energy
-        if (typeof yMin === 'undefined') {
-          yMin = isEnergy ? Math.floor(Math.min(...currentValues, 0) / 100) * 100 : 0;
-        }
-        
-        // Set maximum to 20% above the highest visible reading, then round up to next appropriate unit
-        if (typeof yMax === 'undefined') {
-          const maxWithBuffer = maxValue * 1.2; // Add 20% buffer
-          
-          if (isEnergy) {
-            // For energy readings, determine appropriate rounding based on the value range
-            if (maxWithBuffer < 10) {
-              // For small values, round to next 1
-              yMax = Math.ceil(maxWithBuffer);
-            } else if (maxWithBuffer < 100) {
-              // For medium values, round to next 10
-              yMax = Math.ceil(maxWithBuffer / 10) * 10;
-            } else {
-              // For large values, round to next 100
-              yMax = Math.ceil(maxWithBuffer / 100) * 100;
-            }
-          } else {
-            // For power readings
-            if (maxWithBuffer < 100) {
-              // For small values, round to next 10
-              yMax = Math.ceil(maxWithBuffer / 10) * 10;
-            } else if (maxWithBuffer < 1000) {
-              // For medium values, round to next 100
-              yMax = Math.ceil(maxWithBuffer / 100) * 100;
-            } else {
-              // For large values, round to next 500
-              yMax = Math.ceil(maxWithBuffer / 500) * 500;
-            }
-          }
-        }
-      } catch (error) {
-        // If there's an error getting history data, fall back to current values only
-        console.warn('Error accessing history data for Y-axis scaling:', error);
-        
-        if (currentValues.length > 0) {
-          const minVal = Math.min(...currentValues);
-          const maxVal = Math.max(...currentValues);
-          
-          // Set minimum to 0 for power, or round down to nearest appropriate unit for energy
-          if (typeof yMin === 'undefined') {
-            yMin = isEnergy ? Math.floor(minVal / 100) * 100 : 0;
-          }
-          
-          // Set maximum to 20% above the highest reading, then round up to next appropriate unit
-          if (typeof yMax === 'undefined') {
-            const maxWithBuffer = maxVal * 1.2; // Add 20% buffer
-            if (isEnergy) {
-              // For energy readings
-              if (maxWithBuffer < 10) {
-                yMax = Math.ceil(maxWithBuffer);
-              } else if (maxWithBuffer < 100) {
-                yMax = Math.ceil(maxWithBuffer / 10) * 10;
-              } else {
-                yMax = Math.ceil(maxWithBuffer / 100) * 100;
-              }
-            } else {
-              // For power readings
-              if (maxWithBuffer < 100) {
-                yMax = Math.ceil(maxWithBuffer / 10) * 10;
-              } else if (maxWithBuffer < 1000) {
-                yMax = Math.ceil(maxWithBuffer / 100) * 100;
-              } else {
-                yMax = Math.ceil(maxWithBuffer / 500) * 500;
-              }
-            }
-          }
-        } else {
-          yMin = 0;
-          yMax = isEnergy ? 10 : 200; // Default ranges if no data
-        }
-      }
+    // Set minimum to 0 for power (if not specified in config)
+    if (typeof yMin === 'undefined') {
+      yMin = 0;
     }
 
-    // Calculate grid intervals to ensure appropriate number of grid lines
-    const range = yMax - yMin;
+    // Calculate appropriate tick amount - we'll use undefined for max to let ApexCharts auto scale
     let tickAmount = 5; // Default to 5 grid lines
-    
-    // Adjust tick amount based on the range
-    if (range > 1000) {
-      tickAmount = 10;
-    } else if (range < 10) {
-      tickAmount = 4;
+
+    // For power, we can adjust the tick interval to be at nice round numbers
+    if (!isEnergy) {
+      // We'll let the chart auto-determine the maximum Y value
+      // but we'll set the tick interval to be nice round numbers (50/100/500)
+      tickAmount = 10; // Use more ticks for power to ensure clean intervals
+    } else {
+      // For energy, we'll use fewer ticks by default
+      tickAmount = 5;
     }
 
     // Minimal config object matching apexcharts-card schema
@@ -404,7 +279,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       series,
       yaxis: [{
         min: yMin,
-        max: yMax,
+        // Let max be auto-determined by ApexCharts
         decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 0) // Default to 2 decimal places for energy, 0 for power
       }],
       apex_config: {
@@ -426,6 +301,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
         },
         yaxis: [{
           tickAmount,
+          // For power charts, set up nice intervals based on the data range
+          forceNiceScale: true, // Force nice rounded intervals
           title: { text: yTitle },
           labels: { 
             formatter: (val: number) => val.toFixed(options?.y_axis?.decimals ?? (isEnergy ? 2 : 0))
