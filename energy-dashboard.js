@@ -265,6 +265,56 @@ const cardStyles = `
     margin: 12px var(--card-padding) 8px;
     opacity: 0.6;
   }
+  
+  /* Loading and error states */
+  .loading-container {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: var(--loading-height, 300px);
+    border-radius: 8px;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+  
+  .loading-container .loading-text {
+    margin-top: 16px;
+    color: var(--secondary-text-color);
+    animation: pulse 1.5s infinite;
+  }
+  
+  .error-container {
+    border: 1px dashed var(--error-color, red);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 8px 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .error-container:hover {
+    background-color: rgba(var(--error-color-rgb, 244, 67, 54), 0.05);
+  }
+  
+  .error-container ul {
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  
+  .chart-container {
+    transition: opacity 0.3s ease-in-out;
+  }
 `;
 const editorStyles = `
   .form {
@@ -961,6 +1011,8 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._updateTimer = null;
         this._powerEntities = [];
         this._energyEntities = [];
+        this._isLoading = true;
+        this._apexChartCardRegistered = null;
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
         // Create the card element
@@ -970,6 +1022,7 @@ class EnergyDashboardChartCard extends HTMLElement {
     // Called when the element is added to the DOM
     connectedCallback() {
         this._loadSelectedEntities();
+        this._checkApexChartsRegistration();
         this._updateContent();
         this._startUpdateInterval();
     }
@@ -1016,6 +1069,8 @@ class EnergyDashboardChartCard extends HTMLElement {
             energy_auto_select_count: (_m = config.energy_auto_select_count) !== null && _m !== void 0 ? _m : 6,
         };
         this._loadSelectedEntities();
+        this._isLoading = true;
+        this._checkApexChartsRegistration();
         this._updateContent();
     }
     // Home Assistant specific methods
@@ -1036,9 +1091,17 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     // Called when Home Assistant updates
     set hass(hass) {
+        const firstUpdate = !this._hass;
         this._hass = hass;
-        // Only update charts when hass is updated, entity list comes from localStorage
-        this._updateCharts();
+        if (firstUpdate) {
+            // When we get hass for the first time, end the loading state
+            this._isLoading = false;
+            this._updateContent();
+        }
+        else {
+            // Only update charts when hass is updated, entity list comes from localStorage
+            this._updateCharts();
+        }
     }
     get hass() {
         return this._hass;
@@ -1155,45 +1218,63 @@ class EnergyDashboardChartCard extends HTMLElement {
         return apexChartCardConfig;
     }
     _createChart(isEnergy) {
+        var _a;
+        // If still loading, show loading indicator
+        if (this._isLoading) {
+            return this._createLoadingIndicator();
+        }
         const entities = isEnergy ? this._energyEntities : this._powerEntities;
-        const chartConfig = this._generateApexchartsConfig(entities, isEnergy);
-        if (!chartConfig || !entities.length) {
+        // Check if we have any entities selected
+        if (!entities || entities.length === 0) {
             return this._createEmptyCard(isEnergy);
         }
-        // Create the chart
+        // Check if hass is available
+        if (!this._hass) {
+            return this._createLoadingIndicator();
+        }
+        // Generate chart config
+        const chartConfig = this._generateApexchartsConfig(entities, isEnergy);
+        if (!chartConfig) {
+            return this._createErrorMessage(`Failed to generate chart configuration for ${isEnergy ? 'energy' : 'power'} chart`, ['Check that all required entities exist in Home Assistant',
+                'Refresh the page and try again']);
+        }
+        // Create the chart container
         const chartElement = document.createElement('div');
         chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
         chartElement.style.width = '100%';
         chartElement.style.marginBottom = '16px';
+        chartElement.style.position = 'relative';
+        chartElement.style.minHeight = `${((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) || 300}px`;
         try {
             // Check if apexcharts-card is registered
-            if (!customElements.get('apexcharts-card')) {
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'error-message';
-                errorMsg.style.color = 'var(--error-color, red)';
-                errorMsg.style.padding = '16px';
-                errorMsg.style.textAlign = 'center';
-                errorMsg.textContent = 'Error: apexcharts-card is not installed or registered. Please make sure the integration is installed.';
-                chartElement.appendChild(errorMsg);
-                return chartElement;
+            if (this._apexChartCardRegistered === false) {
+                return this._createErrorMessage('The apexcharts-card integration is not installed', [
+                    'Install the apexcharts-card integration from HACS',
+                    'Make sure apexcharts-card is correctly loaded in your Home Assistant instance',
+                    'Refresh the page after installation to load the custom element'
+                ]);
             }
             // Create the apexcharts-card element
             const apexCard = document.createElement('apexcharts-card');
             // Set card config for apexcharts-card
-            apexCard.setConfig(chartConfig);
-            // Pass hass object to the chart
-            apexCard.hass = this._hass;
+            try {
+                apexCard.setConfig(chartConfig);
+                apexCard.hass = this._hass;
+            }
+            catch (configError) {
+                console.error('Error configuring apexcharts-card:', configError);
+                return this._createErrorMessage('Error configuring chart', ['The chart configuration is invalid',
+                    'Check the console for more details']);
+            }
             chartElement.appendChild(apexCard);
         }
         catch (err) {
-            console.error('Error creating apexcharts-card:', err);
-            const errorMsg = document.createElement('div');
-            errorMsg.className = 'error-message';
-            errorMsg.style.color = 'var(--error-color, red)';
-            errorMsg.style.padding = '16px';
-            errorMsg.style.textAlign = 'center';
-            errorMsg.textContent = `Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`;
-            chartElement.appendChild(errorMsg);
+            console.error(`Error creating ${isEnergy ? 'energy' : 'power'} chart:`, err);
+            return this._createErrorMessage(`Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`, [
+                'Check that apexcharts-card is installed correctly',
+                'Make sure all entities exist in Home Assistant',
+                'Check the console for more detailed error information'
+            ]);
         }
         return chartElement;
     }
@@ -1222,6 +1303,94 @@ class EnergyDashboardChartCard extends HTMLElement {
         message.textContent = `No ${isEnergy ? 'energy' : 'power'} entities selected. Please select entities in the Energy Dashboard Entity Card.`;
         container.appendChild(icon);
         container.appendChild(message);
+        return container;
+    }
+    _createLoadingIndicator() {
+        var _a;
+        const container = document.createElement('div');
+        container.className = 'loading-container';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.height = `${((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) || 200}px`;
+        container.style.width = '100%';
+        container.style.transition = 'opacity 0.3s ease-in-out';
+        // Spinner
+        const spinner = document.createElement('div');
+        spinner.className = 'loading-spinner';
+        spinner.innerHTML = `
+      <style>
+        @keyframes spinner {
+          to { transform: rotate(360deg); }
+        }
+        .loading-spinner:before {
+          content: '';
+          box-sizing: border-box;
+          position: absolute;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 2px solid var(--secondary-text-color);
+          border-top-color: var(--primary-color);
+          animation: spinner 0.8s linear infinite;
+        }
+      </style>
+    `;
+        spinner.style.position = 'relative';
+        spinner.style.width = '30px';
+        spinner.style.height = '30px';
+        spinner.style.marginBottom = '16px';
+        // Text
+        const text = document.createElement('div');
+        text.textContent = 'Initializing chart...';
+        text.style.color = 'var(--secondary-text-color)';
+        text.style.fontSize = '0.9em';
+        container.appendChild(spinner);
+        container.appendChild(text);
+        return container;
+    }
+    _createErrorMessage(error, suggestions) {
+        var _a;
+        const container = document.createElement('div');
+        container.className = 'error-container';
+        container.style.padding = '16px';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.height = `${(((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) || 200) - 32}px`;
+        container.style.border = '1px dashed var(--error-color, red)';
+        container.style.borderRadius = '8px';
+        container.style.margin = '8px 16px';
+        // Error icon
+        const icon = document.createElement('ha-icon');
+        icon.setAttribute('icon', 'mdi:alert-circle-outline');
+        icon.style.color = 'var(--error-color, red)';
+        icon.style.width = '40px';
+        icon.style.height = '40px';
+        icon.style.marginBottom = '8px';
+        // Error message
+        const errorText = document.createElement('div');
+        errorText.textContent = error;
+        errorText.style.color = 'var(--error-color, red)';
+        errorText.style.fontWeight = 'bold';
+        errorText.style.marginBottom = '8px';
+        // Suggestions list
+        const suggestionsList = document.createElement('ul');
+        suggestionsList.style.color = 'var(--secondary-text-color)';
+        suggestionsList.style.textAlign = 'left';
+        suggestionsList.style.margin = '8px 0';
+        suggestionsList.style.paddingLeft = '20px';
+        suggestions.forEach(suggestion => {
+            const item = document.createElement('li');
+            item.textContent = suggestion;
+            item.style.marginBottom = '4px';
+            suggestionsList.appendChild(item);
+        });
+        container.appendChild(icon);
+        container.appendChild(errorText);
+        container.appendChild(suggestionsList);
         return container;
     }
     _updateCharts() {
@@ -1277,6 +1446,22 @@ class EnergyDashboardChartCard extends HTMLElement {
             header.textContent = this.config.title;
             card.appendChild(header);
         }
+        // Loading state - show loading indicator for the whole card when initializing
+        if (this._isLoading) {
+            const loadingIndicator = this._createLoadingIndicator();
+            card.appendChild(loadingIndicator);
+            return;
+        }
+        // Check if apexcharts-card is available (after loading state has ended)
+        if (this._apexChartCardRegistered === false) {
+            const errorMessage = this._createErrorMessage('The apexcharts-card integration is not installed', [
+                'Install the apexcharts-card integration from HACS',
+                'Make sure apexcharts-card is correctly loaded in your Home Assistant instance',
+                'Refresh the page after installation to load the custom element'
+            ]);
+            card.appendChild(errorMessage);
+            return;
+        }
         // Container for both charts
         const chartContainer = document.createElement('div');
         chartContainer.className = 'chart-container';
@@ -1298,6 +1483,18 @@ class EnergyDashboardChartCard extends HTMLElement {
             chartContainer.appendChild(this._energyChartEl);
         }
         card.appendChild(chartContainer);
+    }
+    // Check if apexcharts-card is registered in the DOM
+    _checkApexChartsRegistration() {
+        this._isLoading = true;
+        this._updateContent();
+        // Use setTimeout to give the browser a chance to register custom elements
+        setTimeout(() => {
+            // Try to check if the element is defined
+            this._apexChartCardRegistered = !!customElements.get('apexcharts-card');
+            this._isLoading = false;
+            this._updateContent();
+        }, 500);
     }
 }
 // Register the card with the custom elements registry

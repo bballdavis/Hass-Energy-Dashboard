@@ -170,6 +170,56 @@ export const cardStyles = `
     margin: 12px var(--card-padding) 8px;
     opacity: 0.6;
   }
+  
+  /* Loading and error states */
+  .loading-container {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: var(--loading-height, 300px);
+    border-radius: 8px;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+  
+  .loading-container .loading-text {
+    margin-top: 16px;
+    color: var(--secondary-text-color);
+    animation: pulse 1.5s infinite;
+  }
+  
+  .error-container {
+    border: 1px dashed var(--error-color, red);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 8px 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .error-container:hover {
+    background-color: rgba(var(--error-color-rgb, 244, 67, 54), 0.05);
+  }
+  
+  .error-container ul {
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  
+  .chart-container {
+    transition: opacity 0.3s ease-in-out;
+  }
 `;
 
 export const editorStyles = `
