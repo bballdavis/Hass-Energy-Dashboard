@@ -279,6 +279,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       tickAmount = 5;
     }
 
+    // Ensure consistent decimal formatting
+    const decimals = options?.y_axis?.decimals !== undefined ? options.y_axis.decimals : (isEnergy ? 2 : 0);
+
     // Minimal config object matching apexcharts-card schema
     const apexChartCardConfig = {
       type: 'custom:apexcharts-card',
@@ -291,7 +294,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       yaxis: [{
         min: yMin,
         max: yMax, // Apply max value from config - undefined will be auto
-        decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 0) // Default to 2 decimal places for energy, 0 for power
+        decimals: decimals // Default to 2 decimal places for energy, 0 for power
       }],
       apex_config: {
         chart: {
@@ -313,23 +316,45 @@ export class EnergyDashboardChartCard extends HTMLElement {
         yaxis: [{
           tickAmount, 
           forceNiceScale: true, // Force nice rounded intervals
-          title: { text: yTitle },
+          title: { 
+            text: yTitle || '',
+            style: {
+              fontSize: '12px',
+              fontWeight: 500,
+              color: 'var(--primary-text-color, #000)'
+            }
+          },
           labels: { 
-            formatter: (val: number) => val.toFixed(options?.y_axis?.decimals ?? (isEnergy ? 2 : 0))
+            formatter: (val: number) => val.toFixed(decimals),
+            style: {
+              fontSize: '11px',
+              fontFamily: 'Helvetica, Arial, sans-serif',
+              color: 'var(--secondary-text-color, #666)'
+            }
           },
           axisTicks: {
-            show: true
+            show: true,
+            color: 'var(--divider-color, #e0e0e0)',
+            width: 1
           },
           axisBorder: {
-            show: true
+            show: true,
+            color: 'var(--divider-color, #e0e0e0)',
+            width: 1
           },
-          grid: {
-            show: true
+          crosshairs: {
+            show: true,
+            position: 'back',
+            stroke: {
+              color: 'var(--primary-color, #03a9f4)',
+              width: 1,
+              dashArray: 0
+            }
           }
         }],
         grid: {
           show: true,
-          borderColor: '#90A4AE30',
+          borderColor: 'var(--divider-color, #e0e0e0)',
           strokeDashArray: 0,
           position: 'back',
           xaxis: {
@@ -341,11 +366,55 @@ export class EnergyDashboardChartCard extends HTMLElement {
             lines: {
               show: true
             }
+          },
+          padding: {
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0
           }
         },
-        markers: { size: showPoints ? 4 : 0 },
-        stroke: { curve: smoothCurve ? 'smooth' : 'straight', width: 2 },
-        legend: { show: showLegend }
+        markers: { 
+          size: showPoints ? 4 : 0,
+          colors: ['var(--primary-color, #03a9f4)'],
+          strokeColors: 'var(--card-background-color, #fff)',
+          strokeWidth: 2
+        },
+        stroke: { 
+          curve: smoothCurve ? 'smooth' : 'straight', 
+          width: 2,
+          lineCap: 'round'
+        },
+        legend: { 
+          show: showLegend,
+          position: 'bottom',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          labels: {
+            colors: 'var(--primary-text-color, #000)'
+          }
+        },
+        tooltip: {
+          theme: 'light',
+          style: {
+            fontSize: '12px',
+            fontFamily: 'Helvetica, Arial, sans-serif'
+          }
+        },
+        states: {
+          hover: {
+            filter: {
+              type: 'lighten',
+              value: 0.1
+            }
+          },
+          active: {
+            filter: {
+              type: 'darken',
+              value: 0.35
+            }
+          }
+        }
       }
     };
 
