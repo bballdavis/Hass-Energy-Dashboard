@@ -15,8 +15,8 @@
     "experimentalDecorators": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "sourceMap": true,
-    "inlineSources": true
+    "sourceMap": false,
+    "inlineSources": false
   },
   "include": [
     "src/**/*.ts"
