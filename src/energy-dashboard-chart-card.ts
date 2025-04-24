@@ -247,6 +247,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
     // --- Y Axis Auto-Range Logic ---
     let yMin = options?.y_axis?.min;
+    let yMax = options?.y_axis?.max;
     let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
     if (options?.y_axis?.title) yTitle = options.y_axis.title;
 
@@ -255,16 +256,26 @@ export class EnergyDashboardChartCard extends HTMLElement {
       yMin = 0;
     }
 
-    // Calculate appropriate tick amount - we'll use undefined for max to let ApexCharts auto scale
+    // Calculate appropriate tick amount based on y-axis range
     let tickAmount = 5; // Default to 5 grid lines
 
-    // For power, we can adjust the tick interval to be at nice round numbers
+    // For power, we can adjust the tick interval to be nice round numbers
     if (!isEnergy) {
-      // We'll let the chart auto-determine the maximum Y value
-      // but we'll set the tick interval to be nice round numbers (50/100/500)
-      tickAmount = 10; // Use more ticks for power to ensure clean intervals
+      // If we have a fixed max, adjust the tick amount accordingly
+      if (typeof yMax === 'number') {
+        if (yMax <= 500) {
+          tickAmount = 5;  // For 0-500, show ticks at 0, 100, 200, 300, 400, 500
+        } else if (yMax <= 2000) {
+          tickAmount = 10; // For 0-2000, show more ticks
+        } else {
+          tickAmount = 15; // For larger values, use more ticks
+        }
+      } else {
+        // For auto, use a reasonable default
+        tickAmount = 10;
+      }
     } else {
-      // For energy, we'll use fewer ticks by default
+      // For energy charts, use fewer ticks by default
       tickAmount = 5;
     }
 
@@ -279,7 +290,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       series,
       yaxis: [{
         min: yMin,
-        // Let max be auto-determined by ApexCharts
+        max: yMax, // Apply max value from config - undefined will be auto
         decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 0) // Default to 2 decimal places for energy, 0 for power
       }],
       apex_config: {
@@ -300,8 +311,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
           }
         },
         yaxis: [{
-          tickAmount,
-          // For power charts, set up nice intervals based on the data range
+          tickAmount, 
           forceNiceScale: true, // Force nice rounded intervals
           title: { text: yTitle },
           labels: { 
@@ -802,7 +812,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     buttonsContainer.style.display = 'flex';
     buttonsContainer.style.justifyContent = 'flex-end';
     buttonsContainer.style.alignItems = 'center';
-    buttonsContainer.style.gap = '8px';
+    buttonsContainer.style.gap = '4px'; // Reduced gap
 
     // --- Time Range Controls ---
     const timeRangeTitle = document.createElement('div');
@@ -811,29 +821,30 @@ export class EnergyDashboardChartCard extends HTMLElement {
     timeRangeTitle.style.fontWeight = '500';
     timeRangeTitle.style.fontSize = '0.9em';
     timeRangeTitle.style.marginRight = '8px';
+    timeRangeTitle.style.marginLeft = '8px'; // Add left margin
 
     const timeRangeContainer = document.createElement('div');
     timeRangeContainer.className = 'time-range-container';
     timeRangeContainer.style.display = 'flex';
     timeRangeContainer.style.justifyContent = 'flex-end';
     timeRangeContainer.style.alignItems = 'center';
-    timeRangeContainer.style.gap = '8px';
+    timeRangeContainer.style.gap = '4px'; // Reduced gap
 
-    // --- Y-Axis Controls ---
-    const yAxisTitle = document.createElement('div');
-    yAxisTitle.className = 'y-axis-title';
-    yAxisTitle.textContent = 'Y-Axis:';
-    yAxisTitle.style.fontWeight = '500';
-    yAxisTitle.style.fontSize = '0.9em';
-    yAxisTitle.style.marginRight = '8px';
-    yAxisTitle.style.marginLeft = '16px'; // Add space between this and previous controls
+    // --- Max Range Controls ---
+    const maxRangeTitle = document.createElement('div');
+    maxRangeTitle.className = 'y-axis-title';
+    maxRangeTitle.textContent = 'Max Range:';
+    maxRangeTitle.style.fontWeight = '500';
+    maxRangeTitle.style.fontSize = '0.9em';
+    maxRangeTitle.style.marginRight = '8px';
+    maxRangeTitle.style.marginLeft = '8px'; // Add left margin
 
-    const yAxisContainer = document.createElement('div');
-    yAxisContainer.className = 'y-axis-container';
-    yAxisContainer.style.display = 'flex';
-    yAxisContainer.style.justifyContent = 'flex-end';
-    yAxisContainer.style.alignItems = 'center';
-    yAxisContainer.style.gap = '8px';
+    const maxRangeContainer = document.createElement('div');
+    maxRangeContainer.className = 'y-axis-container';
+    maxRangeContainer.style.display = 'flex';
+    maxRangeContainer.style.justifyContent = 'flex-end';
+    maxRangeContainer.style.alignItems = 'center';
+    maxRangeContainer.style.gap = '4px'; // Reduced gap
 
     // Helper for all controls
     const createButton = (text: string, title: string, value?: string, controlType?: 'time' | 'refresh' | 'yaxis') => {
@@ -848,7 +859,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       button.style.alignItems = 'center';
       button.style.justifyContent = 'center';
       button.style.transition = 'all 0.2s ease-in-out';
-      button.style.minHeight = '32px';
+      button.style.minHeight = '28px'; // Slightly smaller
       button.style.fontSize = '0.9em';
       button.title = title;
       if (text.includes('<ha-icon')) {
@@ -882,8 +893,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
     // Refresh rate buttons
     const refreshButton = createButton('<ha-icon icon="mdi:refresh"></ha-icon>', 'Refresh now');
-    refreshButton.style.minWidth = '36px';
-    refreshButton.style.width = '36px';
+    refreshButton.style.minWidth = '30px'; // Smaller
+    refreshButton.style.width = '30px';
     const offButton = createButton('Off', 'Disable automatic refresh', '0', 'refresh');
     const sec15Button = createButton('15s', 'Refresh every 15 seconds', '15', 'refresh');
     const sec30Button = createButton('30s', 'Refresh every 30 seconds', '30', 'refresh');
@@ -922,21 +933,24 @@ export class EnergyDashboardChartCard extends HTMLElement {
         preset.value,
         'yaxis'
       );
-      yAxisContainer.appendChild(btn);
+      maxRangeContainer.appendChild(btn);
     });
 
-    // First row: Refresh controls and Time range controls
-    const firstRow = document.createElement('div');
-    firstRow.className = 'controls-row';
-    firstRow.style.display = 'flex';
-    firstRow.style.justifyContent = 'space-between';
-    firstRow.style.width = '100%';
-    firstRow.style.marginBottom = '8px';
+    // Single row with all controls
+    const controlsRow = document.createElement('div');
+    controlsRow.className = 'controls-row';
+    controlsRow.style.display = 'flex';
+    controlsRow.style.justifyContent = 'space-between';
+    controlsRow.style.alignItems = 'center';
+    controlsRow.style.width = '100%';
+    controlsRow.style.flexWrap = 'nowrap'; // Prevent wrapping on a single row
     
     const refreshGroup = document.createElement('div');
     refreshGroup.className = 'refresh-group';
     refreshGroup.style.display = 'flex';
     refreshGroup.style.alignItems = 'center';
+    refreshGroup.style.flexShrink = '0';
+    refreshGroup.style.marginRight = '8px';
     refreshGroup.appendChild(refreshTitle);
     refreshGroup.appendChild(buttonsContainer);
     
@@ -944,34 +958,28 @@ export class EnergyDashboardChartCard extends HTMLElement {
     timeRangeGroup.className = 'time-range-group';
     timeRangeGroup.style.display = 'flex';
     timeRangeGroup.style.alignItems = 'center';
+    timeRangeGroup.style.flexShrink = '0';
+    timeRangeGroup.style.marginRight = '8px';
     timeRangeGroup.appendChild(timeRangeTitle);
     timeRangeGroup.appendChild(timeRangeContainer);
     
-    firstRow.appendChild(refreshGroup);
-    firstRow.appendChild(timeRangeGroup);
-
-    // Second row: Y-axis controls
-    const secondRow = document.createElement('div');
-    secondRow.className = 'controls-row';
-    secondRow.style.display = 'flex';
-    secondRow.style.alignItems = 'center';
-    secondRow.style.width = '100%';
+    const maxRangeGroup = document.createElement('div');
+    maxRangeGroup.className = 'y-axis-group';
+    maxRangeGroup.style.display = 'flex';
+    maxRangeGroup.style.alignItems = 'center';
+    maxRangeGroup.style.flexShrink = '0';
+    maxRangeGroup.appendChild(maxRangeTitle);
+    maxRangeGroup.appendChild(maxRangeContainer);
     
-    const yAxisGroup = document.createElement('div');
-    yAxisGroup.className = 'y-axis-group';
-    yAxisGroup.style.display = 'flex';
-    yAxisGroup.style.alignItems = 'center';
-    yAxisGroup.appendChild(yAxisTitle);
-    yAxisGroup.appendChild(yAxisContainer);
+    controlsRow.appendChild(refreshGroup);
+    controlsRow.appendChild(timeRangeGroup);
+    controlsRow.appendChild(maxRangeGroup);
     
-    secondRow.appendChild(yAxisGroup);
-
-    controlsContainer.appendChild(firstRow);
-    controlsContainer.appendChild(secondRow);
+    controlsContainer.appendChild(controlsRow);
 
     this._updateRefreshControlsUI(buttonsContainer);
     this._updateTimeRangeControlsUI(timeRangeContainer);
-    this._updateYAxisControlsUI(yAxisContainer);
+    this._updateYAxisControlsUI(maxRangeContainer);
 
     return controlsContainer;
   }
@@ -1015,6 +1023,16 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _updateYAxisControlsUI(container?: HTMLElement) {
     const controls = container || this._root.querySelector('.y-axis-container');
     if (!controls) return;
+
+    // Get the current max value based on the view mode
+    const isEnergy = this._viewMode === 'energy';
+    const currentMax = isEnergy 
+      ? (this.config?.energy_chart_options?.y_axis?.max ?? 'auto')
+      : (this.config?.power_chart_options?.y_axis?.max ?? 'auto');
+    
+    // Convert to string for comparison with button data attribute
+    const currentMaxStr = currentMax === undefined ? 'auto' : String(currentMax);
+    
     const buttons = controls.querySelectorAll('.yaxis-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
@@ -1022,7 +1040,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       button.style.color = 'var(--primary-text-color)';
       button.style.borderColor = 'var(--divider-color)';
     });
-    const activeButton = controls.querySelector(`.yaxis-button[data-yaxis="${this.config?.energy_chart_options?.y_axis?.max ?? 'auto'}"]`) as HTMLElement;
+    
+    // Find the active button by its data-yaxis attribute
+    const activeButton = controls.querySelector(`.yaxis-button[data-yaxis="${currentMaxStr}"]`) as HTMLElement;
     if (activeButton) {
       activeButton.style.backgroundColor = 'var(--primary-color)';
       activeButton.style.color = 'var(--text-primary-color)';
