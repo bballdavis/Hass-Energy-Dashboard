@@ -870,12 +870,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
         return section;
     }
     _renderEnergySection() {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         const section = document.createElement('div');
-        // Only render if energy section is enabled
-        if (!((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_energy_section)) {
-            return section;
-        }
         const separator = document.createElement('div');
         separator.className = 'section-separator';
         section.appendChild(separator);
@@ -926,7 +922,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             toggleSlider.style.left = '0';
             toggleSlider.style.right = '0';
             toggleSlider.style.bottom = '0';
-            toggleSlider.style.backgroundColor = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
+            toggleSlider.style.backgroundColor = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
             toggleSlider.style.borderRadius = '34px';
             toggleSlider.style.transition = '.4s';
             const toggleButton = document.createElement('span');
@@ -934,7 +930,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             toggleButton.style.content = '""';
             toggleButton.style.height = '16px';
             toggleButton.style.width = '16px';
-            toggleButton.style.left = ((_c = this.config) === null || _c === void 0 ? void 0 : _c.persist_selection) ? '16px' : '4px';
+            toggleButton.style.left = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? '16px' : '4px';
             toggleButton.style.bottom = '2px';
             toggleButton.style.backgroundColor = 'white';
             toggleButton.style.borderRadius = '50%';
@@ -955,7 +951,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             containerWrapper.style.boxSizing = 'border-box';
             const entitiesContainer = document.createElement('div');
             entitiesContainer.className = 'entities-container';
-            if (((_d = this.config) === null || _d === void 0 ? void 0 : _d.max_height) && this.config.max_height > 0) {
+            if (((_c = this.config) === null || _c === void 0 ? void 0 : _c.max_height) && this.config.max_height > 0) {
                 entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
                 entitiesContainer.style.overflowY = 'auto';
             }
@@ -1030,84 +1026,81 @@ class EnergyDashboardEntityCard extends HTMLElement {
             header.textContent = this.config.title;
             card.appendChild(header);
         }
-        // Add mode toggle at the top (only if energy section is enabled)
-        if (this.config.show_energy_section) {
-            const modeToggleContainer = document.createElement('div');
-            modeToggleContainer.className = 'mode-toggle-container';
-            modeToggleContainer.style.display = 'flex';
-            modeToggleContainer.style.justifyContent = 'center';
-            modeToggleContainer.style.alignItems = 'center';
-            modeToggleContainer.style.marginTop = '8px';
-            modeToggleContainer.style.marginBottom = '8px';
-            modeToggleContainer.style.padding = '4px';
-            const toggleWrapper = document.createElement('div');
-            toggleWrapper.className = 'toggle-wrapper';
-            toggleWrapper.style.display = 'flex';
-            toggleWrapper.style.position = 'relative';
-            toggleWrapper.style.border = '1px solid var(--divider-color)';
-            toggleWrapper.style.borderRadius = '25px';
-            toggleWrapper.style.height = '30px';
-            toggleWrapper.style.width = '200px';
-            toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
-            toggleWrapper.style.overflow = 'hidden';
-            // Active background that slides based on selected option
-            const activeBackground = document.createElement('div');
-            activeBackground.className = 'active-background';
-            activeBackground.style.position = 'absolute';
-            activeBackground.style.top = '0';
-            activeBackground.style.bottom = '0';
-            activeBackground.style.left = this._viewMode === 'power' ? '0' : '50%';
-            activeBackground.style.width = '50%';
-            activeBackground.style.backgroundColor = 'var(--primary-color)';
-            activeBackground.style.borderRadius = '25px';
-            activeBackground.style.transition = 'left 0.3s ease-in-out';
-            activeBackground.style.opacity = '0.2';
-            // Power option
-            const powerOption = document.createElement('div');
-            powerOption.className = 'toggle-option';
-            powerOption.textContent = 'Power';
-            powerOption.style.flex = '1';
-            powerOption.style.textAlign = 'center';
-            powerOption.style.lineHeight = '30px';
-            powerOption.style.cursor = 'pointer';
-            powerOption.style.zIndex = '1';
-            powerOption.style.fontWeight = this._viewMode === 'power' ? 'bold' : 'normal';
-            powerOption.style.color = this._viewMode === 'power' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
-            powerOption.addEventListener('click', () => {
-                if (this._viewMode !== 'power') {
-                    this._toggleViewMode();
-                }
-            });
-            // Energy option
-            const energyOption = document.createElement('div');
-            energyOption.className = 'toggle-option';
-            energyOption.textContent = 'Energy';
-            energyOption.style.flex = '1';
-            energyOption.style.textAlign = 'center';
-            energyOption.style.lineHeight = '30px';
-            energyOption.style.cursor = 'pointer';
-            energyOption.style.zIndex = '1';
-            energyOption.style.fontWeight = this._viewMode === 'energy' ? 'bold' : 'normal';
-            energyOption.style.color = this._viewMode === 'energy' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
-            energyOption.addEventListener('click', () => {
-                if (this._viewMode !== 'energy') {
-                    this._toggleViewMode();
-                }
-            });
-            toggleWrapper.appendChild(activeBackground);
-            toggleWrapper.appendChild(powerOption);
-            toggleWrapper.appendChild(energyOption);
-            modeToggleContainer.appendChild(toggleWrapper);
-            card.appendChild(modeToggleContainer);
-        }
+        // Add mode toggle at the top
+        const modeToggleContainer = document.createElement('div');
+        modeToggleContainer.className = 'mode-toggle-container';
+        modeToggleContainer.style.display = 'flex';
+        modeToggleContainer.style.justifyContent = 'center';
+        modeToggleContainer.style.alignItems = 'center';
+        modeToggleContainer.style.marginTop = '8px';
+        modeToggleContainer.style.marginBottom = '8px';
+        modeToggleContainer.style.padding = '4px';
+        const toggleWrapper = document.createElement('div');
+        toggleWrapper.className = 'toggle-wrapper';
+        toggleWrapper.style.display = 'flex';
+        toggleWrapper.style.position = 'relative';
+        toggleWrapper.style.border = '1px solid var(--divider-color)';
+        toggleWrapper.style.borderRadius = '25px';
+        toggleWrapper.style.height = '30px';
+        toggleWrapper.style.width = '200px';
+        toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
+        toggleWrapper.style.overflow = 'hidden';
+        // Active background that slides based on selected option
+        const activeBackground = document.createElement('div');
+        activeBackground.className = 'active-background';
+        activeBackground.style.position = 'absolute';
+        activeBackground.style.top = '0';
+        activeBackground.style.bottom = '0';
+        activeBackground.style.left = this._viewMode === 'power' ? '0' : '50%';
+        activeBackground.style.width = '50%';
+        activeBackground.style.backgroundColor = 'var(--primary-color)';
+        activeBackground.style.borderRadius = '25px';
+        activeBackground.style.transition = 'left 0.3s ease-in-out';
+        activeBackground.style.opacity = '0.2';
+        // Power option
+        const powerOption = document.createElement('div');
+        powerOption.className = 'toggle-option';
+        powerOption.textContent = 'Power';
+        powerOption.style.flex = '1';
+        powerOption.style.textAlign = 'center';
+        powerOption.style.lineHeight = '30px';
+        powerOption.style.cursor = 'pointer';
+        powerOption.style.zIndex = '1';
+        powerOption.style.fontWeight = this._viewMode === 'power' ? 'bold' : 'normal';
+        powerOption.style.color = this._viewMode === 'power' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+        powerOption.addEventListener('click', () => {
+            if (this._viewMode !== 'power') {
+                this._toggleViewMode();
+            }
+        });
+        // Energy option
+        const energyOption = document.createElement('div');
+        energyOption.className = 'toggle-option';
+        energyOption.textContent = 'Energy';
+        energyOption.style.flex = '1';
+        energyOption.style.textAlign = 'center';
+        energyOption.style.lineHeight = '30px';
+        energyOption.style.cursor = 'pointer';
+        energyOption.style.zIndex = '1';
+        energyOption.style.fontWeight = this._viewMode === 'energy' ? 'bold' : 'normal';
+        energyOption.style.color = this._viewMode === 'energy' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+        energyOption.addEventListener('click', () => {
+            if (this._viewMode !== 'energy') {
+                this._toggleViewMode();
+            }
+        });
+        toggleWrapper.appendChild(activeBackground);
+        toggleWrapper.appendChild(powerOption);
+        toggleWrapper.appendChild(energyOption);
+        modeToggleContainer.appendChild(toggleWrapper);
+        card.appendChild(modeToggleContainer);
         // Show either power section or energy section based on the current view mode
-        if (this._viewMode === 'power' || !this.config.show_energy_section) {
+        if (this._viewMode === 'power') {
             // Power section
             const powerSection = this._renderPowerSection();
             card.appendChild(powerSection);
         }
-        // Only show energy section if it's enabled and selected in view mode
-        if (this._viewMode === 'energy' && this.config.show_energy_section) {
+        else {
             // Energy section (without separator when it's the only section shown)
             const energySection = this._renderEnergySection();
             // If we're in energy view mode, remove the separator as it's not needed
@@ -2473,7 +2466,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         this._updateForm();
     }
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
         // Apply default chart config values 
         const defaultConfig = getDefaultChartConfig();
         // Create a merged config object
@@ -2504,9 +2497,8 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
             show_toggle: (_h = config.show_toggle) !== null && _h !== void 0 ? _h : true,
             auto_select_count: (_j = config.auto_select_count) !== null && _j !== void 0 ? _j : 6,
             max_height: (_k = config.max_height) !== null && _k !== void 0 ? _k : 400,
-            show_energy_section: (_l = config.show_energy_section) !== null && _l !== void 0 ? _l : true,
-            energy_auto_select_count: (_m = config.energy_auto_select_count) !== null && _m !== void 0 ? _m : 6,
-            show_legend: (_o = config.show_legend) !== null && _o !== void 0 ? _o : true,
+            energy_auto_select_count: (_l = config.energy_auto_select_count) !== null && _l !== void 0 ? _l : 6,
+            show_legend: (_m = config.show_legend) !== null && _m !== void 0 ? _m : true,
         };
         this._updateForm();
     }

@@ -75,7 +75,6 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
       show_toggle: config.show_toggle ?? true,
       auto_select_count: config.auto_select_count ?? 6,
       max_height: config.max_height ?? 400,
-      show_energy_section: config.show_energy_section ?? true,
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
       show_legend: config.show_legend ?? true,
     } as EnergyDashboardChartConfig;

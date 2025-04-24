@@ -15,7 +15,6 @@ export interface EnergyDashboardConfig {
     show_toggle: boolean;
     auto_select_count: number;
     max_height: number;
-    show_energy_section: boolean;
     energy_auto_select_count: number;
     persist_selection: boolean;
     view_mode?: 'power' | 'energy';
