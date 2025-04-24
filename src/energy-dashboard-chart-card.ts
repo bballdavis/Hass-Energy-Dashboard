@@ -263,20 +263,56 @@ export class EnergyDashboardChartCard extends HTMLElement {
         const minVal = Math.min(...values);
         const maxVal = Math.max(...values);
         
-        // Set minimum to 0 for power, or round down to nearest 100 for energy
-        yMin = isEnergy ? Math.floor(minVal / 100) * 100 : 0;
+        // Set minimum to 0 for power, or round down to nearest appropriate unit for energy
+        if (typeof yMin === 'undefined') {
+          yMin = isEnergy ? Math.floor(minVal / 100) * 100 : 0;
+        }
         
-        // Round up to next 100 and add 100 more for better visualization
-        yMax = Math.ceil(maxVal / 100) * 100 + 100;
+        // Set maximum to 20% above the highest reading, then round up to next appropriate unit
+        if (typeof yMax === 'undefined') {
+          const maxWithBuffer = maxVal * 1.2; // Add 20% buffer
+          if (isEnergy) {
+            // For energy readings, determine appropriate rounding based on the value range
+            if (maxWithBuffer < 10) {
+              // For small values, round to next 1
+              yMax = Math.ceil(maxWithBuffer);
+            } else if (maxWithBuffer < 100) {
+              // For medium values, round to next 10
+              yMax = Math.ceil(maxWithBuffer / 10) * 10;
+            } else {
+              // For large values, round to next 100
+              yMax = Math.ceil(maxWithBuffer / 100) * 100;
+            }
+          } else {
+            // For power readings
+            if (maxWithBuffer < 100) {
+              // For small values, round to next 10
+              yMax = Math.ceil(maxWithBuffer / 10) * 10;
+            } else if (maxWithBuffer < 1000) {
+              // For medium values, round to next 100
+              yMax = Math.ceil(maxWithBuffer / 100) * 100;
+            } else {
+              // For large values, round to next 500
+              yMax = Math.ceil(maxWithBuffer / 500) * 500;
+            }
+          }
+        }
       } else {
         yMin = 0;
-        yMax = 200; // Default to 0-200 range if no data
+        yMax = isEnergy ? 10 : 200; // Default ranges if no data
       }
     }
 
-    // Calculate grid intervals to ensure major lines at intervals of 100
+    // Calculate grid intervals to ensure appropriate number of grid lines
     const range = yMax - yMin;
-    const tickAmount = Math.ceil(range / 100) * 2; // Major lines every 100, minor every 50
+    let tickAmount = 5; // Default to 5 grid lines
+    
+    // Adjust tick amount based on the range
+    if (range > 1000) {
+      tickAmount = 10;
+    } else if (range < 10) {
+      tickAmount = 4;
+    }
 
     // Minimal config object matching apexcharts-card schema
     const apexChartCardConfig = {
