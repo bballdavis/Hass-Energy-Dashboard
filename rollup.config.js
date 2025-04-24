@@ -9,16 +9,16 @@ export default {
   output: {
     file: pkg.main, // using package.json "main" property
     format: "es",
-    sourcemap: false  // Set to false to eliminate source map reference
+    sourcemap: true
   },
   plugins: [
     typescript({
       tsconfig: "tsconfig.json",
-      // Disable source maps
+      // Ensure source maps work correctly
       tsconfigOverride: {
         compilerOptions: {
-          sourceMap: false,
-          inlineSources: false
+          sourceMap: true,
+          inlineSources: true
         }
       }
     })

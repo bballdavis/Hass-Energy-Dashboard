@@ -5,8 +5,6 @@ import { EnergyDashboardChartConfig, getDefaultChartConfig } from './energy-dash
 export class EnergyDashboardChartCard extends HTMLElement {
   // Properties
   private _hass: any;
-  // @ts-ignore - used in hass setter
-  private _lastHassUpdate: number = 0; // Timestamp of last update
   config?: EnergyDashboardChartConfig;
   private _root: ShadowRoot;
   private _powerChartEl: HTMLElement | null = null;
@@ -51,8 +49,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   disconnectedCallback() {
     this._stopUpdateInterval();
-    // Remove storage listener
-    window.removeEventListener('storage', this._handleStorageChange);
   }
 
   // Home Assistant specific method to set config
@@ -120,8 +116,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   // Called when Home Assistant updates
   set hass(hass: any) {
-    // Only store hass, don't trigger full redraw here
-    // Let the interval or storage change handle updates
     this._hass = hass;
     // Only update charts when hass is updated, entity list comes from localStorage
     this._updateCharts();
@@ -183,6 +177,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const aggregateFunc = this.config.aggregate_func || 'avg'; // Keep aggregate func
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
+    const updateInterval = (this.config.update_interval || 60).toString();
 
     // Build series configuration for apexcharts-card
     const series = entities.map(entityId => {
@@ -195,7 +190,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
         stroke_width: 2,
         group_by: {
           func: aggregateFunc,
-          duration: '1h'
+          duration: '1h' // Adjust duration as needed
         }
       };
     });
@@ -210,10 +205,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       graph_span: `${hoursToShow}h`, // Use graph_span
       chart_type: chartType,
       cache: true,
-      stacked: false,
-      // IMPORTANT: Set a very large update interval and handle updates ourselves
-      update_interval: '0', // Disable automatic updates completely
-      
+      stacked: false, // Set based on config if needed
+      update_interval: updateInterval,
+
       // --- Top-level yaxis configuration ---
       yaxis: [
         {
@@ -233,9 +227,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
               download: true, selection: true, zoom: true,
               zoomin: true, zoomout: true, pan: true, reset: true
             }
-          },
-          animations: {
-            enabled: false, // Disable animations for better performance
           },
         },
         stroke: {
@@ -276,92 +267,40 @@ export class EnergyDashboardChartCard extends HTMLElement {
     chartElement.style.marginBottom = '16px';
     
     try {
-      // Create the apexcharts-card element
-      const apexCard = document.createElement('apexcharts-card');
-      
-      // Method 1: Set configuration through attributes and properties
-      try {
-        // Set card config using data attributes
-        apexCard.setAttribute('chart-type', chartConfig.chart_type);
-        apexCard.setAttribute('graph-span', `${chartConfig.graph_span}`);
-        apexCard.setAttribute('update-interval', '0'); // We handle updates ourselves
-
-        // Set data via property
-        (apexCard as any).data = {
-          series: chartConfig.series,
-          apex_config: chartConfig.apex_config
-        };
-        
-        if (chartConfig.yaxis && chartConfig.yaxis.length) {
-          (apexCard as any).yaxis = chartConfig.yaxis;
-        }
-        
-        // Set header config
-        (apexCard as any).header = { show: false };
-
-        // Pass hass object to the chart
-        if (this._hass) {
-          (apexCard as any).hass = this._hass;
-        }
-        
-        chartElement.appendChild(apexCard);
-      } catch (configError) {
-        console.error('Error configuring apexcharts-card:', configError);
-        chartElement.appendChild(this._createErrorMessage(
-          'Error configuring chart. Please check your browser console for details.'
-        ));
+      // Check if apexcharts-card is registered
+      if (!customElements.get('apexcharts-card')) {
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'error-message';
+        errorMsg.style.color = 'var(--error-color, red)';
+        errorMsg.style.padding = '16px';
+        errorMsg.style.textAlign = 'center';
+        errorMsg.textContent = 'Error: apexcharts-card is not installed or registered. Please make sure the integration is installed.';
+        chartElement.appendChild(errorMsg);
+        return chartElement;
       }
+      
+      // Create the apexcharts-card element
+      const apexCard = document.createElement('apexcharts-card') as HTMLElement;
+      
+      // Set card config for apexcharts-card
+      (apexCard as any).setConfig(chartConfig);
+      
+      // Pass hass object to the chart
+      (apexCard as any).hass = this._hass;
+      
+      chartElement.appendChild(apexCard);
     } catch (err) {
       console.error('Error creating apexcharts-card:', err);
-      
-      // Create a more helpful error message with installation instructions
-      chartElement.appendChild(this._createErrorMessage(
-        'The apexcharts-card custom component is required but not available. ' +
-        'Please make sure you have installed the "apexcharts-card" from HACS and ' +
-        'refreshed your browser.'
-      ));
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'error-message';
+      errorMsg.style.color = 'var(--error-color, red)';
+      errorMsg.style.padding = '16px';
+      errorMsg.style.textAlign = 'center';
+      errorMsg.textContent = `Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`;
+      chartElement.appendChild(errorMsg);
     }
     
     return chartElement;
-  }
-
-  // Utility method to create consistent error messages
-  private _createErrorMessage(message: string): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'chart-error-container';
-    container.style.padding = '16px';
-    container.style.textAlign = 'center';
-    container.style.color = 'var(--error-color, red)';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-    container.style.border = '1px solid var(--error-color, red)';
-    container.style.borderRadius = '8px';
-    container.style.margin = '8px 16px';
-    container.style.minHeight = '150px';
-    
-    const icon = document.createElement('ha-icon');
-    icon.setAttribute('icon', 'mdi:alert-circle-outline');
-    icon.style.marginBottom = '8px';
-    icon.style.color = 'var(--error-color, red)';
-    icon.style.width = '40px';
-    icon.style.height = '40px';
-    
-    const errorMsg = document.createElement('div');
-    errorMsg.textContent = message;
-    
-    const helpText = document.createElement('div');
-    helpText.style.marginTop = '8px';
-    helpText.style.fontSize = '0.9rem';
-    helpText.style.color = 'var(--secondary-text-color)';
-    helpText.innerHTML = 'Installation: <a href="https://github.com/RomRider/apexcharts-card" target="_blank" rel="noopener">apexcharts-card documentation</a>';
-    
-    container.appendChild(icon);
-    container.appendChild(errorMsg);
-    container.appendChild(helpText);
-    
-    return container;
   }
 
   private _createEmptyCard(isEnergy: boolean) {
@@ -418,16 +357,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
       }
     }
   }
-
-  // Listen for localStorage changes from other cards
-  private _handleStorageChange = (event: StorageEvent) => {
-    if (event.key === 'energy-dashboard-power-toggle-states' || 
-        event.key === 'energy-dashboard-energy-toggle-states') {
-      // Check for entity changes and update if needed
-      this._loadSelectedEntities();
-      this._updateCharts();
-    }
-  };
 
   private _renderSectionTitle(title: string): HTMLElement {
     const sectionTitle = document.createElement('div');
