@@ -47,6 +47,8 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _selectAllEnergyEntities: () => void;
     _toggleEnergyEntity: (e: Event) => void;
     _togglePersistence: () => void;
+    _loadPersistenceState(): boolean;
+    _savePersistenceState(persist: boolean): void;
     _renderPowerSection(): HTMLElement;
     _renderEnergySection(): HTMLElement;
     _updateContent(): void;

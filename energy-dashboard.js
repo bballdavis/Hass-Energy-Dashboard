@@ -464,7 +464,10 @@ class EnergyDashboardEntityCard extends HTMLElement {
         };
         this._togglePersistence = () => {
             if (this.config) {
+                // Toggle the persistence setting
                 this.config.persist_selection = !this.config.persist_selection;
+                // Always save the persistence toggle state, regardless of its value
+                this._savePersistenceState(this.config.persist_selection);
                 // If persistence is turned off, clear the saved toggle states
                 if (!this.config.persist_selection) {
                     localStorage.removeItem('energy-dashboard-power-toggle-states');
@@ -498,10 +501,12 @@ class EnergyDashboardEntityCard extends HTMLElement {
     }
     // Home Assistant specific method to set config
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         if (!config) {
             throw new Error("Invalid configuration");
         }
+        // Load persistence setting from localStorage first
+        const persistenceFromStorage = this._loadPersistenceState();
         // Create a merged config object correctly by spreading config first
         this.config = {
             ...config,
@@ -514,7 +519,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
             max_height: (_f = config.max_height) !== null && _f !== void 0 ? _f : 400,
             show_energy_section: (_g = config.show_energy_section) !== null && _g !== void 0 ? _g : true,
             energy_auto_select_count: (_h = config.energy_auto_select_count) !== null && _h !== void 0 ? _h : 6,
-            persist_selection: (_j = config.persist_selection) !== null && _j !== void 0 ? _j : true,
+            // Use the stored value as priority for persistence setting
+            persist_selection: persistenceFromStorage,
         };
         this._updateContent();
     }
@@ -652,6 +658,24 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Only save toggle states if persistence is enabled
         if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) {
             saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
+        }
+    }
+    // Manage the persistence toggle setting separately
+    _loadPersistenceState() {
+        try {
+            const stored = localStorage.getItem('energy-dashboard-persistence-toggle');
+            return stored === null ? true : stored === 'true';
+        }
+        catch {
+            return true; // Default to true if we can't load from localStorage
+        }
+    }
+    _savePersistenceState(persist) {
+        try {
+            localStorage.setItem('energy-dashboard-persistence-toggle', String(persist));
+        }
+        catch (e) {
+            console.error("Failed to save persistence state:", e);
         }
     }
     _renderPowerSection() {
