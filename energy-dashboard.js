@@ -1598,24 +1598,11 @@ class EnergyDashboardChartCard extends HTMLElement {
         }, 500);
     }
     _setRefreshInterval(seconds) {
-        // Convert seconds to string for apexcharts-card (e.g., "30s")
-        const intervalString = `${seconds}s`;
         if (this.config) {
             this.config.update_interval = seconds;
         }
         this._currentRefreshInterval = seconds;
         this._updateRefreshControlsUI();
-        // Update the ApexCharts card config for both charts (if present)
-        const charts = this._findAllApexChartsCards();
-        charts.forEach(chart => {
-            if (chart._config) {
-                chart._config.update_interval = intervalString;
-                // Re-apply config to force ApexCharts to use new interval
-                if (typeof chart.setConfig === 'function') {
-                    chart.setConfig(chart._config);
-                }
-            }
-        });
         // Stop our own timer and set up a new one if needed
         this._stopUpdateInterval();
         if (seconds > 0) {
