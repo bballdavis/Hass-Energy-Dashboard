@@ -1246,6 +1246,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._isLoading = true;
         this._apexChartCardRegistered = null;
         this._currentRefreshInterval = 30; // Default to 30 seconds
+        this._currentTimeRangeHours = 24; // Default to 24 hours
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
         // Create the card element
@@ -1274,7 +1275,7 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     // Home Assistant specific method to set config
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
         if (!config) {
             throw new Error("Invalid configuration");
         }
@@ -1315,6 +1316,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         };
         // Set the current refresh interval from config
         this._currentRefreshInterval = (_p = this.config.update_interval) !== null && _p !== void 0 ? _p : 30;
+        this._currentTimeRangeHours = (_q = this.config.hours_to_show) !== null && _q !== void 0 ? _q : 24;
         this._loadSelectedEntities();
         this._isLoading = true;
         this._checkApexChartsRegistration();
@@ -1810,6 +1812,14 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._updateCharts();
         this._startUpdateInterval();
     }
+    _setTimeRange(hours) {
+        if (this.config) {
+            this.config.hours_to_show = hours;
+        }
+        this._currentTimeRangeHours = hours;
+        this._updateTimeRangeControlsUI();
+        this._updateCharts();
+    }
     _manualRefresh() {
         console.log("Manual refresh triggered.");
         this._updateCharts();
@@ -1822,6 +1832,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         controlsContainer.style.alignItems = 'center';
         controlsContainer.style.padding = '0 16px 8px';
         controlsContainer.style.gap = '8px';
+        // --- Refresh Rate Controls ---
         const refreshTitle = document.createElement('div');
         refreshTitle.className = 'refresh-title';
         refreshTitle.textContent = 'Refresh Rate:';
@@ -1834,8 +1845,21 @@ class EnergyDashboardChartCard extends HTMLElement {
         buttonsContainer.style.justifyContent = 'flex-end';
         buttonsContainer.style.alignItems = 'center';
         buttonsContainer.style.gap = '8px';
-        // Create and style base button element
-        const createButton = (text, title, seconds) => {
+        // --- Time Range Controls ---
+        const timeRangeTitle = document.createElement('div');
+        timeRangeTitle.className = 'time-range-title';
+        timeRangeTitle.textContent = 'Time Range:';
+        timeRangeTitle.style.fontWeight = '500';
+        timeRangeTitle.style.fontSize = '0.9em';
+        timeRangeTitle.style.marginRight = '8px';
+        const timeRangeContainer = document.createElement('div');
+        timeRangeContainer.className = 'time-range-container';
+        timeRangeContainer.style.display = 'flex';
+        timeRangeContainer.style.justifyContent = 'flex-end';
+        timeRangeContainer.style.alignItems = 'center';
+        timeRangeContainer.style.gap = '8px';
+        // Helper for both controls
+        const createButton = (text, title, value, isTimeRange) => {
             const button = document.createElement('button');
             button.style.padding = '4px 8px';
             button.style.borderRadius = '4px';
@@ -1850,7 +1874,6 @@ class EnergyDashboardChartCard extends HTMLElement {
             button.style.minHeight = '32px';
             button.style.fontSize = '0.9em';
             button.title = title;
-            // Use safe HTML setting instead of innerHTML
             if (text.includes('<ha-icon')) {
                 const iconWrapper = document.createElement('div');
                 iconWrapper.innerHTML = text;
@@ -1861,10 +1884,15 @@ class EnergyDashboardChartCard extends HTMLElement {
             else {
                 button.textContent = text;
             }
-            if (seconds !== undefined) {
+            if (isTimeRange && value !== undefined) {
+                button.className = 'time-range-button control-button';
+                button.dataset.hours = value;
+                button.addEventListener('click', () => this._setTimeRange(Number(value)));
+            }
+            else if (!isTimeRange && value !== undefined) {
                 button.className = 'interval-button control-button';
-                button.dataset.seconds = seconds;
-                button.addEventListener('click', () => this._setRefreshInterval(Number(seconds)));
+                button.dataset.seconds = value;
+                button.addEventListener('click', () => this._setRefreshInterval(Number(value)));
             }
             else {
                 button.className = 'refresh-button control-button';
@@ -1872,6 +1900,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             }
             return button;
         };
+        // Refresh rate buttons
         const refreshButton = createButton('<ha-icon icon="mdi:refresh"></ha-icon>', 'Refresh now');
         refreshButton.style.minWidth = '36px';
         refreshButton.style.width = '36px';
@@ -1884,9 +1913,26 @@ class EnergyDashboardChartCard extends HTMLElement {
         buttonsContainer.appendChild(sec15Button);
         buttonsContainer.appendChild(sec30Button);
         buttonsContainer.appendChild(sec60Button);
+        // Time range buttons (1h, 3h, 12h, 24h, 3d, 1w)
+        const timeRanges = [
+            { label: '1h', hours: 1 },
+            { label: '3h', hours: 3 },
+            { label: '12h', hours: 12 },
+            { label: '24h', hours: 24 },
+            { label: '3d', hours: 72 },
+            { label: '1w', hours: 168 }
+        ];
+        timeRanges.forEach(range => {
+            const btn = createButton(range.label, `Show last ${range.label}`, String(range.hours), true);
+            timeRangeContainer.appendChild(btn);
+        });
+        // Layout: put both controls on the same line
         controlsContainer.appendChild(refreshTitle);
         controlsContainer.appendChild(buttonsContainer);
+        controlsContainer.appendChild(timeRangeTitle);
+        controlsContainer.appendChild(timeRangeContainer);
         this._updateRefreshControlsUI(buttonsContainer);
+        this._updateTimeRangeControlsUI(timeRangeContainer);
         return controlsContainer;
     }
     _updateRefreshControlsUI(container) {
@@ -1901,6 +1947,24 @@ class EnergyDashboardChartCard extends HTMLElement {
             button.style.borderColor = 'var(--divider-color)';
         });
         const activeButton = controls.querySelector(`.interval-button[data-seconds="${this._currentRefreshInterval}"]`);
+        if (activeButton) {
+            activeButton.style.backgroundColor = 'var(--primary-color)';
+            activeButton.style.color = 'var(--text-primary-color)';
+            activeButton.style.borderColor = 'var(--primary-color)';
+        }
+    }
+    _updateTimeRangeControlsUI(container) {
+        const controls = container || this._root.querySelector('.time-range-container');
+        if (!controls)
+            return;
+        const buttons = controls.querySelectorAll('.time-range-button');
+        buttons.forEach(btn => {
+            const button = btn;
+            button.style.backgroundColor = 'var(--secondary-background-color)';
+            button.style.color = 'var(--primary-text-color)';
+            button.style.borderColor = 'var(--divider-color)';
+        });
+        const activeButton = controls.querySelector(`.time-range-button[data-hours="${this._currentTimeRangeHours}"]`);
         if (activeButton) {
             activeButton.style.backgroundColor = 'var(--primary-color)';
             activeButton.style.color = 'var(--text-primary-color)';

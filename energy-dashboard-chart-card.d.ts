@@ -11,6 +11,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _isLoading;
     private _apexChartCardRegistered;
     private _currentRefreshInterval;
+    private _currentTimeRangeHours;
     static get cardType(): string;
     static get displayName(): string;
     static get description(): string;
@@ -64,7 +65,9 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _updateContent;
     private _checkApexChartsRegistration;
     private _setRefreshInterval;
+    private _setTimeRange;
     private _manualRefresh;
     private _createRefreshControls;
     private _updateRefreshControlsUI;
+    private _updateTimeRangeControlsUI;
 }
