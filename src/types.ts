@@ -19,5 +19,6 @@ export interface EnergyDashboardConfig {
   show_energy_section: boolean;
   energy_auto_select_count: number;
   persist_selection: boolean;
+  view_mode?: 'power' | 'energy';  // New property to track active view mode
   [key: string]: any;
 }

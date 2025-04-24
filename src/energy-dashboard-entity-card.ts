@@ -13,6 +13,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _initialized: boolean = false;
   private _energyInitialized: boolean = false;
   private _root: ShadowRoot;
+  private _viewMode: 'power' | 'energy' = 'power'; // Default view mode
 
   // Define card name and icon for card picker
   static get cardType() {
@@ -44,6 +45,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this.energyEntityToggleStates = {};
     this._initialized = false;
     this._energyInitialized = false;
+    this._viewMode = 'power';
     
     // Create the card element
     const card = document.createElement('ha-card');
@@ -55,6 +57,12 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     // Load persistence setting from localStorage when element is connected to DOM
     if (this.config) {
       this.config.persist_selection = this._loadPersistenceState();
+    }
+    
+    // Load view mode from localStorage
+    this._viewMode = this._loadViewMode();
+    if (this.config) {
+      this.config.view_mode = this._viewMode;
     }
     
     this._updateContent();
@@ -418,6 +426,47 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     }
   }
 
+  // Save view mode to localStorage
+  _saveViewMode(mode: 'power' | 'energy'): void {
+    try {
+      localStorage.setItem('energy-dashboard-view-mode', mode);
+      // Also update config to keep it in sync
+      if (this.config) {
+        this.config.view_mode = mode;
+      }
+      this._viewMode = mode;
+    } catch (e) {
+      console.error("Failed to save view mode:", e);
+    }
+  }
+
+  // Load view mode from localStorage
+  _loadViewMode(): 'power' | 'energy' {
+    try {
+      const stored = localStorage.getItem('energy-dashboard-view-mode');
+      return (stored === 'power' || stored === 'energy') ? stored : 'power';
+    } catch {
+      return 'power'; // Default to power view if we can't load from localStorage
+    }
+  }
+
+  // Toggle between power and energy view
+  _toggleViewMode = () => {
+    const newMode = this._viewMode === 'power' ? 'energy' : 'power';
+    this._viewMode = newMode;
+    this._saveViewMode(newMode);
+    
+    // Save the current view mode to be used by chart card
+    this._updateContent();
+    
+    // Dispatch a custom event that the chart card can listen for
+    this.dispatchEvent(new CustomEvent('view-mode-changed', {
+      detail: { mode: newMode },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
   _renderPowerSection(): HTMLElement {
     const section = document.createElement('div');
 
@@ -763,14 +812,101 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       header.textContent = this.config.title;
       card.appendChild(header);
     }
-
-    // Power section
-    const powerSection = this._renderPowerSection();
-    card.appendChild(powerSection);
-
-    // Energy section (if enabled)
+    
+    // Add mode toggle at the top (only if energy section is enabled)
     if (this.config.show_energy_section) {
+      const modeToggleContainer = document.createElement('div');
+      modeToggleContainer.className = 'mode-toggle-container';
+      modeToggleContainer.style.display = 'flex';
+      modeToggleContainer.style.justifyContent = 'center';
+      modeToggleContainer.style.alignItems = 'center';
+      modeToggleContainer.style.marginTop = '8px';
+      modeToggleContainer.style.marginBottom = '8px';
+      modeToggleContainer.style.padding = '4px';
+      
+      const toggleWrapper = document.createElement('div');
+      toggleWrapper.className = 'toggle-wrapper';
+      toggleWrapper.style.display = 'flex';
+      toggleWrapper.style.position = 'relative';
+      toggleWrapper.style.border = '1px solid var(--divider-color)';
+      toggleWrapper.style.borderRadius = '25px';
+      toggleWrapper.style.height = '30px';
+      toggleWrapper.style.width = '200px';
+      toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
+      toggleWrapper.style.overflow = 'hidden';
+      
+      // Active background that slides based on selected option
+      const activeBackground = document.createElement('div');
+      activeBackground.className = 'active-background';
+      activeBackground.style.position = 'absolute';
+      activeBackground.style.top = '0';
+      activeBackground.style.bottom = '0';
+      activeBackground.style.left = this._viewMode === 'power' ? '0' : '50%';
+      activeBackground.style.width = '50%';
+      activeBackground.style.backgroundColor = 'var(--primary-color)';
+      activeBackground.style.borderRadius = '25px';
+      activeBackground.style.transition = 'left 0.3s ease-in-out';
+      activeBackground.style.opacity = '0.2';
+      
+      // Power option
+      const powerOption = document.createElement('div');
+      powerOption.className = 'toggle-option';
+      powerOption.textContent = 'Power';
+      powerOption.style.flex = '1';
+      powerOption.style.textAlign = 'center';
+      powerOption.style.lineHeight = '30px';
+      powerOption.style.cursor = 'pointer';
+      powerOption.style.zIndex = '1';
+      powerOption.style.fontWeight = this._viewMode === 'power' ? 'bold' : 'normal';
+      powerOption.style.color = this._viewMode === 'power' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+      powerOption.addEventListener('click', () => {
+        if (this._viewMode !== 'power') {
+          this._toggleViewMode();
+        }
+      });
+      
+      // Energy option
+      const energyOption = document.createElement('div');
+      energyOption.className = 'toggle-option';
+      energyOption.textContent = 'Energy';
+      energyOption.style.flex = '1';
+      energyOption.style.textAlign = 'center';
+      energyOption.style.lineHeight = '30px';
+      energyOption.style.cursor = 'pointer';
+      energyOption.style.zIndex = '1';
+      energyOption.style.fontWeight = this._viewMode === 'energy' ? 'bold' : 'normal';
+      energyOption.style.color = this._viewMode === 'energy' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+      energyOption.addEventListener('click', () => {
+        if (this._viewMode !== 'energy') {
+          this._toggleViewMode();
+        }
+      });
+      
+      toggleWrapper.appendChild(activeBackground);
+      toggleWrapper.appendChild(powerOption);
+      toggleWrapper.appendChild(energyOption);
+      modeToggleContainer.appendChild(toggleWrapper);
+      card.appendChild(modeToggleContainer);
+    }
+
+    // Show either power section or energy section based on the current view mode
+    if (this._viewMode === 'power' || !this.config.show_energy_section) {
+      // Power section
+      const powerSection = this._renderPowerSection();
+      card.appendChild(powerSection);
+    }
+
+    // Only show energy section if it's enabled and selected in view mode
+    if (this._viewMode === 'energy' && this.config.show_energy_section) {
+      // Energy section (without separator when it's the only section shown)
       const energySection = this._renderEnergySection();
+      
+      // If we're in energy view mode, remove the separator as it's not needed
+      const separator = energySection.querySelector('.section-separator');
+      if (separator) {
+        separator.remove();
+      }
+      
       card.appendChild(energySection);
     }
   }

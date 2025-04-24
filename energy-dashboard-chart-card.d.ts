@@ -12,13 +12,16 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _apexChartCardRegistered;
     private _currentRefreshInterval;
     private _currentTimeRangeHours;
+    private _viewMode;
     static get cardType(): string;
     static get displayName(): string;
     static get description(): string;
     static get icon(): string;
     constructor();
+    private _loadViewMode;
     connectedCallback(): void;
     disconnectedCallback(): void;
+    private _handleViewModeChange;
     setConfig(config: Partial<EnergyDashboardChartConfig>): void;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): {
@@ -48,6 +51,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
         max_height?: number | undefined;
         energy_auto_select_count?: number | undefined;
         persist_selection?: boolean | undefined;
+        view_mode?: "power" | "energy" | undefined;
     };
     getCardSize(): number;
     set hass(hass: any);

@@ -362,6 +362,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this.energyEntityToggleStates = {};
         this._initialized = false;
         this._energyInitialized = false;
+        this._viewMode = 'power'; // Default view mode
         this._resetToPowerDefaultEntities = () => {
             var _a, _b;
             // Get current entities
@@ -486,6 +487,20 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 this._updateContent();
             }
         };
+        // Toggle between power and energy view
+        this._toggleViewMode = () => {
+            const newMode = this._viewMode === 'power' ? 'energy' : 'power';
+            this._viewMode = newMode;
+            this._saveViewMode(newMode);
+            // Save the current view mode to be used by chart card
+            this._updateContent();
+            // Dispatch a custom event that the chart card can listen for
+            this.dispatchEvent(new CustomEvent('view-mode-changed', {
+                detail: { mode: newMode },
+                bubbles: true,
+                composed: true
+            }));
+        };
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
         // Initialize properties
@@ -496,6 +511,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this.energyEntityToggleStates = {};
         this._initialized = false;
         this._energyInitialized = false;
+        this._viewMode = 'power';
         // Create the card element
         const card = document.createElement('ha-card');
         this._root.appendChild(card);
@@ -505,6 +521,11 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Load persistence setting from localStorage when element is connected to DOM
         if (this.config) {
             this.config.persist_selection = this._loadPersistenceState();
+        }
+        // Load view mode from localStorage
+        this._viewMode = this._loadViewMode();
+        if (this.config) {
+            this.config.view_mode = this._viewMode;
         }
         this._updateContent();
     }
@@ -693,6 +714,30 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
         catch (e) {
             console.error("Failed to save persistence state:", e);
+        }
+    }
+    // Save view mode to localStorage
+    _saveViewMode(mode) {
+        try {
+            localStorage.setItem('energy-dashboard-view-mode', mode);
+            // Also update config to keep it in sync
+            if (this.config) {
+                this.config.view_mode = mode;
+            }
+            this._viewMode = mode;
+        }
+        catch (e) {
+            console.error("Failed to save view mode:", e);
+        }
+    }
+    // Load view mode from localStorage
+    _loadViewMode() {
+        try {
+            const stored = localStorage.getItem('energy-dashboard-view-mode');
+            return (stored === 'power' || stored === 'energy') ? stored : 'power';
+        }
+        catch {
+            return 'power'; // Default to power view if we can't load from localStorage
         }
     }
     _renderPowerSection() {
@@ -982,12 +1027,91 @@ class EnergyDashboardEntityCard extends HTMLElement {
             header.textContent = this.config.title;
             card.appendChild(header);
         }
-        // Power section
-        const powerSection = this._renderPowerSection();
-        card.appendChild(powerSection);
-        // Energy section (if enabled)
+        // Add mode toggle at the top (only if energy section is enabled)
         if (this.config.show_energy_section) {
+            const modeToggleContainer = document.createElement('div');
+            modeToggleContainer.className = 'mode-toggle-container';
+            modeToggleContainer.style.display = 'flex';
+            modeToggleContainer.style.justifyContent = 'center';
+            modeToggleContainer.style.alignItems = 'center';
+            modeToggleContainer.style.marginTop = '8px';
+            modeToggleContainer.style.marginBottom = '8px';
+            modeToggleContainer.style.padding = '4px';
+            const toggleWrapper = document.createElement('div');
+            toggleWrapper.className = 'toggle-wrapper';
+            toggleWrapper.style.display = 'flex';
+            toggleWrapper.style.position = 'relative';
+            toggleWrapper.style.border = '1px solid var(--divider-color)';
+            toggleWrapper.style.borderRadius = '25px';
+            toggleWrapper.style.height = '30px';
+            toggleWrapper.style.width = '200px';
+            toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
+            toggleWrapper.style.overflow = 'hidden';
+            // Active background that slides based on selected option
+            const activeBackground = document.createElement('div');
+            activeBackground.className = 'active-background';
+            activeBackground.style.position = 'absolute';
+            activeBackground.style.top = '0';
+            activeBackground.style.bottom = '0';
+            activeBackground.style.left = this._viewMode === 'power' ? '0' : '50%';
+            activeBackground.style.width = '50%';
+            activeBackground.style.backgroundColor = 'var(--primary-color)';
+            activeBackground.style.borderRadius = '25px';
+            activeBackground.style.transition = 'left 0.3s ease-in-out';
+            activeBackground.style.opacity = '0.2';
+            // Power option
+            const powerOption = document.createElement('div');
+            powerOption.className = 'toggle-option';
+            powerOption.textContent = 'Power';
+            powerOption.style.flex = '1';
+            powerOption.style.textAlign = 'center';
+            powerOption.style.lineHeight = '30px';
+            powerOption.style.cursor = 'pointer';
+            powerOption.style.zIndex = '1';
+            powerOption.style.fontWeight = this._viewMode === 'power' ? 'bold' : 'normal';
+            powerOption.style.color = this._viewMode === 'power' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+            powerOption.addEventListener('click', () => {
+                if (this._viewMode !== 'power') {
+                    this._toggleViewMode();
+                }
+            });
+            // Energy option
+            const energyOption = document.createElement('div');
+            energyOption.className = 'toggle-option';
+            energyOption.textContent = 'Energy';
+            energyOption.style.flex = '1';
+            energyOption.style.textAlign = 'center';
+            energyOption.style.lineHeight = '30px';
+            energyOption.style.cursor = 'pointer';
+            energyOption.style.zIndex = '1';
+            energyOption.style.fontWeight = this._viewMode === 'energy' ? 'bold' : 'normal';
+            energyOption.style.color = this._viewMode === 'energy' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+            energyOption.addEventListener('click', () => {
+                if (this._viewMode !== 'energy') {
+                    this._toggleViewMode();
+                }
+            });
+            toggleWrapper.appendChild(activeBackground);
+            toggleWrapper.appendChild(powerOption);
+            toggleWrapper.appendChild(energyOption);
+            modeToggleContainer.appendChild(toggleWrapper);
+            card.appendChild(modeToggleContainer);
+        }
+        // Show either power section or energy section based on the current view mode
+        if (this._viewMode === 'power' || !this.config.show_energy_section) {
+            // Power section
+            const powerSection = this._renderPowerSection();
+            card.appendChild(powerSection);
+        }
+        // Only show energy section if it's enabled and selected in view mode
+        if (this._viewMode === 'energy' && this.config.show_energy_section) {
+            // Energy section (without separator when it's the only section shown)
             const energySection = this._renderEnergySection();
+            // If we're in energy view mode, remove the separator as it's not needed
+            const separator = energySection.querySelector('.section-separator');
+            if (separator) {
+                separator.remove();
+            }
             card.appendChild(energySection);
         }
     }
@@ -1247,14 +1371,38 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._apexChartCardRegistered = null;
         this._currentRefreshInterval = 30; // Default to 30 seconds
         this._currentTimeRangeHours = 24; // Default to 24 hours
+        this._viewMode = 'power'; // Default to power view
+        // Handle view mode changes from entity card
+        this._handleViewModeChange = (event) => {
+            if (event.detail && event.detail.mode) {
+                this._viewMode = event.detail.mode;
+                console.log(`View mode changed to: ${this._viewMode}`);
+                // Update the chart display based on view mode
+                this._updateContent();
+            }
+        };
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
         // Create the card element
         const card = document.createElement('ha-card');
         this._root.appendChild(card);
     }
+    // Load the view mode from localStorage
+    _loadViewMode() {
+        try {
+            const stored = localStorage.getItem('energy-dashboard-view-mode');
+            return (stored === 'power' || stored === 'energy') ? stored : 'power';
+        }
+        catch {
+            return 'power'; // Default to power view if we can't load from localStorage
+        }
+    }
     // Called when the element is added to the DOM
     connectedCallback() {
+        // Load the selected view mode from localStorage
+        this._viewMode = this._loadViewMode();
+        // Add event listener for view mode changes from entity card
+        window.addEventListener('view-mode-changed', this._handleViewModeChange);
         this._loadSelectedEntities();
         this._checkApexChartsRegistration();
         // First update the content without starting the timer
@@ -1272,6 +1420,8 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     disconnectedCallback() {
         this._stopUpdateInterval();
+        // Remove event listener when component is removed
+        window.removeEventListener('view-mode-changed', this._handleViewModeChange);
     }
     // Home Assistant specific method to set config
     setConfig(config) {
@@ -1819,24 +1969,28 @@ class EnergyDashboardChartCard extends HTMLElement {
         chartContainer.style.width = '100%';
         chartContainer.style.display = 'flex';
         chartContainer.style.flexDirection = 'column';
-        chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
-        const powerPlaceholder = document.createElement('div');
-        powerPlaceholder.className = 'power-chart-placeholder';
-        chartContainer.appendChild(powerPlaceholder);
-        this._powerChartEl = null;
-        if (this.config.show_energy_section) {
-            const separator = document.createElement('div');
-            separator.className = 'section-separator';
-            separator.style.margin = '16px 8px';
-            chartContainer.appendChild(separator);
+        // Load the view mode from localStorage (in case it changed)
+        this._viewMode = this._loadViewMode();
+        // Only show the appropriate chart based on view mode
+        if (this._viewMode === 'power' || !this.config.show_energy_section) {
+            // Power chart section
+            chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
+            const powerPlaceholder = document.createElement('div');
+            powerPlaceholder.className = 'power-chart-placeholder';
+            chartContainer.appendChild(powerPlaceholder);
+            this._powerChartEl = null;
+            // Reset energy chart element so it doesn't get updated
+            this._energyChartEl = null;
+        }
+        else if (this._viewMode === 'energy' && this.config.show_energy_section) {
+            // Energy chart section
             chartContainer.appendChild(this._renderSectionTitle('Energy Consumption', true));
             const energyPlaceholder = document.createElement('div');
             energyPlaceholder.className = 'energy-chart-placeholder';
             chartContainer.appendChild(energyPlaceholder);
             this._energyChartEl = null;
-        }
-        else {
-            this._energyChartEl = null;
+            // Reset power chart element so it doesn't get updated
+            this._powerChartEl = null;
         }
         card.appendChild(chartContainer);
         setTimeout(() => this._updateCharts(), 0);

@@ -16,6 +16,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _apexChartCardRegistered: boolean | null = null;
   private _currentRefreshInterval: number = 30; // Default to 30 seconds
   private _currentTimeRangeHours: number = 24; // Default to 24 hours
+  private _viewMode: 'power' | 'energy' = 'power'; // Default to power view
 
   // Define card name and icon for card picker
   static get cardType() {
@@ -44,8 +45,24 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this._root.appendChild(card);
   }
 
+  // Load the view mode from localStorage
+  private _loadViewMode(): 'power' | 'energy' {
+    try {
+      const stored = localStorage.getItem('energy-dashboard-view-mode');
+      return (stored === 'power' || stored === 'energy') ? stored : 'power';
+    } catch {
+      return 'power'; // Default to power view if we can't load from localStorage
+    }
+  }
+
   // Called when the element is added to the DOM
   connectedCallback() {
+    // Load the selected view mode from localStorage
+    this._viewMode = this._loadViewMode();
+    
+    // Add event listener for view mode changes from entity card
+    window.addEventListener('view-mode-changed', this._handleViewModeChange as EventListener);
+    
     this._loadSelectedEntities();
     this._checkApexChartsRegistration();
     
@@ -67,6 +84,18 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   disconnectedCallback() {
     this._stopUpdateInterval();
+    // Remove event listener when component is removed
+    window.removeEventListener('view-mode-changed', this._handleViewModeChange as EventListener);
+  }
+
+  // Handle view mode changes from entity card
+  private _handleViewModeChange = (event: CustomEvent) => {
+    if (event.detail && event.detail.mode) {
+      this._viewMode = event.detail.mode;
+      console.log(`View mode changed to: ${this._viewMode}`);
+      // Update the chart display based on view mode
+      this._updateContent();
+    }
   }
 
   // Home Assistant specific method to set config
@@ -684,25 +713,30 @@ export class EnergyDashboardChartCard extends HTMLElement {
     chartContainer.style.display = 'flex';
     chartContainer.style.flexDirection = 'column';
     
-    chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
-    const powerPlaceholder = document.createElement('div'); 
-    powerPlaceholder.className = 'power-chart-placeholder';
-    chartContainer.appendChild(powerPlaceholder);
-    this._powerChartEl = null;
+    // Load the view mode from localStorage (in case it changed)
+    this._viewMode = this._loadViewMode();
     
-    if (this.config.show_energy_section) {
-      const separator = document.createElement('div');
-      separator.className = 'section-separator';
-      separator.style.margin = '16px 8px';
-      chartContainer.appendChild(separator);
+    // Only show the appropriate chart based on view mode
+    if (this._viewMode === 'power' || !this.config.show_energy_section) {
+      // Power chart section
+      chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
+      const powerPlaceholder = document.createElement('div'); 
+      powerPlaceholder.className = 'power-chart-placeholder';
+      chartContainer.appendChild(powerPlaceholder);
+      this._powerChartEl = null;
       
+      // Reset energy chart element so it doesn't get updated
+      this._energyChartEl = null;
+    } else if (this._viewMode === 'energy' && this.config.show_energy_section) {
+      // Energy chart section
       chartContainer.appendChild(this._renderSectionTitle('Energy Consumption', true));
       const energyPlaceholder = document.createElement('div'); 
       energyPlaceholder.className = 'energy-chart-placeholder';
       chartContainer.appendChild(energyPlaceholder);
       this._energyChartEl = null;
-    } else {
-      this._energyChartEl = null;
+      
+      // Reset power chart element so it doesn't get updated
+      this._powerChartEl = null;
     }
     
     card.appendChild(chartContainer);

@@ -10,6 +10,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _initialized: boolean;
     private _energyInitialized: boolean;
     private _root: ShadowRoot;
+    private _viewMode: 'power' | 'energy';
 
     // Card picker properties
     static get cardType(): string;
@@ -30,6 +31,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
         max_height: number;
         show_energy_section: boolean;
         energy_auto_select_count: number;
+        persist_selection: boolean;
     };
     getCardSize(): number;
     set hass(hass: any);
@@ -49,6 +51,12 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _clearAllEnergyEntities: () => void;
     private _selectAllEnergyEntities: () => void;
     private _toggleEnergyEntity: (e: Event) => void;
+    private _togglePersistence: () => void;
+    private _loadPersistenceState(): boolean;
+    private _savePersistenceState(persist: boolean): void;
+    private _saveViewMode(mode: 'power' | 'energy'): void;
+    private _loadViewMode(): 'power' | 'energy';
+    private _toggleViewMode: () => void;
     private _renderPowerSection(): HTMLElement;
     private _renderEnergySection(): HTMLElement;
     private _updateContent(): void;
