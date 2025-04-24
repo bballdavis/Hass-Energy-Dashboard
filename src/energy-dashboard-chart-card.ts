@@ -812,7 +812,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     buttonsContainer.style.display = 'flex';
     buttonsContainer.style.justifyContent = 'flex-end';
     buttonsContainer.style.alignItems = 'center';
-    buttonsContainer.style.gap = '4px'; // Reduced gap
+    buttonsContainer.style.gap = '0'; // Remove gap between buttons
 
     // --- Time Range Controls ---
     const timeRangeTitle = document.createElement('div');
@@ -828,7 +828,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     timeRangeContainer.style.display = 'flex';
     timeRangeContainer.style.justifyContent = 'flex-end';
     timeRangeContainer.style.alignItems = 'center';
-    timeRangeContainer.style.gap = '4px'; // Reduced gap
+    timeRangeContainer.style.gap = '0'; // Remove gap between buttons
 
     // --- Max Range Controls ---
     const maxRangeTitle = document.createElement('div');
@@ -844,13 +844,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
     maxRangeContainer.style.display = 'flex';
     maxRangeContainer.style.justifyContent = 'flex-end';
     maxRangeContainer.style.alignItems = 'center';
-    maxRangeContainer.style.gap = '4px'; // Reduced gap
+    maxRangeContainer.style.gap = '0'; // Remove gap between buttons
 
     // Helper for all controls
-    const createButton = (text: string, title: string, value?: string, controlType?: 'time' | 'refresh' | 'yaxis') => {
+    const createButton = (text: string, title: string, value?: string, controlType?: 'time' | 'refresh' | 'yaxis', index?: number, total?: number) => {
       const button = document.createElement('button');
       button.style.padding = '4px 8px';
-      button.style.borderRadius = '4px';
       button.style.border = '1px solid var(--divider-color)';
       button.style.backgroundColor = 'var(--secondary-background-color)';
       button.style.color = 'var(--primary-text-color)';
@@ -861,6 +860,30 @@ export class EnergyDashboardChartCard extends HTMLElement {
       button.style.transition = 'all 0.2s ease-in-out';
       button.style.minHeight = '28px'; // Slightly smaller
       button.style.fontSize = '0.9em';
+      button.style.margin = '0';
+      button.style.position = 'relative';
+      
+      // Handle button border radius based on position
+      if (index !== undefined && total !== undefined) {
+        // First button - round left corners only
+        if (index === 0) {
+          button.style.borderRadius = '4px 0 0 4px';
+          button.style.borderRight = 'none';
+        } 
+        // Last button - round right corners only
+        else if (index === total - 1) {
+          button.style.borderRadius = '0 4px 4px 0';
+        } 
+        // Middle buttons - no rounded corners
+        else {
+          button.style.borderRadius = '0';
+          button.style.borderRight = 'none';
+        }
+      } else {
+        // Default for refresh button
+        button.style.borderRadius = '4px';
+      }
+      
       button.title = title;
       if (text.includes('<ha-icon')) {
         const iconWrapper = document.createElement('div');
@@ -895,17 +918,24 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const refreshButton = createButton('<ha-icon icon="mdi:refresh"></ha-icon>', 'Refresh now');
     refreshButton.style.minWidth = '30px'; // Smaller
     refreshButton.style.width = '30px';
-    const offButton = createButton('Off', 'Disable automatic refresh', '0', 'refresh');
-    const sec15Button = createButton('15s', 'Refresh every 15 seconds', '15', 'refresh');
-    const sec30Button = createButton('30s', 'Refresh every 30 seconds', '30', 'refresh');
-    const sec60Button = createButton('60s', 'Refresh every 60 seconds', '60', 'refresh');
-    buttonsContainer.appendChild(refreshButton);
-    buttonsContainer.appendChild(offButton);
-    buttonsContainer.appendChild(sec15Button);
-    buttonsContainer.appendChild(sec30Button);
-    buttonsContainer.appendChild(sec60Button);
+    refreshButton.style.marginRight = '4px'; // Add space between refresh and interval buttons
+    
+    // Make interval buttons as a single connected group
+    const refreshOptions = [
+      { text: 'Off', title: 'Disable automatic refresh', value: '0' },
+      { text: '15s', title: 'Refresh every 15 seconds', value: '15' },
+      { text: '30s', title: 'Refresh every 30 seconds', value: '30' },
+      { text: '60s', title: 'Refresh every 60 seconds', value: '60' }
+    ];
+    
+    refreshOptions.forEach((option, index) => {
+      const btn = createButton(option.text, option.title, option.value, 'refresh', index, refreshOptions.length);
+      buttonsContainer.appendChild(btn);
+    });
+    
+    buttonsContainer.insertBefore(refreshButton, buttonsContainer.firstChild);
 
-    // Time range buttons (1h, 3h, 12h, 24h, 3d, 1w)
+    // Time range buttons (1h, 3h, 12h, 24h, 3d, 1w) as a single connected group
     const timeRanges = [
       { label: '1h', hours: 1 },
       { label: '3h', hours: 3 },
@@ -914,24 +944,33 @@ export class EnergyDashboardChartCard extends HTMLElement {
       { label: '3d', hours: 72 },
       { label: '1w', hours: 168 }
     ];
-    timeRanges.forEach(range => {
-      const btn = createButton(range.label, `Show last ${range.label}`, String(range.hours), 'time');
+    timeRanges.forEach((range, index) => {
+      const btn = createButton(
+        range.label, 
+        `Show last ${range.label}`, 
+        String(range.hours), 
+        'time',
+        index,
+        timeRanges.length
+      );
       timeRangeContainer.appendChild(btn);
     });
 
-    // Y-axis preset buttons (Auto, 500, 2000, 3000)
+    // Y-axis preset buttons (Auto, 500, 2000, 3000) as a single connected group
     const yAxisPresets = [
       { label: 'Auto', value: 'auto' },
       { label: '500', value: '500' },
       { label: '2000', value: '2000' },
       { label: '3000', value: '3000' }
     ];
-    yAxisPresets.forEach(preset => {
+    yAxisPresets.forEach((preset, index) => {
       const btn = createButton(
         preset.label, 
         preset.value === 'auto' ? 'Automatic Y-axis scaling' : `Set Y-axis maximum to ${preset.value}`,
         preset.value,
-        'yaxis'
+        'yaxis',
+        index,
+        yAxisPresets.length
       );
       maxRangeContainer.appendChild(btn);
     });
