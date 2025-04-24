@@ -74,4 +74,6 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _createRefreshControls;
     private _updateRefreshControlsUI;
     private _updateTimeRangeControlsUI;
+    private _updateYAxisControlsUI;
+    private _setYAxisMax;
 }

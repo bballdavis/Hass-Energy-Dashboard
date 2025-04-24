@@ -2030,6 +2030,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         controlsContainer.style.alignItems = 'center';
         controlsContainer.style.padding = '0 16px 8px';
         controlsContainer.style.gap = '8px';
+        controlsContainer.style.flexWrap = 'wrap';
         // --- Refresh Rate Controls ---
         const refreshTitle = document.createElement('div');
         refreshTitle.className = 'refresh-title';
@@ -2056,8 +2057,22 @@ class EnergyDashboardChartCard extends HTMLElement {
         timeRangeContainer.style.justifyContent = 'flex-end';
         timeRangeContainer.style.alignItems = 'center';
         timeRangeContainer.style.gap = '8px';
-        // Helper for both controls
-        const createButton = (text, title, value, isTimeRange) => {
+        // --- Y-Axis Controls ---
+        const yAxisTitle = document.createElement('div');
+        yAxisTitle.className = 'y-axis-title';
+        yAxisTitle.textContent = 'Y-Axis:';
+        yAxisTitle.style.fontWeight = '500';
+        yAxisTitle.style.fontSize = '0.9em';
+        yAxisTitle.style.marginRight = '8px';
+        yAxisTitle.style.marginLeft = '16px'; // Add space between this and previous controls
+        const yAxisContainer = document.createElement('div');
+        yAxisContainer.className = 'y-axis-container';
+        yAxisContainer.style.display = 'flex';
+        yAxisContainer.style.justifyContent = 'flex-end';
+        yAxisContainer.style.alignItems = 'center';
+        yAxisContainer.style.gap = '8px';
+        // Helper for all controls
+        const createButton = (text, title, value, controlType) => {
             const button = document.createElement('button');
             button.style.padding = '4px 8px';
             button.style.borderRadius = '4px';
@@ -2082,15 +2097,20 @@ class EnergyDashboardChartCard extends HTMLElement {
             else {
                 button.textContent = text;
             }
-            if (isTimeRange && value !== undefined) {
+            if (controlType === 'time' && value !== undefined) {
                 button.className = 'time-range-button control-button';
                 button.dataset.hours = value;
                 button.addEventListener('click', () => this._setTimeRange(Number(value)));
             }
-            else if (!isTimeRange && value !== undefined) {
+            else if (controlType === 'refresh' && value !== undefined) {
                 button.className = 'interval-button control-button';
                 button.dataset.seconds = value;
                 button.addEventListener('click', () => this._setRefreshInterval(Number(value)));
+            }
+            else if (controlType === 'yaxis' && value !== undefined) {
+                button.className = 'yaxis-button control-button';
+                button.dataset.yaxis = value;
+                button.addEventListener('click', () => this._setYAxisMax(value));
             }
             else {
                 button.className = 'refresh-button control-button';
@@ -2102,10 +2122,10 @@ class EnergyDashboardChartCard extends HTMLElement {
         const refreshButton = createButton('<ha-icon icon="mdi:refresh"></ha-icon>', 'Refresh now');
         refreshButton.style.minWidth = '36px';
         refreshButton.style.width = '36px';
-        const offButton = createButton('Off', 'Disable automatic refresh', '0');
-        const sec15Button = createButton('15s', 'Refresh every 15 seconds', '15');
-        const sec30Button = createButton('30s', 'Refresh every 30 seconds', '30');
-        const sec60Button = createButton('60s', 'Refresh every 60 seconds', '60');
+        const offButton = createButton('Off', 'Disable automatic refresh', '0', 'refresh');
+        const sec15Button = createButton('15s', 'Refresh every 15 seconds', '15', 'refresh');
+        const sec30Button = createButton('30s', 'Refresh every 30 seconds', '30', 'refresh');
+        const sec60Button = createButton('60s', 'Refresh every 60 seconds', '60', 'refresh');
         buttonsContainer.appendChild(refreshButton);
         buttonsContainer.appendChild(offButton);
         buttonsContainer.appendChild(sec15Button);
@@ -2121,16 +2141,59 @@ class EnergyDashboardChartCard extends HTMLElement {
             { label: '1w', hours: 168 }
         ];
         timeRanges.forEach(range => {
-            const btn = createButton(range.label, `Show last ${range.label}`, String(range.hours), true);
+            const btn = createButton(range.label, `Show last ${range.label}`, String(range.hours), 'time');
             timeRangeContainer.appendChild(btn);
         });
-        // Layout: put both controls on the same line
-        controlsContainer.appendChild(refreshTitle);
-        controlsContainer.appendChild(buttonsContainer);
-        controlsContainer.appendChild(timeRangeTitle);
-        controlsContainer.appendChild(timeRangeContainer);
+        // Y-axis preset buttons (Auto, 500, 2000, 3000)
+        const yAxisPresets = [
+            { label: 'Auto', value: 'auto' },
+            { label: '500', value: '500' },
+            { label: '2000', value: '2000' },
+            { label: '3000', value: '3000' }
+        ];
+        yAxisPresets.forEach(preset => {
+            const btn = createButton(preset.label, preset.value === 'auto' ? 'Automatic Y-axis scaling' : `Set Y-axis maximum to ${preset.value}`, preset.value, 'yaxis');
+            yAxisContainer.appendChild(btn);
+        });
+        // First row: Refresh controls and Time range controls
+        const firstRow = document.createElement('div');
+        firstRow.className = 'controls-row';
+        firstRow.style.display = 'flex';
+        firstRow.style.justifyContent = 'space-between';
+        firstRow.style.width = '100%';
+        firstRow.style.marginBottom = '8px';
+        const refreshGroup = document.createElement('div');
+        refreshGroup.className = 'refresh-group';
+        refreshGroup.style.display = 'flex';
+        refreshGroup.style.alignItems = 'center';
+        refreshGroup.appendChild(refreshTitle);
+        refreshGroup.appendChild(buttonsContainer);
+        const timeRangeGroup = document.createElement('div');
+        timeRangeGroup.className = 'time-range-group';
+        timeRangeGroup.style.display = 'flex';
+        timeRangeGroup.style.alignItems = 'center';
+        timeRangeGroup.appendChild(timeRangeTitle);
+        timeRangeGroup.appendChild(timeRangeContainer);
+        firstRow.appendChild(refreshGroup);
+        firstRow.appendChild(timeRangeGroup);
+        // Second row: Y-axis controls
+        const secondRow = document.createElement('div');
+        secondRow.className = 'controls-row';
+        secondRow.style.display = 'flex';
+        secondRow.style.alignItems = 'center';
+        secondRow.style.width = '100%';
+        const yAxisGroup = document.createElement('div');
+        yAxisGroup.className = 'y-axis-group';
+        yAxisGroup.style.display = 'flex';
+        yAxisGroup.style.alignItems = 'center';
+        yAxisGroup.appendChild(yAxisTitle);
+        yAxisGroup.appendChild(yAxisContainer);
+        secondRow.appendChild(yAxisGroup);
+        controlsContainer.appendChild(firstRow);
+        controlsContainer.appendChild(secondRow);
         this._updateRefreshControlsUI(buttonsContainer);
         this._updateTimeRangeControlsUI(timeRangeContainer);
+        this._updateYAxisControlsUI(yAxisContainer);
         return controlsContainer;
     }
     _updateRefreshControlsUI(container) {
@@ -2168,6 +2231,59 @@ class EnergyDashboardChartCard extends HTMLElement {
             activeButton.style.color = 'var(--text-primary-color)';
             activeButton.style.borderColor = 'var(--primary-color)';
         }
+    }
+    _updateYAxisControlsUI(container) {
+        var _a, _b, _c, _d;
+        const controls = container || this._root.querySelector('.y-axis-container');
+        if (!controls)
+            return;
+        const buttons = controls.querySelectorAll('.yaxis-button');
+        buttons.forEach(btn => {
+            const button = btn;
+            button.style.backgroundColor = 'var(--secondary-background-color)';
+            button.style.color = 'var(--primary-text-color)';
+            button.style.borderColor = 'var(--divider-color)';
+        });
+        const activeButton = controls.querySelector(`.yaxis-button[data-yaxis="${(_d = (_c = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.energy_chart_options) === null || _b === void 0 ? void 0 : _b.y_axis) === null || _c === void 0 ? void 0 : _c.max) !== null && _d !== void 0 ? _d : 'auto'}"]`);
+        if (activeButton) {
+            activeButton.style.backgroundColor = 'var(--primary-color)';
+            activeButton.style.color = 'var(--text-primary-color)';
+            activeButton.style.borderColor = 'var(--primary-color)';
+        }
+    }
+    _setYAxisMax(maxValue) {
+        if (!this.config)
+            return;
+        // Get current view mode
+        const isEnergy = this._viewMode === 'energy';
+        // Update config based on current view mode
+        if (isEnergy) {
+            if (!this.config.energy_chart_options) {
+                this.config.energy_chart_options = { y_axis: {} };
+            }
+            if (!this.config.energy_chart_options.y_axis) {
+                this.config.energy_chart_options.y_axis = {};
+            }
+            // Set max to number or undefined for auto
+            this.config.energy_chart_options.y_axis.max =
+                maxValue === 'auto' ? undefined : Number(maxValue);
+        }
+        else {
+            if (!this.config.power_chart_options) {
+                this.config.power_chart_options = { y_axis: {} };
+            }
+            if (!this.config.power_chart_options.y_axis) {
+                this.config.power_chart_options.y_axis = {};
+            }
+            // Set max to number or undefined for auto
+            this.config.power_chart_options.y_axis.max =
+                maxValue === 'auto' ? undefined : Number(maxValue);
+        }
+        // Update the UI to show the active button
+        this._updateYAxisControlsUI();
+        // Refresh the chart to apply new Y-axis setting
+        this._updateCharts();
+        console.log(`Set Y-axis max to ${maxValue} for ${isEnergy ? 'energy' : 'power'} chart`);
     }
 }
 customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
