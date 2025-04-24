@@ -207,49 +207,39 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const chartType = this.config.chart_type || 'line';
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
-    const aggregateFunc = this.config.aggregate_func || 'avg';
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
 
+    // Strictly minimal series config matching apexcharts-card schema
     const series = entities.map(entityId => ({
       entity: entityId,
-      name: this._hass.states[entityId]?.attributes?.friendly_name || entityId,
-      type: chartType,
-      stroke_width: 2,
-      // Only include group_by if we have an aggregation function
-      ...(aggregateFunc ? {
-        group_by: {
-          func: aggregateFunc,
-          duration: '1h'
-        }
-      } : {})
+      name: this._hass.states[entityId]?.attributes?.friendly_name || entityId
     }));
 
-    const apexChartCardConfig: any = {
+    // Minimal config object matching apexcharts-card schema
+    const apexChartCardConfig = {
       type: 'custom:apexcharts-card',
       header: {
-        show: false,
+        show: false
       },
       graph_span: `${hoursToShow}h`,
       chart_type: chartType,
-      cache: true,
-      stacked: false,
-      // Set to 0s to disable internal updates
-      update_interval: '0s',
-
-      series: series,
+      series,
       
-      yaxis: [{
-        ...(typeof options?.y_axis?.min !== 'undefined' && { min: options.y_axis.min }),
-        ...(typeof options?.y_axis?.max !== 'undefined' && { max: options.y_axis.max }),
-        ...(typeof options?.y_axis?.decimals !== 'undefined' 
-            ? { decimals: options.y_axis.decimals }
-            : { decimals: isEnergy ? 2 : 1 })
-      }],
+      ...(options?.y_axis ? {
+        yaxis: [{
+          ...(typeof options.y_axis.min !== 'undefined' && { min: options.y_axis.min }),
+          ...(typeof options.y_axis.max !== 'undefined' && { max: options.y_axis.max }),
+          decimals: options.y_axis.decimals ?? (isEnergy ? 2 : 1)
+        }]
+      } : {}),
 
       apex_config: {
         chart: {
           height: this.config.chart_height || 300,
+          animations: {
+            enabled: false
+          },
           toolbar: {
             show: true,
             tools: {
@@ -261,31 +251,20 @@ export class EnergyDashboardChartCard extends HTMLElement {
               pan: true,
               reset: true
             }
-          },
-          animations: {
-            enabled: false
-          },
-          redrawOnWindowResize: false
-        },
-        stroke: {
-          curve: smoothCurve ? 'smooth' : 'straight'
+          }
         },
         markers: {
           size: showPoints ? 4 : 0
         },
+        stroke: {
+          curve: smoothCurve ? 'smooth' : 'straight',
+          width: 2
+        },
         legend: {
           show: showLegend
-        },
-        annotations: {
-          position: 'front'
         }
       }
     };
-
-    // Clean up empty or undefined properties
-    if (Object.keys(apexChartCardConfig.yaxis[0]).length === 0) {
-      delete apexChartCardConfig.yaxis;
-    }
 
     return apexChartCardConfig;
   }
