@@ -219,8 +219,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     // --- Y Axis Auto-Range Logic ---
     let yMin = options?.y_axis?.min;
     let yMax = options?.y_axis?.max;
-    let tickAmount = options?.y_axis?.tickAmount;
-    let decimals = 0;
     let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
     if (options?.y_axis?.title) yTitle = options.y_axis.title;
 
@@ -235,17 +233,21 @@ export class EnergyDashboardChartCard extends HTMLElement {
       if (values.length > 0) {
         const minVal = Math.min(...values);
         const maxVal = Math.max(...values);
+        
+        // Set minimum to 0 for power, or round down to nearest 100 for energy
         yMin = isEnergy ? Math.floor(minVal / 100) * 100 : 0;
-        yMax = Math.ceil(maxVal / 100) * 100;
-        if (yMax - yMin < 100) yMax = yMin + 100;
-        tickAmount = Math.round((yMax - yMin) / 50);
-        if (tickAmount < 2) tickAmount = 2;
+        
+        // Round up to next 100 and add 100 more for better visualization
+        yMax = Math.ceil(maxVal / 100) * 100 + 100;
       } else {
         yMin = 0;
-        yMax = 100;
-        tickAmount = 2;
+        yMax = 200; // Default to 0-200 range if no data
       }
     }
+
+    // Calculate grid intervals to ensure major lines at intervals of 100
+    const range = yMax - yMin;
+    const tickAmount = Math.ceil(range / 100) * 2; // Major lines every 100, minor every 50
 
     // Minimal config object matching apexcharts-card schema
     const apexChartCardConfig = {
@@ -259,7 +261,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       yaxis: [{
         min: yMin,
         max: yMax,
-        decimals
+        decimals: 0 // Always use whole numbers
       }],
       apex_config: {
         chart: {
@@ -281,8 +283,35 @@ export class EnergyDashboardChartCard extends HTMLElement {
         yaxis: [{
           tickAmount,
           title: { text: yTitle },
-          labels: { formatter: (val: number) => val.toFixed(0) }
+          labels: { 
+            formatter: (val: number) => val.toFixed(0)
+          },
+          axisTicks: {
+            show: true
+          },
+          axisBorder: {
+            show: true
+          },
+          grid: {
+            show: true
+          }
         }],
+        grid: {
+          show: true,
+          borderColor: '#90A4AE30',
+          strokeDashArray: 0,
+          position: 'back',
+          xaxis: {
+            lines: {
+              show: false
+            }
+          },
+          yaxis: {
+            lines: {
+              show: true
+            }
+          }
+        },
         markers: { size: showPoints ? 4 : 0 },
         stroke: { curve: smoothCurve ? 'smooth' : 'straight', width: 2 },
         legend: { show: showLegend }

@@ -1383,7 +1383,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d;
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = isEnergy
@@ -1405,16 +1405,14 @@ class EnergyDashboardChartCard extends HTMLElement {
         // --- Y Axis Auto-Range Logic ---
         let yMin = (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min;
         let yMax = (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max;
-        let tickAmount = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.tickAmount;
-        let decimals = 0;
         let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
-        if ((_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.title)
+        if ((_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.title)
             yTitle = options.y_axis.title;
         // Only auto-range if min/max are not set in config
         if (typeof yMin === 'undefined' || typeof yMax === 'undefined') {
             let values = [];
             for (const entityId of entities) {
-                const state = (_e = this._hass.states[entityId]) === null || _e === void 0 ? void 0 : _e.state;
+                const state = (_d = this._hass.states[entityId]) === null || _d === void 0 ? void 0 : _d.state;
                 const num = Number(state);
                 if (!isNaN(num))
                     values.push(num);
@@ -1422,20 +1420,19 @@ class EnergyDashboardChartCard extends HTMLElement {
             if (values.length > 0) {
                 const minVal = Math.min(...values);
                 const maxVal = Math.max(...values);
+                // Set minimum to 0 for power, or round down to nearest 100 for energy
                 yMin = isEnergy ? Math.floor(minVal / 100) * 100 : 0;
-                yMax = Math.ceil(maxVal / 100) * 100;
-                if (yMax - yMin < 100)
-                    yMax = yMin + 100;
-                tickAmount = Math.round((yMax - yMin) / 50);
-                if (tickAmount < 2)
-                    tickAmount = 2;
+                // Round up to next 100 and add 100 more for better visualization
+                yMax = Math.ceil(maxVal / 100) * 100 + 100;
             }
             else {
                 yMin = 0;
-                yMax = 100;
-                tickAmount = 2;
+                yMax = 200; // Default to 0-200 range if no data
             }
         }
+        // Calculate grid intervals to ensure major lines at intervals of 100
+        const range = yMax - yMin;
+        const tickAmount = Math.ceil(range / 100) * 2; // Major lines every 100, minor every 50
         // Minimal config object matching apexcharts-card schema
         const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
@@ -1448,7 +1445,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             yaxis: [{
                     min: yMin,
                     max: yMax,
-                    decimals
+                    decimals: 0 // Always use whole numbers
                 }],
             apex_config: {
                 chart: {
@@ -1470,8 +1467,35 @@ class EnergyDashboardChartCard extends HTMLElement {
                 yaxis: [{
                         tickAmount,
                         title: { text: yTitle },
-                        labels: { formatter: (val) => val.toFixed(0) }
+                        labels: {
+                            formatter: (val) => val.toFixed(0)
+                        },
+                        axisTicks: {
+                            show: true
+                        },
+                        axisBorder: {
+                            show: true
+                        },
+                        grid: {
+                            show: true
+                        }
                     }],
+                grid: {
+                    show: true,
+                    borderColor: '#90A4AE30',
+                    strokeDashArray: 0,
+                    position: 'back',
+                    xaxis: {
+                        lines: {
+                            show: false
+                        }
+                    },
+                    yaxis: {
+                        lines: {
+                            show: true
+                        }
+                    }
+                },
                 markers: { size: showPoints ? 4 : 0 },
                 stroke: { curve: smoothCurve ? 'smooth' : 'straight', width: 2 },
                 legend: { show: showLegend }
