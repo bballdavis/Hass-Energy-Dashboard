@@ -1,6 +1,8 @@
 import { EnergyDashboardChartConfig } from './energy-dashboard-chart-config';
 export declare class EnergyDashboardChartCard extends HTMLElement {
     private _hass;
+    private _lastHassUpdate;
+    private _lastEntitiesHash;
     config?: EnergyDashboardChartConfig;
     private _root;
     private _powerChartEl;
@@ -11,6 +13,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _renderedPowerEntities;
     private _renderedEnergyEntities;
     private _isInitialRender;
+    private _updateScheduled;
     static get cardType(): string;
     static get displayName(): string;
     static get description(): string;
@@ -53,6 +56,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _loadSelectedEntities;
     private _startUpdateInterval;
     private _stopUpdateInterval;
+    private _checkForEntityChanges;
     private _handleStorageChange;
     private _generateApexchartsConfig;
     private _createChart;
