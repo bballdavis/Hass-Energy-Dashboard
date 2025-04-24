@@ -112,7 +112,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     } as EnergyDashboardChartConfig;
     
     // Set the current refresh interval from config
-    this._currentRefreshInterval = this.config.update_interval;
+    this._currentRefreshInterval = this.config.update_interval ?? 30;
     
     this._loadSelectedEntities();
     this._isLoading = true;

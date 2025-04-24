@@ -1198,7 +1198,7 @@ function getDefaultChartConfig() {
         chart_height: 300,
         show_points: false,
         smooth_curve: true,
-        update_interval: 0, // Set default to 0 (disabled) - our UI controls will handle refresh
+        update_interval: 30, // Set default to 30 seconds
         hours_to_show: 24,
         aggregate_func: 'avg',
         power_chart_options: {
@@ -1274,7 +1274,7 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     // Home Assistant specific method to set config
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         if (!config) {
             throw new Error("Invalid configuration");
         }
@@ -1314,7 +1314,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             update_interval: (_o = config.update_interval) !== null && _o !== void 0 ? _o : 30,
         };
         // Set the current refresh interval from config
-        this._currentRefreshInterval = this.config.update_interval;
+        this._currentRefreshInterval = (_p = this.config.update_interval) !== null && _p !== void 0 ? _p : 30;
         this._loadSelectedEntities();
         this._isLoading = true;
         this._checkApexChartsRegistration();
