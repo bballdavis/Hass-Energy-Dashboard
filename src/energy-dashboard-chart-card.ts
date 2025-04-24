@@ -715,21 +715,40 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _setRefreshInterval(seconds: number) {
-    // Use the direct ApexCharts control instead of our own mechanism
-    this._setApexChartRefreshInterval(seconds);
-    
-    // Update the config so it persists
+    // Update the config so it persists and is used for new chart creation
     if (this.config) {
       this.config.update_interval = seconds;
     }
-    
+    // Set our tracking variable
+    this._currentRefreshInterval = seconds;
+
     // Update the UI to reflect the current interval
     this._updateRefreshControlsUI();
+
+    // Update the ApexCharts card config for both charts (if present)
+    const charts = this._findAllApexChartsCards();
+    charts.forEach(chart => {
+      if (chart._config) {
+        chart._config.update_interval = seconds;
+        // Re-apply config to force ApexCharts to use new interval
+        if (typeof chart.setConfig === 'function') {
+          chart.setConfig(chart._config);
+        }
+      }
+    });
+
+    // Stop our own timer and set up a new one if needed
+    this._stopUpdateInterval();
+    if (seconds > 0) {
+      this._updateTimer = window.setInterval(() => {
+        this._triggerApexChartManualRefresh();
+      }, seconds * 1000);
+    }
   }
-  
+
   private _manualRefresh() {
-    // Directly trigger a refresh on the ApexCharts components
-    this._triggerApexChartManualRefresh();
+    // Reload the apexcharts-card instance(s) by re-creating the chart elements
+    this._updateCharts();
   }
   
   private _createRefreshControls(): HTMLElement {
@@ -968,29 +987,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         console.error('Failed to refresh ApexCharts:', e);
       }
     });
-  }
-  
-  private _setApexChartRefreshInterval(seconds: number) {
-    const charts = this._findAllApexChartsCards();
-    
-    // First stop all existing timers
-    this._stopAllApexChartTimers();
-    
-    // Set our tracking variable
-    this._currentRefreshInterval = seconds;
-    
-    // If seconds is 0, we're done - auto refresh is disabled
-    if (seconds === 0) {
-      console.log(`Auto-refresh disabled for ${charts.length} ApexCharts cards`);
-      return;
-    }
-    
-    // Otherwise set up our own timer to trigger manual refreshes
-    this._updateTimer = window.setInterval(() => {
-      this._triggerApexChartManualRefresh();
-    }, seconds * 1000);
-    
-    console.log(`Set refresh interval to ${seconds}s for ${charts.length} ApexCharts cards`);
   }
 }
 
