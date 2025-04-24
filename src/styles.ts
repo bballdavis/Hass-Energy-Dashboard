@@ -29,12 +29,13 @@ export const cardStyles = `
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    gap: min(4px, 1%); /* Use dynamic gap that shrinks with card size */
   }
   .control-button {
     background-color: var(--secondary-background-color);
     border: none;
     border-radius: 8px;
-    padding: 6px 12px;
+    padding: 6px min(12px, 2%); /* Reduce padding on smaller screens */
     color: var(--primary-text-color);
     font-size: 0.9em;
     font-weight: 500;
@@ -44,11 +45,13 @@ export const cardStyles = `
     justify-content: center;
     transition: background-color 0.3s ease;
     flex: 1;
-    margin: 0 4px;
+    margin: 0; /* Remove margin in favor of gap on the parent */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     height: var(--button-height);
     min-height: var(--button-height);
     box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
   }
   .control-button:first-child {
     margin-left: 0;
@@ -150,8 +153,8 @@ export const cardStyles = `
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    min-width: 85px;
-    max-width: 85px;
+    min-width: 65px; /* Reduced from 85px to allow 20px more for entity name */
+    max-width: 65px; /* Reduced from 85px to allow 20px more for entity name */
     white-space: nowrap;
     flex: 0 0 auto;
     font-size: 0.95em;
