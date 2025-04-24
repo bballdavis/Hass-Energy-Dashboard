@@ -46,7 +46,7 @@ export function getDefaultChartConfig(): Partial<EnergyDashboardChartConfig> {
     chart_height: 300,
     show_points: false,
     smooth_curve: true,
-    update_interval: 60,
+    update_interval: 30,
     hours_to_show: 24,
     aggregate_func: 'avg',
     power_chart_options: {
