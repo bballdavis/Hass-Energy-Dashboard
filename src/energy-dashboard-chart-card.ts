@@ -185,8 +185,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
         entity: entityId,
         name: name,
         type: chartType,
-        curve: smooth ? 'smooth' : 'straight',
-        show_points: showPoints,
+        // apexcharts-card expects 'smooth' only as a boolean
+        smooth: smooth,
+        // don't include show_points in the series config
         stroke_width: 2
       };
     });
@@ -216,12 +217,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
         },
       },
       series: series,
-      hours_to_show: hoursToShow,
+      // Convert hours_to_show to a string with "h" suffix
+      hours_to_show: hoursToShow.toString(),
       span: {
         start: `now-${hoursToShow}h`,
         end: 'now'
       },
-      show_legend: true,
+      show_legend: this.config.show_legend !== false,
       yaxis: [{
         min: options?.y_axis?.min,
         max: options?.y_axis?.max,
@@ -237,15 +239,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
           }
         }
       }],
-      all_series_config: {
-        stroke_width: 2,
-        show_points: showPoints,
-        type: chartType,
-      },
+      // Remove all_series_config since it's causing errors
       cache: true,
       stacked: false,
-      update_interval: this.config.update_interval || 60,
-      group_by: aggregateFunc
+      // Convert update_interval to a string
+      update_interval: (this.config.update_interval || 60).toString(),
+      group_by: aggregateFunc,
+      // Add show_points at the top level instead of in all_series_config
+      show_points: showPoints
     };
   }
 
