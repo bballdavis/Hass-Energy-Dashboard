@@ -237,20 +237,6 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     hoursToShowRow.appendChild(hoursToShowField);
     form.appendChild(hoursToShowRow);
 
-    // Update Interval field
-    const updateIntervalRow = this._createRow();
-    const updateIntervalField = document.createElement('ha-textfield') as HaFormElement;
-    updateIntervalField.className = 'value';
-    updateIntervalField.label = 'Update Interval (seconds)';
-    updateIntervalField.type = 'number';
-    updateIntervalField.min = '10';
-    updateIntervalField.max = '3600';
-    updateIntervalField.value = String(this.config.update_interval || 60);
-    updateIntervalField.configValue = 'update_interval';
-    updateIntervalField.addEventListener('change', this.valueChanged);
-    updateIntervalRow.appendChild(updateIntervalField);
-    form.appendChild(updateIntervalRow);
-
     // Show Points toggle
     const showPointsRow = this._createRow();
     const showPointsSwitch = document.createElement('ha-switch') as HaFormElement;
