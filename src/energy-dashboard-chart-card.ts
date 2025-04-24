@@ -350,8 +350,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
       
       // If we got here, the element is available, set its config
       try {
-        // Set card config for apexcharts-card
-        (apexCard as any).setConfig(chartConfig);
+        // Apply configuration directly to properties instead of using setConfig
+        Object.entries(chartConfig).forEach(([key, value]) => {
+          (apexCard as any)[key] = value;
+        });
         
         // Pass hass object to the chart
         if (this._hass) {
