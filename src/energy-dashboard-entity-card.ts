@@ -52,6 +52,11 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
   // Called when the element is added to the DOM
   connectedCallback() {
+    // Load persistence setting from localStorage when element is connected to DOM
+    if (this.config) {
+      this.config.persist_selection = this._loadPersistenceState();
+    }
+    
     this._updateContent();
   }
 
@@ -123,11 +128,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     const isFirstUpdate = !this._hass;
     this._hass = hass;
     
-    // Make sure initialization happens after we have both hass and config
-    if (isFirstUpdate && this.config) {
-      // Force initialization on first update if we already have config
-      this._initialized = false;
-      this._energyInitialized = false;
+    // Load the persistence setting from localStorage early to ensure it's always available
+    if (this.config && isFirstUpdate) {
+      this.config.persist_selection = this._loadPersistenceState();
     }
     
     this._updateEntities();
@@ -718,6 +721,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       }
       return;
     }
+
+    // Always ensure persistence setting is loaded from localStorage
+    this.config.persist_selection = this._loadPersistenceState();
 
     // Get the ha-card element
     const card = this._root.querySelector('ha-card');
