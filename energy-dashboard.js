@@ -1236,25 +1236,19 @@ class EnergyDashboardChartCard extends HTMLElement {
         chartElement.style.width = '100%';
         chartElement.style.marginBottom = '16px';
         try {
-            // First try to create the element regardless of whether customElements.get succeeds
-            // This is more reliable than checking if it's registered
+            // Create a card wrapper element for the apexcharts-card
+            const cardWrapper = document.createElement('div');
+            // Create the card content in the format expected by apexcharts-card
+            const content = document.createTextNode(JSON.stringify(chartConfig));
+            cardWrapper.appendChild(content);
+            // Initialize card from markup - this is likely how apexcharts-card processes config
             const apexCard = document.createElement('apexcharts-card');
-            // If we got here, the element is available, set its config
-            try {
-                // Apply configuration directly to properties instead of using setConfig
-                Object.entries(chartConfig).forEach(([key, value]) => {
-                    apexCard[key] = value;
-                });
-                // Pass hass object to the chart
-                if (this._hass) {
-                    apexCard.hass = this._hass;
-                }
-                chartElement.appendChild(apexCard);
+            apexCard.appendChild(cardWrapper);
+            // Pass hass object to the chart
+            if (this._hass) {
+                apexCard.hass = this._hass;
             }
-            catch (configError) {
-                console.error('Error configuring apexcharts-card:', configError);
-                chartElement.appendChild(this._createErrorMessage('Error configuring chart. Please check your browser console for details.'));
-            }
+            chartElement.appendChild(apexCard);
         }
         catch (err) {
             console.error('Error creating apexcharts-card:', err);
