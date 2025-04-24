@@ -248,8 +248,8 @@ const cardStyles = `
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    min-width: 65px; /* Reduced from 85px to allow 20px more for entity name */
-    max-width: 65px; /* Reduced from 85px to allow 20px more for entity name */
+    min-width: 45px; /* Reduced from 65px to allow another 20px more for entity name */
+    max-width: 45px; /* Reduced from 65px to allow another 20px more for entity name */
     white-space: nowrap;
     flex: 0 0 auto;
     font-size: 0.95em;
