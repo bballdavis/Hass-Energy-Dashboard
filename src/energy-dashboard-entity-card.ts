@@ -655,6 +655,10 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
       resetButton.style.backgroundColor = 'var(--card-background-color, white)';
       resetButton.style.border = '1px solid var(--primary-color)';
+      resetButton.style.whiteSpace = 'normal';
+      resetButton.style.lineHeight = '1.2';
+      resetButton.style.flexDirection = 'column';
+      resetButton.style.padding = '4px 8px';
       
       const clearButton = document.createElement('button');
       clearButton.className = 'control-button';
@@ -662,13 +666,21 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       clearButton.addEventListener('click', this._clearAllEnergyEntities);
       clearButton.style.backgroundColor = 'var(--card-background-color, white)';
       clearButton.style.border = '1px solid var(--primary-color)';
+      clearButton.style.whiteSpace = 'normal';
+      clearButton.style.lineHeight = '1.2';
+      clearButton.style.flexDirection = 'column';
+      clearButton.style.padding = '4px 8px';
       
       const selectAllButton = document.createElement('button');
       selectAllButton.className = 'control-button';
-      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
       selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
       selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
       selectAllButton.style.border = '1px solid var(--primary-color)';
+      selectAllButton.style.whiteSpace = 'normal';
+      selectAllButton.style.lineHeight = '1.2';
+      selectAllButton.style.flexDirection = 'column';
+      selectAllButton.style.padding = '4px 8px';
       
       controlButtons.appendChild(resetButton);
       controlButtons.appendChild(clearButton);
