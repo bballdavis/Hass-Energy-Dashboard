@@ -166,6 +166,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _generateApexchartsConfig(entities: string[], isEnergy: boolean) {
     if (!this.config || !entities.length || !this._hass) return null;
 
+    // Reinstate options to get y-axis config
     const options = isEnergy
       ? this.config.energy_chart_options
       : this.config.power_chart_options;
@@ -174,7 +175,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
     const aggregateFunc = this.config.aggregate_func || 'avg';
-    const showLegend = this.config.show_legend !== false; // Get boolean value
+    const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
     const updateInterval = (this.config.update_interval || 60).toString();
 
@@ -182,33 +183,45 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const series = entities.map(entityId => {
       const entityState = this._hass.states[entityId];
       const name = entityState?.attributes?.friendly_name || entityId;
-
       return {
         entity: entityId,
         name: name,
-        type: chartType, // Series type if needed
+        type: chartType,
         stroke_width: 2,
       };
     });
 
-    // Create the correct configuration format for apexcharts-card
+    // Create the configuration format for apexcharts-card
     const apexChartCardConfig: any = {
+      // --- Top-level apexcharts-card specific config ---
       type: 'custom:apexcharts-card',
       header: {
         show: false,
       },
-      // Use graph_span for time range
-      graph_span: `${hoursToShow}h`,
-      // Add group_by at the top level
+      graph_span: `${hoursToShow}h`, // Use graph_span
       group_by: {
         func: aggregateFunc,
         duration: '1h' // Adjust duration as needed
       },
-      // Control legend visibility via top-level 'show' object
       show: {
-        legend_value: showLegend
+        legend_value: showLegend // Use show.legend_value
       },
-      chart_type: chartType, // Global chart type
+      chart_type: chartType,
+      cache: true,
+      stacked: false, // Set based on config if needed
+      update_interval: updateInterval,
+
+      // --- Top-level yaxis configuration ---
+      yaxis: [
+        {
+          // Properties apexcharts-card might expect at the top level
+          min: options?.y_axis?.min,
+          max: options?.y_axis?.max,
+          decimals: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1), // Use 'decimals' instead of 'decimalsInFloat'
+        }
+      ],
+
+      // --- Standard ApexCharts options nested under apex_config ---
       apex_config: {
         chart: {
           height: this.config.chart_height || 300,
@@ -226,21 +239,16 @@ export class EnergyDashboardChartCard extends HTMLElement {
         markers: {
           size: showPoints ? 4 : 0
         },
-        yaxis: [{
-          min: options?.y_axis?.min,
-          max: options?.y_axis?.max,
-          decimalsInFloat: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1),
-        }]
       },
+
+      // --- Series Data ---
       series: series,
-      cache: true,
-      stacked: false, // Set based on config if needed
-      update_interval: updateInterval
     };
 
-    // Clean up potential undefined values that might cause issues
-    if (apexChartCardConfig.apex_config.yaxis[0].min === undefined) delete apexChartCardConfig.apex_config.yaxis[0].min;
-    if (apexChartCardConfig.apex_config.yaxis[0].max === undefined) delete apexChartCardConfig.apex_config.yaxis[0].max;
+    // Clean up potential undefined values from top-level yaxis
+    if (apexChartCardConfig.yaxis[0].min === undefined) delete apexChartCardConfig.yaxis[0].min;
+    if (apexChartCardConfig.yaxis[0].max === undefined) delete apexChartCardConfig.yaxis[0].max;
+    if (apexChartCardConfig.yaxis[0].decimals === undefined) delete apexChartCardConfig.yaxis[0].decimals;
 
     return apexChartCardConfig;
   }

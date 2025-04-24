@@ -1073,6 +1073,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         var _a, _b, _c, _d;
         if (!this.config || !entities.length || !this._hass)
             return null;
+        // Reinstate options to get y-axis config
         const options = isEnergy
             ? this.config.energy_chart_options
             : this.config.power_chart_options;
@@ -1080,7 +1081,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
         const aggregateFunc = this.config.aggregate_func || 'avg';
-        const showLegend = this.config.show_legend !== false; // Get boolean value
+        const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
         const updateInterval = (this.config.update_interval || 60).toString();
         // Build series configuration for apexcharts-card
@@ -1091,28 +1092,39 @@ class EnergyDashboardChartCard extends HTMLElement {
             return {
                 entity: entityId,
                 name: name,
-                type: chartType, // Series type if needed
+                type: chartType,
                 stroke_width: 2,
             };
         });
-        // Create the correct configuration format for apexcharts-card
+        // Create the configuration format for apexcharts-card
         const apexChartCardConfig = {
+            // --- Top-level apexcharts-card specific config ---
             type: 'custom:apexcharts-card',
             header: {
                 show: false,
             },
-            // Use graph_span for time range
-            graph_span: `${hoursToShow}h`,
-            // Add group_by at the top level
+            graph_span: `${hoursToShow}h`, // Use graph_span
             group_by: {
                 func: aggregateFunc,
                 duration: '1h' // Adjust duration as needed
             },
-            // Control legend visibility via top-level 'show' object
             show: {
-                legend_value: showLegend
+                legend_value: showLegend // Use show.legend_value
             },
-            chart_type: chartType, // Global chart type
+            chart_type: chartType,
+            cache: true,
+            stacked: false, // Set based on config if needed
+            update_interval: updateInterval,
+            // --- Top-level yaxis configuration ---
+            yaxis: [
+                {
+                    // Properties apexcharts-card might expect at the top level
+                    min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
+                    max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
+                    decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1), // Use 'decimals' instead of 'decimalsInFloat'
+                }
+            ],
+            // --- Standard ApexCharts options nested under apex_config ---
             apex_config: {
                 chart: {
                     height: this.config.chart_height || 300,
@@ -1130,22 +1142,17 @@ class EnergyDashboardChartCard extends HTMLElement {
                 markers: {
                     size: showPoints ? 4 : 0
                 },
-                yaxis: [{
-                        min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
-                        max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
-                        decimalsInFloat: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
-                    }]
             },
+            // --- Series Data ---
             series: series,
-            cache: true,
-            stacked: false, // Set based on config if needed
-            update_interval: updateInterval
         };
-        // Clean up potential undefined values that might cause issues
-        if (apexChartCardConfig.apex_config.yaxis[0].min === undefined)
-            delete apexChartCardConfig.apex_config.yaxis[0].min;
-        if (apexChartCardConfig.apex_config.yaxis[0].max === undefined)
-            delete apexChartCardConfig.apex_config.yaxis[0].max;
+        // Clean up potential undefined values from top-level yaxis
+        if (apexChartCardConfig.yaxis[0].min === undefined)
+            delete apexChartCardConfig.yaxis[0].min;
+        if (apexChartCardConfig.yaxis[0].max === undefined)
+            delete apexChartCardConfig.yaxis[0].max;
+        if (apexChartCardConfig.yaxis[0].decimals === undefined)
+            delete apexChartCardConfig.yaxis[0].decimals;
         return apexChartCardConfig;
     }
     _createChart(isEnergy) {
