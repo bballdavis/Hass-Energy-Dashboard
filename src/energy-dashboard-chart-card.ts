@@ -862,13 +862,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
       button.style.fontSize = '0.9em';
       button.style.margin = '0';
       button.style.position = 'relative';
+      button.style.boxSizing = 'border-box'; // Important to include borders in size
       
       // Handle button border radius based on position
       if (index !== undefined && total !== undefined) {
         // First button - round left corners only
         if (index === 0) {
           button.style.borderRadius = '4px 0 0 4px';
-          button.style.borderRight = 'none';
         } 
         // Last button - round right corners only
         else if (index === total - 1) {
@@ -877,7 +877,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
         // Middle buttons - no rounded corners
         else {
           button.style.borderRadius = '0';
-          button.style.borderRight = 'none';
+        }
+        
+        // Apply negative margin to every button except first to overlap borders
+        if (index > 0) {
+          button.style.marginLeft = '-1px';
         }
       } else {
         // Default for refresh button
