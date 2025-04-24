@@ -648,19 +648,17 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this.energyEntityToggleStates = toggleStates;
         }
     }
+    // Make entity selections accessible to other components even when persistence is off
     _savePowerToggleStates() {
-        var _a;
-        // Only save toggle states if persistence is enabled
-        if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) {
-            saveToggleStates(this.entityToggleStates, 'energy-dashboard-power-toggle-states');
-        }
+        // Always save toggle states to localStorage for the chart card to access, 
+        // but they will only be loaded on initialization if persistence is enabled
+        saveToggleStates(this.entityToggleStates, 'energy-dashboard-power-toggle-states');
     }
+    // Make entity selections accessible to other components even when persistence is off
     _saveEnergyToggleStates() {
-        var _a;
-        // Only save toggle states if persistence is enabled
-        if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) {
-            saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
-        }
+        // Always save toggle states to localStorage for the chart card to access,
+        // but they will only be loaded on initialization if persistence is enabled
+        saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
     }
     // Manage the persistence toggle setting separately
     _loadPersistenceState() {
