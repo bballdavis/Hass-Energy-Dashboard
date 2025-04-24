@@ -2017,12 +2017,20 @@ class EnergyDashboardChartCard extends HTMLElement {
         const card = this._root.querySelector('ha-card');
         if (!card)
             return;
+        // Clear previous content
         card.innerHTML = '';
+        // Reset any previous inline styles
+        card.style.paddingTop = '';
         if (this.config.show_header) {
             const header = document.createElement('div');
             header.className = 'card-header';
             header.textContent = this.config.title;
             card.appendChild(header);
+        }
+        else {
+            // Add padding to the top of the card when header is disabled
+            // This matches the entity card's buffer space
+            card.style.paddingTop = 'var(--card-padding, 16px)';
         }
         if (this._isLoading) {
             const loadingIndicator = this._createLoadingIndicator();
