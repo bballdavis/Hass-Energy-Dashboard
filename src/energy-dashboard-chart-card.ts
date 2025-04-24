@@ -940,36 +940,33 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const charts = this._findAllApexChartsCards();
     charts.forEach(chart => {
       try {
+        // Check and call the most likely update methods first
         if (typeof chart._originalUpdateChart === 'function') {
           chart._originalUpdateChart.call(chart, 'manual-refresh');
-          return;
-        }
-        if (typeof chart._updateChart === 'function') {
+        } else if (typeof chart._updateChart === 'function') {
           chart._updateChart.call(chart, 'manual-refresh');
-          return;
-        }
-        if (typeof chart.updateChart === 'function') {
+        } else if (typeof chart.updateChart === 'function') {
           chart.updateChart('manual-refresh');
-          return;
-        }
-        if (typeof chart.update === 'function') {
+        } else if (typeof chart.update === 'function') {
           chart.update('manual-refresh');
-          return;
-        }
-        if (typeof chart._originalUpdateData === 'function') {
+        // Check and call data update methods if chart update methods aren't available
+        } else if (typeof chart._originalUpdateData === 'function') {
           chart._originalUpdateData.call(chart, 'manual-refresh');
-          return;
-        }
-        if (typeof chart._updateData === 'function') {
+        } else if (typeof chart._updateData === 'function') {
           chart._updateData.call(chart, 'manual-refresh');
-          return;
-        }
-        if (chart._chart && chart._chart.updateSeries) {
-          const currentSeries = chart._chart.w.globals.series;
-          chart._chart.updateSeries(currentSeries, true);
+        // Fallback to updating series directly if other methods fail
+        } else if (chart._chart && typeof chart._chart.updateSeries === 'function') {
+          const currentSeries = chart._chart.w?.globals?.series;
+          if (currentSeries) {
+            chart._chart.updateSeries(currentSeries, true);
+          } else {
+            console.warn('Could not find series data to refresh ApexChart.');
+          }
+        } else {
+          console.warn('Could not find a method to manually refresh ApexChart.');
         }
       } catch (e) {
-        // Silently ignore
+        console.error('Error during manual ApexChart refresh:', e);
       }
     });
   }
