@@ -956,8 +956,9 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     constructor() {
         super();
-        this._lastHassUpdate = 0; // Timestamp of last update
         this._lastEntitiesHash = ''; // Hash to detect entity changes
+        // @ts-ignore - used in hass setter
+        this._lastHassUpdate = 0; // Timestamp of last update
         this._powerChartEl = null;
         this._energyChartEl = null;
         this._updateTimer = null;
@@ -1068,22 +1069,12 @@ class EnergyDashboardChartCard extends HTMLElement {
         if (this._isInitialRender) {
             return;
         }
-        // Skip updates that happen too frequently
-        const now = Date.now();
-        const timeSinceLastUpdate = now - this._lastHassUpdate;
-        if (timeSinceLastUpdate < 2000 && !this._pendingUpdate) {
-            this._pendingUpdate = true;
-            setTimeout(() => {
-                this._lastHassUpdate = Date.now();
-                this._pendingUpdate = false;
-                this._safeUpdateApexCardHass();
-            }, 2000 - timeSinceLastUpdate);
-            return;
-        }
-        // Update immediately if we have a pending update or it's been long enough
-        if (this._pendingUpdate || timeSinceLastUpdate >= 2000) {
+        // Only propagate updates to the chart when explicitly checking for changes
+        // We'll let our update interval handle regular updates instead of
+        // responding to every Home Assistant state change
+        if (this._pendingUpdate) {
             this._pendingUpdate = false;
-            this._lastHassUpdate = now;
+            this._lastHassUpdate = Date.now();
             this._safeUpdateApexCardHass();
         }
     }
@@ -1110,11 +1101,13 @@ class EnergyDashboardChartCard extends HTMLElement {
         var _a;
         this._stopUpdateInterval();
         // Minimum interval of 30 seconds
-        const intervalSeconds = Math.max(((_a = this.config) === null || _a === void 0 ? void 0 : _a.update_interval) || 30, 30);
+        const intervalSeconds = Math.max(((_a = this.config) === null || _a === void 0 ? void 0 : _a.update_interval) || 60, 30);
         if (intervalSeconds > 0) {
             // Set interval to check for entity changes periodically
             this._updateTimer = window.setInterval(() => {
-                this._checkForEntityChanges();
+                // Instead of checking for entity changes every interval,
+                // just signal that we want to update on the next hass state change
+                this._pendingUpdate = true;
             }, intervalSeconds * 1000);
             console.log(`Chart update interval started: ${intervalSeconds}s`);
         }
@@ -1137,6 +1130,10 @@ class EnergyDashboardChartCard extends HTMLElement {
         if (oldHash !== this._lastEntitiesHash) {
             console.log('Entities changed - rebuilding charts');
             this._rebuildCharts();
+        }
+        else {
+            // If no entity changes, just update the chart data
+            this._pendingUpdate = true;
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
