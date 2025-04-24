@@ -87,10 +87,11 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       show_toggle: config.show_toggle ?? true,
       auto_select_count: config.auto_select_count ?? 6,
       max_height: config.max_height ?? 400,
-      show_energy_section: config.show_energy_section ?? true,
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
       // Use the stored value as priority for persistence setting
       persist_selection: persistenceFromStorage,
+      // Always enable energy section
+      show_energy_section: true,
     };
     
     this._updateContent();
@@ -109,7 +110,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       show_toggle: true,
       auto_select_count: 6,
       max_height: 400,
-      show_energy_section: true,
       energy_auto_select_count: 6,
       persist_selection: true
     };

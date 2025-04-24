@@ -56,7 +56,6 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
       show_toggle: config.show_toggle !== undefined ? config.show_toggle : true,
       auto_select_count: config.auto_select_count !== undefined ? config.auto_select_count : 6,
       max_height: config.max_height !== undefined ? config.max_height : 400, // Default to ~15 entities
-      show_energy_section: config.show_energy_section !== undefined ? config.show_energy_section : true,
       energy_auto_select_count: config.energy_auto_select_count !== undefined ? config.energy_auto_select_count : 6,
       persist_selection: config.persist_selection !== undefined ? config.persist_selection : true,
       title: config.title !== undefined ? config.title : 'Energy Dashboard',
@@ -200,18 +199,6 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
     energyAutoSelectField.addEventListener('change', this.valueChanged);
     energyAutoSelectRow.appendChild(energyAutoSelectField);
     form.appendChild(energyAutoSelectRow);
-
-    // Show Energy Section toggle
-    const energySectionRow = this._createRow();
-    const energySectionSwitch = document.createElement('ha-switch') as HaFormElement;
-    energySectionSwitch.checked = this.config.show_energy_section !== false;
-    energySectionSwitch.configValue = 'show_energy_section';
-    energySectionSwitch.addEventListener('change', this.valueChanged);
-    const energySectionLabel = document.createElement('div');
-    energySectionLabel.textContent = 'Show Energy Section';
-    energySectionRow.appendChild(energySectionSwitch);
-    energySectionRow.appendChild(energySectionLabel);
-    form.appendChild(energySectionRow);
 
     // Max Height field
     const maxHeightRow = this._createRow();

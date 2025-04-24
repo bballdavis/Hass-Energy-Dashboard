@@ -761,7 +761,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     } else {
       // Add padding to the top of the card when header is disabled
       // This matches the entity card's buffer space
-      card.style.paddingTop = 'var(--card-padding, 16px)';
+      card.style.paddingTop = 'var(--card-padding, 8px)';
     }
 
     if (this._isLoading) {
