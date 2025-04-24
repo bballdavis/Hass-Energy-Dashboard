@@ -58,6 +58,7 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
       max_height: config.max_height !== undefined ? config.max_height : 400, // Default to ~15 entities
       show_energy_section: config.show_energy_section !== undefined ? config.show_energy_section : true,
       energy_auto_select_count: config.energy_auto_select_count !== undefined ? config.energy_auto_select_count : 6,
+      persist_selection: config.persist_selection !== undefined ? config.persist_selection : true,
       title: config.title !== undefined ? config.title : 'Energy Dashboard',
     };
     this._updateForm();
@@ -159,6 +160,18 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
     toggleRow.appendChild(toggleSwitch);
     toggleRow.appendChild(toggleLabel);
     form.appendChild(toggleRow);
+
+    // Add Persist Selection toggle
+    const persistSelectionRow = this._createRow();
+    const persistSelectionSwitch = document.createElement('ha-switch') as HaFormElement;
+    persistSelectionSwitch.checked = this.config.persist_selection !== false;
+    persistSelectionSwitch.configValue = 'persist_selection';
+    persistSelectionSwitch.addEventListener('change', this.valueChanged);
+    const persistSelectionLabel = document.createElement('div');
+    persistSelectionLabel.textContent = 'Remember Selection';
+    persistSelectionRow.appendChild(persistSelectionSwitch);
+    persistSelectionRow.appendChild(persistSelectionLabel);
+    form.appendChild(persistSelectionRow);
 
     // Auto-select Count field
     const autoSelectRow = this._createRow();

@@ -462,6 +462,22 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 this._updateContent();
             }
         };
+        this._togglePersistence = () => {
+            if (this.config) {
+                this.config.persist_selection = !this.config.persist_selection;
+                // If persistence is turned off, clear the saved toggle states
+                if (!this.config.persist_selection) {
+                    localStorage.removeItem('energy-dashboard-power-toggle-states');
+                    localStorage.removeItem('energy-dashboard-energy-toggle-states');
+                }
+                else {
+                    // If persistence is turned on, save the current toggle states
+                    this._savePowerToggleStates();
+                    this._saveEnergyToggleStates();
+                }
+                this._updateContent();
+            }
+        };
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
         // Initialize properties
@@ -482,7 +498,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
     }
     // Home Assistant specific method to set config
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!config) {
             throw new Error("Invalid configuration");
         }
@@ -498,6 +514,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             max_height: (_f = config.max_height) !== null && _f !== void 0 ? _f : 400,
             show_energy_section: (_g = config.show_energy_section) !== null && _g !== void 0 ? _g : true,
             energy_auto_select_count: (_h = config.energy_auto_select_count) !== null && _h !== void 0 ? _h : 6,
+            persist_selection: (_j = config.persist_selection) !== null && _j !== void 0 ? _j : true,
         };
         this._updateContent();
     }
@@ -514,7 +531,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
             auto_select_count: 6,
             max_height: 400,
             show_energy_section: true,
-            energy_auto_select_count: 6
+            energy_auto_select_count: 6,
+            persist_selection: true
         };
     }
     getCardSize() {
@@ -532,7 +550,14 @@ class EnergyDashboardEntityCard extends HTMLElement {
     }
     // Called when Home Assistant updates
     set hass(hass) {
+        const isFirstUpdate = !this._hass;
         this._hass = hass;
+        // Make sure initialization happens after we have both hass and config
+        if (isFirstUpdate && this.config) {
+            // Force initialization on first update if we already have config
+            this._initialized = false;
+            this._energyInitialized = false;
+        }
         this._updateEntities();
         this._updateContent();
     }
@@ -584,8 +609,16 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this.entityToggleStates = savedStates;
         }
         else {
+            // Create a new toggle states object
             const toggleStates = {};
+            // Get auto_select_count from config, or use default of 6
             const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.auto_select_count) !== null && _b !== void 0 ? _b : 6;
+            // Initialize all entities first to ensure they're tracked
+            entities.forEach(entity => {
+                // Set to true only for the first `count` entities
+                toggleStates[entity.entityId] = false;
+            });
+            // Then set the first `count` entities to true
             entities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
@@ -608,13 +641,21 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
     }
     _savePowerToggleStates() {
-        saveToggleStates(this.entityToggleStates, 'energy-dashboard-power-toggle-states');
+        var _a;
+        // Only save toggle states if persistence is enabled
+        if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) {
+            saveToggleStates(this.entityToggleStates, 'energy-dashboard-power-toggle-states');
+        }
     }
     _saveEnergyToggleStates() {
-        saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
+        var _a;
+        // Only save toggle states if persistence is enabled
+        if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) {
+            saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
+        }
     }
     _renderPowerSection() {
-        var _a;
+        var _a, _b, _c;
         const section = document.createElement('div');
         if (this.powerEntities.length > 0) {
             // Control buttons
@@ -636,6 +677,51 @@ class EnergyDashboardEntityCard extends HTMLElement {
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
+            // Add persistence toggle
+            const persistenceToggle = document.createElement('div');
+            persistenceToggle.className = 'persistence-toggle';
+            persistenceToggle.style.display = 'flex';
+            persistenceToggle.style.alignItems = 'center';
+            persistenceToggle.style.justifyContent = 'center';
+            persistenceToggle.style.marginTop = '8px';
+            persistenceToggle.style.marginBottom = '8px';
+            persistenceToggle.style.cursor = 'pointer';
+            persistenceToggle.addEventListener('click', this._togglePersistence);
+            const toggleLabel = document.createElement('span');
+            toggleLabel.style.marginRight = '8px';
+            toggleLabel.textContent = 'Remember Selection: ';
+            const toggleSwitch = document.createElement('span');
+            toggleSwitch.className = 'toggle-switch';
+            toggleSwitch.style.position = 'relative';
+            toggleSwitch.style.display = 'inline-block';
+            toggleSwitch.style.width = '36px';
+            toggleSwitch.style.height = '20px';
+            const toggleSlider = document.createElement('span');
+            toggleSlider.className = 'toggle-slider';
+            toggleSlider.style.position = 'absolute';
+            toggleSlider.style.cursor = 'pointer';
+            toggleSlider.style.top = '0';
+            toggleSlider.style.left = '0';
+            toggleSlider.style.right = '0';
+            toggleSlider.style.bottom = '0';
+            toggleSlider.style.backgroundColor = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
+            toggleSlider.style.borderRadius = '34px';
+            toggleSlider.style.transition = '.4s';
+            const toggleButton = document.createElement('span');
+            toggleButton.style.position = 'absolute';
+            toggleButton.style.content = '""';
+            toggleButton.style.height = '16px';
+            toggleButton.style.width = '16px';
+            toggleButton.style.left = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? '16px' : '4px';
+            toggleButton.style.bottom = '2px';
+            toggleButton.style.backgroundColor = 'white';
+            toggleButton.style.borderRadius = '50%';
+            toggleButton.style.transition = '.4s';
+            toggleSlider.appendChild(toggleButton);
+            toggleSwitch.appendChild(toggleSlider);
+            persistenceToggle.appendChild(toggleLabel);
+            persistenceToggle.appendChild(toggleSwitch);
+            section.appendChild(persistenceToggle);
             // Section title
             const sectionTitle = document.createElement('div');
             sectionTitle.className = 'section-title';
@@ -647,7 +733,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             containerWrapper.style.boxSizing = 'border-box';
             const entitiesContainer = document.createElement('div');
             entitiesContainer.className = 'entities-container';
-            if (((_a = this.config) === null || _a === void 0 ? void 0 : _a.max_height) && this.config.max_height > 0) {
+            if (((_c = this.config) === null || _c === void 0 ? void 0 : _c.max_height) && this.config.max_height > 0) {
                 entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
                 entitiesContainer.style.overflowY = 'auto';
             }
@@ -695,7 +781,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         return section;
     }
     _renderEnergySection() {
-        var _a, _b;
+        var _a, _b, _c, _d;
         const section = document.createElement('div');
         // Only render if energy section is enabled
         if (!((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_energy_section)) {
@@ -724,6 +810,51 @@ class EnergyDashboardEntityCard extends HTMLElement {
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
+            // Add persistence toggle
+            const persistenceToggle = document.createElement('div');
+            persistenceToggle.className = 'persistence-toggle';
+            persistenceToggle.style.display = 'flex';
+            persistenceToggle.style.alignItems = 'center';
+            persistenceToggle.style.justifyContent = 'center';
+            persistenceToggle.style.marginTop = '8px';
+            persistenceToggle.style.marginBottom = '8px';
+            persistenceToggle.style.cursor = 'pointer';
+            persistenceToggle.addEventListener('click', this._togglePersistence);
+            const toggleLabel = document.createElement('span');
+            toggleLabel.style.marginRight = '8px';
+            toggleLabel.textContent = 'Remember Selection: ';
+            const toggleSwitch = document.createElement('span');
+            toggleSwitch.className = 'toggle-switch';
+            toggleSwitch.style.position = 'relative';
+            toggleSwitch.style.display = 'inline-block';
+            toggleSwitch.style.width = '36px';
+            toggleSwitch.style.height = '20px';
+            const toggleSlider = document.createElement('span');
+            toggleSlider.className = 'toggle-slider';
+            toggleSlider.style.position = 'absolute';
+            toggleSlider.style.cursor = 'pointer';
+            toggleSlider.style.top = '0';
+            toggleSlider.style.left = '0';
+            toggleSlider.style.right = '0';
+            toggleSlider.style.bottom = '0';
+            toggleSlider.style.backgroundColor = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
+            toggleSlider.style.borderRadius = '34px';
+            toggleSlider.style.transition = '.4s';
+            const toggleButton = document.createElement('span');
+            toggleButton.style.position = 'absolute';
+            toggleButton.style.content = '""';
+            toggleButton.style.height = '16px';
+            toggleButton.style.width = '16px';
+            toggleButton.style.left = ((_c = this.config) === null || _c === void 0 ? void 0 : _c.persist_selection) ? '16px' : '4px';
+            toggleButton.style.bottom = '2px';
+            toggleButton.style.backgroundColor = 'white';
+            toggleButton.style.borderRadius = '50%';
+            toggleButton.style.transition = '.4s';
+            toggleSlider.appendChild(toggleButton);
+            toggleSwitch.appendChild(toggleSlider);
+            persistenceToggle.appendChild(toggleLabel);
+            persistenceToggle.appendChild(toggleSwitch);
+            section.appendChild(persistenceToggle);
             // Section title
             const sectionTitle = document.createElement('div');
             sectionTitle.className = 'section-title';
@@ -735,7 +866,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             containerWrapper.style.boxSizing = 'border-box';
             const entitiesContainer = document.createElement('div');
             entitiesContainer.className = 'entities-container';
-            if (((_b = this.config) === null || _b === void 0 ? void 0 : _b.max_height) && this.config.max_height > 0) {
+            if (((_d = this.config) === null || _d === void 0 ? void 0 : _d.max_height) && this.config.max_height > 0) {
                 entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
                 entitiesContainer.style.overflowY = 'auto';
             }
@@ -881,6 +1012,7 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
             max_height: config.max_height !== undefined ? config.max_height : 400, // Default to ~15 entities
             show_energy_section: config.show_energy_section !== undefined ? config.show_energy_section : true,
             energy_auto_select_count: config.energy_auto_select_count !== undefined ? config.energy_auto_select_count : 6,
+            persist_selection: config.persist_selection !== undefined ? config.persist_selection : true,
             title: config.title !== undefined ? config.title : 'Energy Dashboard',
         };
         this._updateForm();
@@ -944,6 +1076,17 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         toggleRow.appendChild(toggleSwitch);
         toggleRow.appendChild(toggleLabel);
         form.appendChild(toggleRow);
+        // Add Persist Selection toggle
+        const persistSelectionRow = this._createRow();
+        const persistSelectionSwitch = document.createElement('ha-switch');
+        persistSelectionSwitch.checked = this.config.persist_selection !== false;
+        persistSelectionSwitch.configValue = 'persist_selection';
+        persistSelectionSwitch.addEventListener('change', this.valueChanged);
+        const persistSelectionLabel = document.createElement('div');
+        persistSelectionLabel.textContent = 'Remember Selection';
+        persistSelectionRow.appendChild(persistSelectionSwitch);
+        persistSelectionRow.appendChild(persistSelectionLabel);
+        form.appendChild(persistSelectionRow);
         // Auto-select Count field
         const autoSelectRow = this._createRow();
         const autoSelectField = document.createElement('ha-textfield');

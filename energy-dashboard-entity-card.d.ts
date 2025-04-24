@@ -26,6 +26,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
         max_height: number;
         show_energy_section: boolean;
         energy_auto_select_count: number;
+        persist_selection: boolean;
     };
     getCardSize(): number;
     set hass(hass: any);
@@ -45,6 +46,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _clearAllEnergyEntities: () => void;
     _selectAllEnergyEntities: () => void;
     _toggleEnergyEntity: (e: Event) => void;
+    _togglePersistence: () => void;
     _renderPowerSection(): HTMLElement;
     _renderEnergySection(): HTMLElement;
     _updateContent(): void;

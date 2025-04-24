@@ -17,5 +17,6 @@ export interface EnergyDashboardConfig {
     max_height: number;
     show_energy_section: boolean;
     energy_auto_select_count: number;
+    persist_selection: boolean;
     [key: string]: any;
 }
