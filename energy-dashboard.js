@@ -1152,7 +1152,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = isEnergy
@@ -1164,21 +1164,21 @@ class EnergyDashboardChartCard extends HTMLElement {
         const aggregateFunc = this.config.aggregate_func || 'avg';
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
-        const updateInterval = "0s";
         const series = entities.map(entityId => {
-            var _a;
-            const entityState = this._hass.states[entityId];
-            const name = ((_a = entityState === null || entityState === void 0 ? void 0 : entityState.attributes) === null || _a === void 0 ? void 0 : _a.friendly_name) || entityId;
-            return {
+            var _a, _b;
+            return ({
                 entity: entityId,
-                name: name,
+                name: ((_b = (_a = this._hass.states[entityId]) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.friendly_name) || entityId,
                 type: chartType,
                 stroke_width: 2,
-                group_by: {
-                    func: aggregateFunc,
-                    duration: '1h'
-                }
-            };
+                // Only include group_by if we have an aggregation function
+                ...(aggregateFunc ? {
+                    group_by: {
+                        func: aggregateFunc,
+                        duration: '1h'
+                    }
+                } : {})
+            });
         });
         const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
@@ -1189,22 +1189,29 @@ class EnergyDashboardChartCard extends HTMLElement {
             chart_type: chartType,
             cache: true,
             stacked: false,
-            update_interval: updateInterval,
-            yaxis: [
-                {
-                    min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
-                    max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
-                    decimals: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
-                }
-            ],
+            // Set to 0s to disable internal updates
+            update_interval: '0s',
+            series: series,
+            yaxis: [{
+                    ...(typeof ((_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min) !== 'undefined' && { min: options.y_axis.min }),
+                    ...(typeof ((_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max) !== 'undefined' && { max: options.y_axis.max }),
+                    ...(typeof ((_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== 'undefined'
+                        ? { decimals: options.y_axis.decimals }
+                        : { decimals: isEnergy ? 2 : 1 })
+                }],
             apex_config: {
                 chart: {
                     height: this.config.chart_height || 300,
                     toolbar: {
                         show: true,
                         tools: {
-                            download: true, selection: true, zoom: true,
-                            zoomin: true, zoomout: true, pan: true, reset: true
+                            download: true,
+                            selection: true,
+                            zoom: true,
+                            zoomin: true,
+                            zoomout: true,
+                            pan: true,
+                            reset: true
                         }
                     },
                     animations: {
@@ -1224,15 +1231,12 @@ class EnergyDashboardChartCard extends HTMLElement {
                 annotations: {
                     position: 'front'
                 }
-            },
-            series: series,
+            }
         };
-        if (apexChartCardConfig.yaxis[0].min === undefined)
-            delete apexChartCardConfig.yaxis[0].min;
-        if (apexChartCardConfig.yaxis[0].max === undefined)
-            delete apexChartCardConfig.yaxis[0].max;
-        if (apexChartCardConfig.yaxis[0].decimals === undefined)
-            delete apexChartCardConfig.yaxis[0].decimals;
+        // Clean up empty or undefined properties
+        if (Object.keys(apexChartCardConfig.yaxis[0]).length === 0) {
+            delete apexChartCardConfig.yaxis;
+        }
         return apexChartCardConfig;
     }
     _createChart(isEnergy) {
