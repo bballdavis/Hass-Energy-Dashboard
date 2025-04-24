@@ -1103,10 +1103,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             this._isLoading = false;
             this._updateContent();
         }
-        else {
-            // Only update charts when hass is updated, entity list comes from localStorage
-            this._updateCharts();
-        }
+        // Remove automatic update on every hass change - let the refresh controls handle updates
     }
     get hass() {
         return this._hass;
@@ -1156,7 +1153,9 @@ class EnergyDashboardChartCard extends HTMLElement {
         const aggregateFunc = this.config.aggregate_func || 'avg'; // Keep aggregate func
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
-        const updateInterval = (this.config.update_interval || 60).toString();
+        // Set update_interval to 0 to disable ApexCharts auto-refresh
+        // Our refresh controls will handle updates instead
+        const updateInterval = "0";
         // Build series configuration for apexcharts-card
         const series = entities.map(entityId => {
             var _a;
@@ -1184,7 +1183,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             chart_type: chartType,
             cache: true,
             stacked: false, // Set based on config if needed
-            update_interval: updateInterval,
+            update_interval: updateInterval, // Set to 0 to disable auto-refresh
             // --- Top-level yaxis configuration ---
             yaxis: [
                 {
@@ -1204,6 +1203,10 @@ class EnergyDashboardChartCard extends HTMLElement {
                             zoomin: true, zoomout: true, pan: true, reset: true
                         }
                     },
+                    animations: {
+                        enabled: false // Disable animations to prevent unnecessary rerenders
+                    },
+                    redrawOnWindowResize: false // Prevent redraw on window resize
                 },
                 stroke: {
                     curve: smoothCurve ? 'smooth' : 'straight'
@@ -1213,6 +1216,10 @@ class EnergyDashboardChartCard extends HTMLElement {
                 },
                 legend: {
                     show: showLegend
+                },
+                // Disable any auto update/refresh features
+                annotations: {
+                    position: 'front'
                 }
             },
             // --- Series Data ---
@@ -1529,9 +1536,23 @@ class EnergyDashboardChartCard extends HTMLElement {
         const controlsContainer = document.createElement('div');
         controlsContainer.className = 'refresh-controls';
         controlsContainer.style.display = 'flex';
-        controlsContainer.style.justifyContent = 'flex-end';
+        controlsContainer.style.justifyContent = 'space-between';
+        controlsContainer.style.alignItems = 'center';
         controlsContainer.style.padding = '0 16px 8px';
         controlsContainer.style.gap = '8px';
+        // Add a title for the refresh controls
+        const refreshTitle = document.createElement('div');
+        refreshTitle.className = 'refresh-title';
+        refreshTitle.textContent = 'Refresh Rate:';
+        refreshTitle.style.fontWeight = '500';
+        refreshTitle.style.fontSize = '0.9em';
+        refreshTitle.style.marginRight = '8px';
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'buttons-container';
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.justifyContent = 'flex-end';
+        buttonsContainer.style.alignItems = 'center';
+        buttonsContainer.style.gap = '8px';
         // Manual refresh button
         const refreshButton = document.createElement('button');
         refreshButton.className = 'refresh-button control-button';
@@ -1561,16 +1582,18 @@ class EnergyDashboardChartCard extends HTMLElement {
         sec60Button.title = 'Refresh every 60 seconds';
         sec60Button.dataset.seconds = '60';
         sec60Button.addEventListener('click', () => this._setRefreshInterval(60));
-        controlsContainer.appendChild(refreshButton);
-        controlsContainer.appendChild(sec15Button);
-        controlsContainer.appendChild(sec30Button);
-        controlsContainer.appendChild(sec60Button);
+        buttonsContainer.appendChild(refreshButton);
+        buttonsContainer.appendChild(sec15Button);
+        buttonsContainer.appendChild(sec30Button);
+        buttonsContainer.appendChild(sec60Button);
+        controlsContainer.appendChild(refreshTitle);
+        controlsContainer.appendChild(buttonsContainer);
         // Set initial active state
-        this._updateRefreshControlsUI(controlsContainer);
+        this._updateRefreshControlsUI(buttonsContainer);
         return controlsContainer;
     }
     _updateRefreshControlsUI(container) {
-        const controls = container || this._root.querySelector('.refresh-controls');
+        const controls = container || this._root.querySelector('.buttons-container');
         if (!controls)
             return;
         // Clear active state from all buttons
