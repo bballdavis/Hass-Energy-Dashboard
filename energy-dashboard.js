@@ -1841,4 +1841,3 @@ window.customCards.push({
     preview: false,
     documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
 });
-//# sourceMappingURL=energy-dashboard.js.map
