@@ -344,23 +344,41 @@ export class EnergyDashboardChartCard extends HTMLElement {
     chartElement.style.marginBottom = '16px';
     
     try {
-      // Create a card wrapper element for the apexcharts-card
-      const cardWrapper = document.createElement('div');
-      
-      // Create the card content in the format expected by apexcharts-card
-      const content = document.createTextNode(JSON.stringify(chartConfig));
-      cardWrapper.appendChild(content);
-      
-      // Initialize card from markup - this is likely how apexcharts-card processes config
+      // Create the apexcharts-card element
       const apexCard = document.createElement('apexcharts-card');
-      apexCard.appendChild(cardWrapper);
       
-      // Pass hass object to the chart
-      if (this._hass) {
-        (apexCard as any).hass = this._hass;
+      // Method 1: Set configuration through attributes and properties
+      try {
+        // Set card config using data attributes
+        apexCard.setAttribute('chart-type', chartConfig.chart_type);
+        apexCard.setAttribute('graph-span', `${chartConfig.graph_span}`);
+        apexCard.setAttribute('update-interval', '0'); // We handle updates ourselves
+
+        // Set data via property
+        (apexCard as any).data = {
+          series: chartConfig.series,
+          apex_config: chartConfig.apex_config
+        };
+        
+        if (chartConfig.yaxis && chartConfig.yaxis.length) {
+          (apexCard as any).yaxis = chartConfig.yaxis;
+        }
+        
+        // Set header config
+        (apexCard as any).header = { show: false };
+
+        // Pass hass object to the chart
+        if (this._hass) {
+          (apexCard as any).hass = this._hass;
+        }
+        
+        chartElement.appendChild(apexCard);
+      } catch (configError) {
+        console.error('Error configuring apexcharts-card:', configError);
+        chartElement.appendChild(this._createErrorMessage(
+          'Error configuring chart. Please check your browser console for details.'
+        ));
       }
-      
-      chartElement.appendChild(apexCard);
     } catch (err) {
       console.error('Error creating apexcharts-card:', err);
       
@@ -374,7 +392,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     
     return chartElement;
   }
-  
+
   // Utility method to create consistent error messages
   private _createErrorMessage(message: string): HTMLElement {
     const container = document.createElement('div');
