@@ -1274,7 +1274,7 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     // Home Assistant specific method to set config
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         if (!config) {
             throw new Error("Invalid configuration");
         }
@@ -1310,14 +1310,11 @@ class EnergyDashboardChartCard extends HTMLElement {
             max_height: (_k = config.max_height) !== null && _k !== void 0 ? _k : 400,
             show_energy_section: (_l = config.show_energy_section) !== null && _l !== void 0 ? _l : true,
             energy_auto_select_count: (_m = config.energy_auto_select_count) !== null && _m !== void 0 ? _m : 6,
+            // Set update_interval default to 30 seconds if not specified
+            update_interval: (_o = config.update_interval) !== null && _o !== void 0 ? _o : 30,
         };
         // Set the current refresh interval from config
-        if (this.config.update_interval) {
-            this._currentRefreshInterval = this.config.update_interval;
-        }
-        else {
-            this._currentRefreshInterval = 30;
-        }
+        this._currentRefreshInterval = this.config.update_interval;
         this._loadSelectedEntities();
         this._isLoading = true;
         this._checkApexChartsRegistration();
@@ -1622,22 +1619,24 @@ class EnergyDashboardChartCard extends HTMLElement {
             console.log("Skipping _updateCharts: Hass not ready, loading, or apexcharts-card not registered.");
             return;
         }
+        // Always reload selected entities to ensure we have the latest selection
+        this._loadSelectedEntities();
         const powerChartContainer = this._root.querySelector('.power-chart-placeholder');
         if (powerChartContainer) {
             // Check for existing apexcharts-card element
             const existingPowerChart = powerChartContainer.querySelector('apexcharts-card');
             if (existingPowerChart) {
                 console.log("Refreshing existing power chart.");
-                // Just update the hass object to trigger a refresh on the chart
-                existingPowerChart.hass = this._hass;
-                // Try to call a direct refresh method if available
-                if (typeof existingPowerChart.updateChart === 'function') {
+                // Generate updated chart config with latest entity selections
+                const updatedChartConfig = this._generateApexchartsConfig(this._powerEntities, false);
+                if (updatedChartConfig) {
+                    // Update the chart config with latest entity selections
                     try {
-                        console.log("Calling updateChart method on power chart");
-                        existingPowerChart.updateChart();
+                        existingPowerChart.setConfig(updatedChartConfig);
+                        existingPowerChart.hass = this._hass;
                     }
                     catch (err) {
-                        console.warn("Failed to call updateChart method:", err);
+                        console.warn("Failed to update chart config:", err);
                     }
                 }
             }
@@ -1671,16 +1670,16 @@ class EnergyDashboardChartCard extends HTMLElement {
                 const existingEnergyChart = energyChartContainer.querySelector('apexcharts-card');
                 if (existingEnergyChart) {
                     console.log("Refreshing existing energy chart.");
-                    // Just update the hass object to trigger a refresh on the chart
-                    existingEnergyChart.hass = this._hass;
-                    // Try to call a direct refresh method if available
-                    if (typeof existingEnergyChart.updateChart === 'function') {
+                    // Generate updated chart config with latest entity selections
+                    const updatedChartConfig = this._generateApexchartsConfig(this._energyEntities, true);
+                    if (updatedChartConfig) {
+                        // Update the chart config with latest entity selections
                         try {
-                            console.log("Calling updateChart method on energy chart");
-                            existingEnergyChart.updateChart();
+                            existingEnergyChart.setConfig(updatedChartConfig);
+                            existingEnergyChart.hass = this._hass;
                         }
                         catch (err) {
-                            console.warn("Failed to call updateChart method:", err);
+                            console.warn("Failed to update chart config:", err);
                         }
                     }
                 }
