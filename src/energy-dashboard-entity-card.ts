@@ -181,7 +181,10 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _initializePowerToggleStates(entities: EntityInfo[]) {
-    const savedStates = loadToggleStates('energy-dashboard-power-toggle-states');
+    // Only load saved states if persistence is enabled
+    const persistenceEnabled = this.config?.persist_selection ?? true;
+    const savedStates = persistenceEnabled ? loadToggleStates('energy-dashboard-power-toggle-states') : null;
+    
     if (savedStates && Object.keys(savedStates).length > 0) {
       this.entityToggleStates = savedStates;
     } else {
@@ -193,7 +196,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       // Initialize all entities first to ensure they're tracked
       entities.forEach(entity => {
-        // Set to true only for the first `count` entities
+        // Set to false by default
         toggleStates[entity.entityId] = false;
       });
       
@@ -207,15 +210,30 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _initializeEnergyToggleStates(entities: EntityInfo[]) {
-    const savedStates = loadToggleStates('energy-dashboard-energy-toggle-states');
+    // Only load saved states if persistence is enabled
+    const persistenceEnabled = this.config?.persist_selection ?? true;
+    const savedStates = persistenceEnabled ? loadToggleStates('energy-dashboard-energy-toggle-states') : null;
+    
     if (savedStates && Object.keys(savedStates).length > 0) {
       this.energyEntityToggleStates = savedStates;
     } else {
+      // Create a new toggle states object
       const toggleStates: Record<string, boolean> = {};
+      
+      // Get energy_auto_select_count from config, or use default of 6
       const count = this.config?.energy_auto_select_count ?? 6;
+      
+      // Initialize all entities first to ensure they're tracked
+      entities.forEach(entity => {
+        // Set to false by default
+        toggleStates[entity.entityId] = false;
+      });
+      
+      // Then set the first `count` entities to true
       entities.slice(0, count).forEach(entity => {
         toggleStates[entity.entityId] = true;
       });
+      
       this.energyEntityToggleStates = toggleStates;
     }
   }
@@ -362,16 +380,22 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       // Always save the persistence toggle state, regardless of its value
       this._savePersistenceState(this.config.persist_selection);
       
-      // If persistence is turned off, clear the saved toggle states
+      // If persistence is turned off, clear localStorage and reset to defaults immediately
       if (!this.config.persist_selection) {
         localStorage.removeItem('energy-dashboard-power-toggle-states');
         localStorage.removeItem('energy-dashboard-energy-toggle-states');
+        
+        // Reset initialized state to force reload of default entities
+        this._initialized = false;
+        this._energyInitialized = false;
       } else {
         // If persistence is turned on, save the current toggle states
         this._savePowerToggleStates();
         this._saveEnergyToggleStates();
       }
       
+      // Re-initialize and update the content with new settings
+      this._updateEntities();
       this._updateContent();
     }
   }
