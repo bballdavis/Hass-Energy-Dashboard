@@ -1033,15 +1033,15 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.interval-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--secondary-background-color)';
-      button.style.color = 'var(--primary-text-color)';
-      button.style.borderColor = 'var(--divider-color)';
+      button.style.backgroundColor = 'var(--secondary-background-color, #f0f0f0)';
+      button.style.color = 'var(--primary-text-color, #212121)';
+      button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
     const activeButton = controls.querySelector(`.interval-button[data-seconds="${this._currentRefreshInterval}"]`) as HTMLElement;
     if (activeButton) {
-      activeButton.style.backgroundColor = 'var(--primary-color)';
-      activeButton.style.color = 'var(--text-primary-color)';
-      activeButton.style.borderColor = 'var(--primary-color)';
+      activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
+      activeButton.style.color = 'var(--text-primary-color, #fff)';
+      activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
     }
   }
 
@@ -1051,15 +1051,15 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.time-range-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--secondary-background-color)';
-      button.style.color = 'var(--primary-text-color)';
-      button.style.borderColor = 'var(--divider-color)';
+      button.style.backgroundColor = 'var(--secondary-background-color, #f0f0f0)';
+      button.style.color = 'var(--primary-text-color, #212121)';
+      button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
     const activeButton = controls.querySelector(`.time-range-button[data-hours="${this._currentTimeRangeHours}"]`) as HTMLElement;
     if (activeButton) {
-      activeButton.style.backgroundColor = 'var(--primary-color)';
-      activeButton.style.color = 'var(--text-primary-color)';
-      activeButton.style.borderColor = 'var(--primary-color)';
+      activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
+      activeButton.style.color = 'var(--text-primary-color, #fff)';
+      activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
     }
   }
 
@@ -1079,17 +1079,17 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.yaxis-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--secondary-background-color)';
-      button.style.color = 'var(--primary-text-color)';
-      button.style.borderColor = 'var(--divider-color)';
+      button.style.backgroundColor = 'var(--secondary-background-color, #f0f0f0)';
+      button.style.color = 'var(--primary-text-color, #212121)';
+      button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
     
     // Find the active button by its data-yaxis attribute
     const activeButton = controls.querySelector(`.yaxis-button[data-yaxis="${currentMaxStr}"]`) as HTMLElement;
     if (activeButton) {
-      activeButton.style.backgroundColor = 'var(--primary-color)';
-      activeButton.style.color = 'var(--text-primary-color)';
-      activeButton.style.borderColor = 'var(--primary-color)';
+      activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
+      activeButton.style.color = 'var(--text-primary-color, #fff)';
+      activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
     }
   }
 
