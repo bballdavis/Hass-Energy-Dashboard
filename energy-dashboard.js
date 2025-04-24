@@ -1617,18 +1617,37 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     _updateCharts() {
         var _a, _b, _c;
-        console.log("Executing _updateCharts: Reloading chart elements.");
+        console.log("Executing _updateCharts: Updating chart elements.");
         if (!this._hass || this._isLoading || this._apexChartCardRegistered === false) {
             console.log("Skipping _updateCharts: Hass not ready, loading, or apexcharts-card not registered.");
             return;
         }
         const powerChartContainer = this._root.querySelector('.power-chart-placeholder');
         if (powerChartContainer) {
-            console.log("Recreating power chart.");
-            const newPowerChart = this._createChart(false);
-            powerChartContainer.innerHTML = '';
-            powerChartContainer.appendChild(newPowerChart);
-            this._powerChartEl = newPowerChart;
+            // Check for existing apexcharts-card element
+            const existingPowerChart = powerChartContainer.querySelector('apexcharts-card');
+            if (existingPowerChart) {
+                console.log("Refreshing existing power chart.");
+                // Just update the hass object to trigger a refresh on the chart
+                existingPowerChart.hass = this._hass;
+                // Try to call a direct refresh method if available
+                if (typeof existingPowerChart.updateChart === 'function') {
+                    try {
+                        console.log("Calling updateChart method on power chart");
+                        existingPowerChart.updateChart();
+                    }
+                    catch (err) {
+                        console.warn("Failed to call updateChart method:", err);
+                    }
+                }
+            }
+            else {
+                console.log("Creating new power chart (no existing chart found).");
+                const newPowerChart = this._createChart(false);
+                powerChartContainer.innerHTML = '';
+                powerChartContainer.appendChild(newPowerChart);
+                this._powerChartEl = newPowerChart;
+            }
         }
         else if (!this._powerChartEl) {
             const card = this._root.querySelector('ha-card .chart-container');
@@ -1648,11 +1667,30 @@ class EnergyDashboardChartCard extends HTMLElement {
         const energyChartContainer = this._root.querySelector('.energy-chart-placeholder');
         if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_energy_section) {
             if (energyChartContainer) {
-                console.log("Recreating energy chart.");
-                const newEnergyChart = this._createChart(true);
-                energyChartContainer.innerHTML = '';
-                energyChartContainer.appendChild(newEnergyChart);
-                this._energyChartEl = newEnergyChart;
+                // Check for existing apexcharts-card element
+                const existingEnergyChart = energyChartContainer.querySelector('apexcharts-card');
+                if (existingEnergyChart) {
+                    console.log("Refreshing existing energy chart.");
+                    // Just update the hass object to trigger a refresh on the chart
+                    existingEnergyChart.hass = this._hass;
+                    // Try to call a direct refresh method if available
+                    if (typeof existingEnergyChart.updateChart === 'function') {
+                        try {
+                            console.log("Calling updateChart method on energy chart");
+                            existingEnergyChart.updateChart();
+                        }
+                        catch (err) {
+                            console.warn("Failed to call updateChart method:", err);
+                        }
+                    }
+                }
+                else {
+                    console.log("Creating new energy chart (no existing chart found).");
+                    const newEnergyChart = this._createChart(true);
+                    energyChartContainer.innerHTML = '';
+                    energyChartContainer.appendChild(newEnergyChart);
+                    this._energyChartEl = newEnergyChart;
+                }
             }
             else if (!this._energyChartEl) {
                 const card = this._root.querySelector('ha-card .chart-container');
