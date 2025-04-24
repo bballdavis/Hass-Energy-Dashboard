@@ -558,51 +558,45 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   private _disableRefreshForApexChart(apexChart: Element | null) {
     if (!apexChart) return;
-    
     try {
-      // Get access to the underlying ApexCharts instance
       const card = apexChart as any;
-      
-      // Method 1: Cancel any running timers directly
       if (card._updateTimer) {
         window.clearInterval(card._updateTimer);
         card._updateTimer = null;
       }
-      
-      // Method 2: Override the update interval in the card's configuration
       if (card._config) {
-        card._config.update_interval = 0; // Set to zero to disable automatic updates
+        card._config.update_interval = '0s';
       }
-      
-      // Method 3: Override the internal update method to prevent future refreshes
-      if (typeof card._updateData === 'function') {
-        const originalUpdateData = card._updateData;
-        card._updateData = function(...args: any[]) {
-          // Only allow explicit manual updates
-          if (args && args[0] === 'manual-refresh') {
-            return originalUpdateData.apply(this);
+      // Only block auto-refresh, allow manual refresh
+      if (typeof card._updateChart === 'function' && !card._originalUpdateChart) {
+        card._originalUpdateChart = card._updateChart;
+        card._updateChart = function(arg?: any) {
+          if (arg === 'manual-refresh') {
+            return card._originalUpdateChart.apply(this, arguments);
           }
-          console.log('Auto-refresh prevented in ApexCharts card');
-          return Promise.resolve();
+          // Block automatic refreshes
+          return;
         };
       }
-      
-      // Method 4: Check for and disable any ApexCharts auto-refresh options
+      if (typeof card._updateData === 'function' && !card._originalUpdateData) {
+        card._originalUpdateData = card._updateData;
+        card._updateData = function(arg?: any) {
+          if (arg === 'manual-refresh') {
+            return card._originalUpdateData.apply(this, arguments);
+          }
+          return;
+        };
+      }
       if (card.ApexOptions && card.ApexOptions.chart) {
         if (card.ApexOptions.chart.animations) {
           card.ApexOptions.chart.animations.enabled = false;
         }
-        
-        // Disable auto-update features if present
         if (card._chart) {
-          // Access the underlying ApexCharts instance and disable its auto-refresh
           const apexInstance = card._chart;
           if (apexInstance && apexInstance.updateOptions) {
             apexInstance.updateOptions({
               chart: {
-                animations: {
-                  enabled: false
-                },
+                animations: { enabled: false },
                 autoUpdateSeries: false
               }
             }, false, false);
@@ -610,7 +604,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
         }
       }
     } catch (error) {
-      console.warn('Failed to disable ApexCharts auto-refresh:', error);
+      // Silently ignore
     }
   }
 
@@ -715,21 +709,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _setRefreshInterval(seconds: number) {
-    // Update the config so it persists and is used for new chart creation
+    // Convert seconds to string for apexcharts-card (e.g., "30s")
+    const intervalString = `${seconds}s`;
     if (this.config) {
       this.config.update_interval = seconds;
     }
-    // Set our tracking variable
     this._currentRefreshInterval = seconds;
-
-    // Update the UI to reflect the current interval
     this._updateRefreshControlsUI();
 
     // Update the ApexCharts card config for both charts (if present)
     const charts = this._findAllApexChartsCards();
     charts.forEach(chart => {
       if (chart._config) {
-        chart._config.update_interval = seconds;
+        chart._config.update_interval = intervalString;
         // Re-apply config to force ApexCharts to use new interval
         if (typeof chart.setConfig === 'function') {
           chart.setConfig(chart._config);
@@ -946,45 +938,38 @@ export class EnergyDashboardChartCard extends HTMLElement {
   
   private _triggerApexChartManualRefresh() {
     const charts = this._findAllApexChartsCards();
-    
     charts.forEach(chart => {
       try {
-        // Method 1: If we intercepted the update method, call the original
         if (chart._originalUpdateChart) {
-          chart._originalUpdateChart.call(chart);
+          chart._originalUpdateChart.call(chart, 'manual-refresh');
           return;
         }
-        
-        // Method 2: If there's an updateChart method, try to call it
         if (chart._updateChart) {
-          chart._updateChart.call(chart);
+          chart._updateChart.call(chart, 'manual-refresh');
           return;
         }
-        
-        // Method 3: Try to call any update method available
         if (chart.updateChart) {
-          chart.updateChart();
+          chart.updateChart('manual-refresh');
           return;
         }
-        
         if (chart.update) {
-          chart.update();
+          chart.update('manual-refresh');
           return;
         }
-        
+        if (chart._originalUpdateData) {
+          chart._originalUpdateData.call(chart, 'manual-refresh');
+          return;
+        }
         if (chart._updateData) {
-          chart._updateData();
+          chart._updateData.call(chart, 'manual-refresh');
           return;
         }
-        
-        // Method 4: If all else fails, try to access the ApexCharts instance directly
         if (chart._chart && chart._chart.updateSeries) {
-          // Force a series update with the same data to trigger a refresh
           const currentSeries = chart._chart.w.globals.series;
           chart._chart.updateSeries(currentSeries, true);
         }
       } catch (e) {
-        console.error('Failed to refresh ApexCharts:', e);
+        // Silently ignore
       }
     });
   }
