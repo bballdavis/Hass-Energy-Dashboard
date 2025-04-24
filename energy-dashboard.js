@@ -2112,7 +2112,9 @@ class EnergyDashboardChartCard extends HTMLElement {
         controlsContainer.style.display = 'flex';
         controlsContainer.style.justifyContent = 'space-between';
         controlsContainer.style.alignItems = 'center';
-        controlsContainer.style.padding = '0 16px 8px';
+        controlsContainer.style.padding = '0 16px';
+        controlsContainer.style.marginTop = '8px'; // Match entity card mode toggle container
+        controlsContainer.style.marginBottom = '8px'; // Match entity card mode toggle container
         controlsContainer.style.gap = '8px';
         controlsContainer.style.flexWrap = 'wrap';
         // --- Refresh Rate Controls ---
