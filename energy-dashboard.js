@@ -1383,7 +1383,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
-        var _a;
+        var _a, _b, _c, _d, _e;
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = isEnergy
@@ -1402,6 +1402,44 @@ class EnergyDashboardChartCard extends HTMLElement {
                 name: ((_b = (_a = this._hass.states[entityId]) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.friendly_name) || entityId
             });
         });
+        // --- Y Axis Auto-Range Logic ---
+        let yMin = (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min;
+        let yMax = (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max;
+        let tickAmount = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.tickAmount;
+        let decimals = 0;
+        let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
+        if ((_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.title)
+            yTitle = options.y_axis.title;
+        // Only auto-range if min/max are not set in config
+        if (typeof yMin === 'undefined' || typeof yMax === 'undefined') {
+            let values = [];
+            for (const entityId of entities) {
+                const state = (_e = this._hass.states[entityId]) === null || _e === void 0 ? void 0 : _e.state;
+                const num = Number(state);
+                if (!isNaN(num))
+                    values.push(num);
+            }
+            if (values.length > 0) {
+                const minVal = Math.min(...values);
+                const maxVal = Math.max(...values);
+                // Always start at 0 for power, or min rounded down to nearest 100 for energy
+                yMin = isEnergy ? Math.floor(minVal / 100) * 100 : 0;
+                // Always round up to next 100 for max
+                yMax = Math.ceil(maxVal / 100) * 100;
+                // If range is too small, ensure at least 100
+                if (yMax - yMin < 100)
+                    yMax = yMin + 100;
+                // Intervals of 50, major of 100
+                tickAmount = Math.round((yMax - yMin) / 50);
+                if (tickAmount < 2)
+                    tickAmount = 2;
+            }
+            else {
+                yMin = 0;
+                yMax = 100;
+                tickAmount = 2;
+            }
+        }
         // Minimal config object matching apexcharts-card schema
         const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
@@ -1411,19 +1449,18 @@ class EnergyDashboardChartCard extends HTMLElement {
             graph_span: `${hoursToShow}h`,
             chart_type: chartType,
             series,
-            ...((options === null || options === void 0 ? void 0 : options.y_axis) ? {
-                yaxis: [{
-                        ...(typeof options.y_axis.min !== 'undefined' && { min: options.y_axis.min }),
-                        ...(typeof options.y_axis.max !== 'undefined' && { max: options.y_axis.max }),
-                        decimals: (_a = options.y_axis.decimals) !== null && _a !== void 0 ? _a : (isEnergy ? 2 : 1)
-                    }]
-            } : {}),
+            yaxis: [{
+                    min: yMin,
+                    max: yMax,
+                    decimals,
+                    tickAmount,
+                    title: { text: yTitle },
+                    labels: { formatter: (val) => val.toFixed(0) }
+                }],
             apex_config: {
                 chart: {
                     height: this.config.chart_height || 300,
-                    animations: {
-                        enabled: false
-                    },
+                    animations: { enabled: false },
                     toolbar: {
                         show: true,
                         tools: {
@@ -1437,16 +1474,9 @@ class EnergyDashboardChartCard extends HTMLElement {
                         }
                     }
                 },
-                markers: {
-                    size: showPoints ? 4 : 0
-                },
-                stroke: {
-                    curve: smoothCurve ? 'smooth' : 'straight',
-                    width: 2
-                },
-                legend: {
-                    show: showLegend
-                }
+                markers: { size: showPoints ? 4 : 0 },
+                stroke: { curve: smoothCurve ? 'smooth' : 'straight', width: 2 },
+                legend: { show: showLegend }
             }
         };
         return apexChartCardConfig;
