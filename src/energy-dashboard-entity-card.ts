@@ -60,6 +60,10 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     if (!config) {
       throw new Error("Invalid configuration");
     }
+    
+    // Load persistence setting from localStorage first
+    const persistenceFromStorage = this._loadPersistenceState();
+    
     // Create a merged config object correctly by spreading config first
     this.config = {
       ...config,
@@ -72,7 +76,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       max_height: config.max_height ?? 400,
       show_energy_section: config.show_energy_section ?? true,
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
-      persist_selection: config.persist_selection ?? true,
+      // Use the stored value as priority for persistence setting
+      persist_selection: persistenceFromStorage,
     };
     
     this._updateContent();
@@ -348,7 +353,11 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
   _togglePersistence = () => {
     if (this.config) {
+      // Toggle the persistence setting
       this.config.persist_selection = !this.config.persist_selection;
+      
+      // Always save the persistence toggle state, regardless of its value
+      this._savePersistenceState(this.config.persist_selection);
       
       // If persistence is turned off, clear the saved toggle states
       if (!this.config.persist_selection) {
@@ -361,6 +370,24 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       }
       
       this._updateContent();
+    }
+  }
+
+  // Manage the persistence toggle setting separately
+  _loadPersistenceState(): boolean {
+    try {
+      const stored = localStorage.getItem('energy-dashboard-persistence-toggle');
+      return stored === null ? true : stored === 'true';
+    } catch {
+      return true; // Default to true if we can't load from localStorage
+    }
+  }
+
+  _savePersistenceState(persist: boolean): void {
+    try {
+      localStorage.setItem('energy-dashboard-persistence-toggle', String(persist));
+    } catch (e) {
+      console.error("Failed to save persistence state:", e);
     }
   }
 
