@@ -688,7 +688,17 @@ export class EnergyDashboardChartCard extends HTMLElement {
       button.style.minHeight = '32px';
       button.style.fontSize = '0.9em';
       button.title = title;
-      button.innerHTML = text;
+      
+      // Use safe HTML setting instead of innerHTML
+      if (text.includes('<ha-icon')) {
+        const iconWrapper = document.createElement('div');
+        iconWrapper.innerHTML = text;
+        while (iconWrapper.firstChild) {
+          button.appendChild(iconWrapper.firstChild);
+        }
+      } else {
+        button.textContent = text;
+      }
       
       if (seconds !== undefined) {
         button.className = 'interval-button control-button';

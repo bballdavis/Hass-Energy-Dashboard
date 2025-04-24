@@ -46,6 +46,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
         auto_select_count?: number | undefined;
         max_height?: number | undefined;
         energy_auto_select_count?: number | undefined;
+        persist_selection?: boolean | undefined;
     };
     getCardSize(): number;
     set hass(hass: any);
