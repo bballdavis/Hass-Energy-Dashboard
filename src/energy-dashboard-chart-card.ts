@@ -671,42 +671,45 @@ export class EnergyDashboardChartCard extends HTMLElement {
     buttonsContainer.style.justifyContent = 'flex-end';
     buttonsContainer.style.alignItems = 'center';
     buttonsContainer.style.gap = '8px';
+
+    // Create and style base button element
+    const createButton = (text: string, title: string, seconds?: string) => {
+      const button = document.createElement('button');
+      button.style.padding = '4px 8px';
+      button.style.borderRadius = '4px';
+      button.style.border = '1px solid var(--divider-color)';
+      button.style.backgroundColor = 'var(--secondary-background-color)';
+      button.style.color = 'var(--primary-text-color)';
+      button.style.cursor = 'pointer';
+      button.style.display = 'flex';
+      button.style.alignItems = 'center';
+      button.style.justifyContent = 'center';
+      button.style.transition = 'all 0.2s ease-in-out';
+      button.style.minHeight = '32px';
+      button.style.fontSize = '0.9em';
+      button.title = title;
+      button.innerHTML = text;
+      
+      if (seconds !== undefined) {
+        button.className = 'interval-button control-button';
+        button.dataset.seconds = seconds;
+        button.addEventListener('click', () => this._setRefreshInterval(Number(seconds)));
+      } else {
+        button.className = 'refresh-button control-button';
+        button.addEventListener('click', () => this._manualRefresh());
+      }
+      
+      return button;
+    };
     
-    const refreshButton = document.createElement('button');
-    refreshButton.className = 'refresh-button control-button';
-    refreshButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
-    refreshButton.title = 'Refresh now';
-    refreshButton.addEventListener('click', () => this._manualRefresh());
+    const refreshButton = createButton('<ha-icon icon="mdi:refresh"></ha-icon>', 'Refresh now');
     refreshButton.style.minWidth = '36px';
     refreshButton.style.width = '36px';
-
-    const offButton = document.createElement('button');
-    offButton.className = 'interval-button control-button';
-    offButton.innerText = 'Off';
-    offButton.title = 'Disable automatic refresh';
-    offButton.dataset.seconds = '0';
-    offButton.addEventListener('click', () => this._setRefreshInterval(0));
     
-    const sec15Button = document.createElement('button');
-    sec15Button.className = 'interval-button control-button';
-    sec15Button.innerText = '15s';
-    sec15Button.title = 'Refresh every 15 seconds';
-    sec15Button.dataset.seconds = '15';
-    sec15Button.addEventListener('click', () => this._setRefreshInterval(15));
-    
-    const sec30Button = document.createElement('button');
-    sec30Button.className = 'interval-button control-button';
-    sec30Button.innerText = '30s';
-    sec30Button.title = 'Refresh every 30 seconds';
-    sec30Button.dataset.seconds = '30';
-    sec30Button.addEventListener('click', () => this._setRefreshInterval(30));
-    
-    const sec60Button = document.createElement('button');
-    sec60Button.className = 'interval-button control-button';
-    sec60Button.innerText = '60s';
-    sec60Button.title = 'Refresh every 60 seconds';
-    sec60Button.dataset.seconds = '60';
-    sec60Button.addEventListener('click', () => this._setRefreshInterval(60));
+    const offButton = createButton('Off', 'Disable automatic refresh', '0');
+    const sec15Button = createButton('15s', 'Refresh every 15 seconds', '15');
+    const sec30Button = createButton('30s', 'Refresh every 30 seconds', '30');
+    const sec60Button = createButton('60s', 'Refresh every 60 seconds', '60');
     
     buttonsContainer.appendChild(refreshButton);
     buttonsContainer.appendChild(offButton);
@@ -729,16 +732,16 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.interval-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.classList.remove('active');
       button.style.backgroundColor = 'var(--secondary-background-color)';
       button.style.color = 'var(--primary-text-color)';
+      button.style.borderColor = 'var(--divider-color)';
     });
     
     const activeButton = controls.querySelector(`.interval-button[data-seconds="${this._currentRefreshInterval}"]`) as HTMLElement;
     if (activeButton) {
-      activeButton.classList.add('active');
       activeButton.style.backgroundColor = 'var(--primary-color)';
       activeButton.style.color = 'var(--text-primary-color)';
+      activeButton.style.borderColor = 'var(--primary-color)';
     }
   }
 }
