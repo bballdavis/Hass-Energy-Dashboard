@@ -68,4 +68,9 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _createRefreshControls;
     private _updateRefreshControlsUI;
     private _disableApexChartsAutoUpdate;
+    private _findAllApexChartsCards;
+    private _stopAllApexChartTimers;
+    private _interceptApexChartRefresh;
+    private _triggerApexChartManualRefresh;
+    private _setApexChartRefreshInterval;
 }
