@@ -188,7 +188,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         name: name,
         type: chartType, // Series type if needed
         stroke_width: 2,
-        // Removed group_by from series config
       };
     });
 
@@ -197,14 +196,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
       type: 'custom:apexcharts-card',
       header: {
         show: false,
-        title: isEnergy ? 'Energy Consumption' : 'Power Consumption'
       },
       // Use graph_span for time range
       graph_span: `${hoursToShow}h`,
       // Add group_by at the top level
       group_by: {
         func: aggregateFunc,
-        duration: '1h' // Adjust duration as needed, e.g., '10m', '1h'
+        duration: '1h' // Adjust duration as needed
       },
       // Control legend visibility via top-level 'show' object
       show: {
@@ -228,33 +226,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
         markers: {
           size: showPoints ? 4 : 0
         },
-        // Keep legend config here for fine-tuning if needed (ApexCharts options)
-        legend: {
-           show: showLegend // Standard ApexCharts legend control
-        },
-        // Keep yaxis config within apex_config, ensuring standard ApexCharts structure
         yaxis: [{
           min: options?.y_axis?.min,
           max: options?.y_axis?.max,
-          decimalsInFloat: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1), // ApexCharts uses decimalsInFloat
-          title: {
-            // Standard ApexCharts title object
-            text: options?.y_axis?.title || (isEnergy ? 'Energy' : 'Power')
-          },
-          labels: {
-            // Standard ApexCharts labels object
-            formatter:
-              `(val) => {
-                if (val === null || val === undefined) return val;
-                const decimals = ${options?.y_axis?.decimals ?? (isEnergy ? 2 : 1)};
-                const unit = '${options?.y_axis?.unit || (isEnergy ? 'kWh' : 'W')}';
-                // Ensure val is a number before calling toFixed
-                if (typeof val === 'number') {
-                   return val.toFixed(decimals) + ' ' + unit;
-                }
-                return val; // Return original value if not a number
-              }`
-          }
+          decimalsInFloat: options?.y_axis?.decimals ?? (isEnergy ? 2 : 1),
         }]
       },
       series: series,
@@ -262,6 +237,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
       stacked: false, // Set based on config if needed
       update_interval: updateInterval
     };
+
+    // Clean up potential undefined values that might cause issues
+    if (apexChartCardConfig.apex_config.yaxis[0].min === undefined) delete apexChartCardConfig.apex_config.yaxis[0].min;
+    if (apexChartCardConfig.apex_config.yaxis[0].max === undefined) delete apexChartCardConfig.apex_config.yaxis[0].max;
 
     return apexChartCardConfig;
   }

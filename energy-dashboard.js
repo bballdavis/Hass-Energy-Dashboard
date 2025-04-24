@@ -1070,7 +1070,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d;
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = isEnergy
@@ -1093,7 +1093,6 @@ class EnergyDashboardChartCard extends HTMLElement {
                 name: name,
                 type: chartType, // Series type if needed
                 stroke_width: 2,
-                // Removed group_by from series config
             };
         });
         // Create the correct configuration format for apexcharts-card
@@ -1101,14 +1100,13 @@ class EnergyDashboardChartCard extends HTMLElement {
             type: 'custom:apexcharts-card',
             header: {
                 show: false,
-                title: isEnergy ? 'Energy Consumption' : 'Power Consumption'
             },
             // Use graph_span for time range
             graph_span: `${hoursToShow}h`,
             // Add group_by at the top level
             group_by: {
                 func: aggregateFunc,
-                duration: '1h' // Adjust duration as needed, e.g., '10m', '1h'
+                duration: '1h' // Adjust duration as needed
             },
             // Control legend visibility via top-level 'show' object
             show: {
@@ -1132,32 +1130,10 @@ class EnergyDashboardChartCard extends HTMLElement {
                 markers: {
                     size: showPoints ? 4 : 0
                 },
-                // Keep legend config here for fine-tuning if needed (ApexCharts options)
-                legend: {
-                    show: showLegend // Standard ApexCharts legend control
-                },
-                // Keep yaxis config within apex_config, ensuring standard ApexCharts structure
                 yaxis: [{
                         min: (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min,
                         max: (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max,
-                        decimalsInFloat: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1), // ApexCharts uses decimalsInFloat
-                        title: {
-                            // Standard ApexCharts title object
-                            text: ((_e = options === null || options === void 0 ? void 0 : options.y_axis) === null || _e === void 0 ? void 0 : _e.title) || (isEnergy ? 'Energy' : 'Power')
-                        },
-                        labels: {
-                            // Standard ApexCharts labels object
-                            formatter: `(val) => {
-                if (val === null || val === undefined) return val;
-                const decimals = ${(_g = (_f = options === null || options === void 0 ? void 0 : options.y_axis) === null || _f === void 0 ? void 0 : _f.decimals) !== null && _g !== void 0 ? _g : (isEnergy ? 2 : 1)};
-                const unit = '${((_h = options === null || options === void 0 ? void 0 : options.y_axis) === null || _h === void 0 ? void 0 : _h.unit) || (isEnergy ? 'kWh' : 'W')}';
-                // Ensure val is a number before calling toFixed
-                if (typeof val === 'number') {
-                   return val.toFixed(decimals) + ' ' + unit;
-                }
-                return val; // Return original value if not a number
-              }`
-                        }
+                        decimalsInFloat: (_d = (_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.decimals) !== null && _d !== void 0 ? _d : (isEnergy ? 2 : 1),
                     }]
             },
             series: series,
@@ -1165,6 +1141,11 @@ class EnergyDashboardChartCard extends HTMLElement {
             stacked: false, // Set based on config if needed
             update_interval: updateInterval
         };
+        // Clean up potential undefined values that might cause issues
+        if (apexChartCardConfig.apex_config.yaxis[0].min === undefined)
+            delete apexChartCardConfig.apex_config.yaxis[0].min;
+        if (apexChartCardConfig.apex_config.yaxis[0].max === undefined)
+            delete apexChartCardConfig.apex_config.yaxis[0].max;
         return apexChartCardConfig;
     }
     _createChart(isEnergy) {
