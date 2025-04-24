@@ -937,36 +937,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
   
   private _triggerApexChartManualRefresh() {
+    if (!this._hass) {
+      console.warn('Cannot refresh charts: hass object not available.');
+      return;
+    }
     const charts = this._findAllApexChartsCards();
     charts.forEach(chart => {
       try {
-        // Check and call the most likely update methods first
-        if (typeof chart._originalUpdateChart === 'function') {
-          chart._originalUpdateChart.call(chart, 'manual-refresh');
-        } else if (typeof chart._updateChart === 'function') {
-          chart._updateChart.call(chart, 'manual-refresh');
-        } else if (typeof chart.updateChart === 'function') {
-          chart.updateChart('manual-refresh');
-        } else if (typeof chart.update === 'function') {
-          chart.update('manual-refresh');
-        // Check and call data update methods if chart update methods aren't available
-        } else if (typeof chart._originalUpdateData === 'function') {
-          chart._originalUpdateData.call(chart, 'manual-refresh');
-        } else if (typeof chart._updateData === 'function') {
-          chart._updateData.call(chart, 'manual-refresh');
-        // Fallback to updating series directly if other methods fail
-        } else if (chart._chart && typeof chart._chart.updateSeries === 'function') {
-          const currentSeries = chart._chart.w?.globals?.series;
-          if (currentSeries) {
-            chart._chart.updateSeries(currentSeries, true);
-          } else {
-            console.warn('Could not find series data to refresh ApexChart.');
-          }
-        } else {
-          console.warn('Could not find a method to manually refresh ApexChart.');
-        }
+        // Re-assign the hass object to potentially trigger an update in apexcharts-card
+        chart.hass = this._hass;
+        // console.log('Attempted refresh by re-assigning hass object to chart:', chart);
       } catch (e) {
-        console.error('Error during manual ApexChart refresh:', e);
+        // Log error but don't crash if hass assignment fails for some reason
+        console.error('Error during hass re-assignment refresh:', e);
       }
     });
   }
