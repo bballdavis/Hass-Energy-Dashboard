@@ -341,8 +341,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
       },
       span: {
         type: 'time',
-        start: `-${hoursToShow}h`,  // Use correct string format with negative hours
-        end: 'now'                  // Use 'now' instead of hour with offset
+        start: `-${hoursToShow}h`,
+        end: 'now'
       },
       all_series_config: {
         stroke_width: 2,
