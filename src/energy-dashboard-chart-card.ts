@@ -329,6 +329,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       };
     });
 
+    // Ensure hours_to_show is a valid number and fallback to 24
+    const hoursToShow = typeof this.config.hours_to_show === 'number' && this.config.hours_to_show > 0 ? this.config.hours_to_show : 24;
+
     // Create apexcharts-card compatible config object
     const apexChartCardConfig = {
       type: 'custom:apexcharts-card',
@@ -336,7 +339,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       header: { show: false, title: isEnergy ? 'Energy Consumption' : 'Power Consumption', show_states: false },
       span: {
         start: 'hour',
-        offset: `-${this.config.hours_to_show}h`,
+        offset: `-${hoursToShow}h`,
         end: 'hour'
       },
       all_series_config: {
