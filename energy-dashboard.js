@@ -312,11 +312,12 @@ const cardStyles = `
     margin-top: 8px;
     margin-bottom: 4px;
   }
+  /* Chart container styling */
   .chart-container {
     transition: opacity 0.3s ease-in-out;
   }
   
-  /* Ensure apexcharts-card has no borders */
+  /* Force no borders or margins on chart containers */
   .power-chart-container, .energy-chart-container {
     margin: 0 !important;
     padding: 0 !important;
@@ -325,6 +326,7 @@ const cardStyles = `
     overflow: visible !important;
   }
   
+  /* Target apexcharts-card element */
   apexcharts-card {
     margin: 0 !important;
     padding: 0 !important;
@@ -337,8 +339,8 @@ const cardStyles = `
     --apex-card-background: transparent;
   }
 
-  /* Target the shadow DOM elements inside apexcharts-card */
-  ::part(ha-card) {
+  /* Target the inner card inside apexcharts-card shadow DOM */
+  apexcharts-card::part(card) {
     border: none !important;
     box-shadow: none !important;
     margin: 0 !important;
