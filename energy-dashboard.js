@@ -421,6 +421,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._viewMode = 'power'; // Default view mode
         this._resetToPowerDefaultEntities = () => {
             var _a, _b;
+            // Find the scrollable container and save its scroll position
+            const container = this._root.querySelector('.entities-container');
+            const scrollPosition = container ? container.scrollTop : 0;
             // Get current entities
             const entities = getPowerEntities(this._hass);
             // Create a new toggle state object
@@ -435,8 +438,18 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._savePowerToggleStates();
             this._updatePowerEntities();
             this._updateContent();
+            // Restore the scroll position after the content update
+            requestAnimationFrame(() => {
+                const updatedContainer = this._root.querySelector('.entities-container');
+                if (updatedContainer) {
+                    updatedContainer.scrollTop = scrollPosition;
+                }
+            });
         };
         this._clearAllPowerEntities = () => {
+            // Find the scrollable container and save its scroll position
+            const container = this._root.querySelector('.entities-container');
+            const scrollPosition = container ? container.scrollTop : 0;
             const entities = getPowerEntities(this._hass);
             const newToggleStates = {};
             // Set all entity toggle states to false
@@ -447,8 +460,18 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._savePowerToggleStates();
             this._updatePowerEntities();
             this._updateContent();
+            // Restore the scroll position after the content update
+            requestAnimationFrame(() => {
+                const updatedContainer = this._root.querySelector('.entities-container');
+                if (updatedContainer) {
+                    updatedContainer.scrollTop = scrollPosition;
+                }
+            });
         };
         this._selectAllPowerEntities = () => {
+            // Find the scrollable container and save its scroll position
+            const container = this._root.querySelector('.entities-container');
+            const scrollPosition = container ? container.scrollTop : 0;
             const entities = getPowerEntities(this._hass);
             const newToggleStates = {};
             // Set all entity toggle states to true
@@ -459,18 +482,39 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._savePowerToggleStates();
             this._updatePowerEntities();
             this._updateContent();
+            // Restore the scroll position after the content update
+            requestAnimationFrame(() => {
+                const updatedContainer = this._root.querySelector('.entities-container');
+                if (updatedContainer) {
+                    updatedContainer.scrollTop = scrollPosition;
+                }
+            });
         };
         this._togglePowerEntity = (e) => {
             const target = e.currentTarget;
             const entityId = target.dataset.entity;
             if (entityId) {
+                // Find the scrollable container and save its scroll position
+                const container = this._root.querySelector('.entities-container');
+                const scrollPosition = container ? container.scrollTop : 0;
+                // Toggle the entity state
                 this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
                 this._updatePowerEntities();
                 this._updateContent();
+                // Restore the scroll position after the content update
+                requestAnimationFrame(() => {
+                    const updatedContainer = this._root.querySelector('.entities-container');
+                    if (updatedContainer) {
+                        updatedContainer.scrollTop = scrollPosition;
+                    }
+                });
             }
         };
         this._resetToEnergyDefaultEntities = () => {
             var _a, _b;
+            // Find the scrollable container and save its scroll position
+            const container = this._root.querySelector('.entities-container');
+            const scrollPosition = container ? container.scrollTop : 0;
             // Get current energy entities
             const entities = getEnergyEntities(this._hass);
             // Create a new toggle state object
@@ -485,8 +529,18 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._saveEnergyToggleStates();
             this._updateEnergyEntities();
             this._updateContent();
+            // Restore the scroll position after the content update
+            requestAnimationFrame(() => {
+                const updatedContainer = this._root.querySelector('.entities-container');
+                if (updatedContainer) {
+                    updatedContainer.scrollTop = scrollPosition;
+                }
+            });
         };
         this._clearAllEnergyEntities = () => {
+            // Find the scrollable container and save its scroll position
+            const container = this._root.querySelector('.entities-container');
+            const scrollPosition = container ? container.scrollTop : 0;
             const entities = getEnergyEntities(this._hass);
             const newToggleStates = {};
             // Set all entity toggle states to false
@@ -497,8 +551,18 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._saveEnergyToggleStates();
             this._updateEnergyEntities();
             this._updateContent();
+            // Restore the scroll position after the content update
+            requestAnimationFrame(() => {
+                const updatedContainer = this._root.querySelector('.entities-container');
+                if (updatedContainer) {
+                    updatedContainer.scrollTop = scrollPosition;
+                }
+            });
         };
         this._selectAllEnergyEntities = () => {
+            // Find the scrollable container and save its scroll position
+            const container = this._root.querySelector('.entities-container');
+            const scrollPosition = container ? container.scrollTop : 0;
             const entities = getEnergyEntities(this._hass);
             const newToggleStates = {};
             // Set all entity toggle states to true
@@ -509,14 +573,32 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._saveEnergyToggleStates();
             this._updateEnergyEntities();
             this._updateContent();
+            // Restore the scroll position after the content update
+            requestAnimationFrame(() => {
+                const updatedContainer = this._root.querySelector('.entities-container');
+                if (updatedContainer) {
+                    updatedContainer.scrollTop = scrollPosition;
+                }
+            });
         };
         this._toggleEnergyEntity = (e) => {
             const target = e.currentTarget;
             const entityId = target.dataset.entity;
             if (entityId) {
+                // Find the scrollable container and save its scroll position
+                const container = this._root.querySelector('.entities-container');
+                const scrollPosition = container ? container.scrollTop : 0;
+                // Toggle the entity state
                 this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
                 this._updateEnergyEntities();
                 this._updateContent();
+                // Restore the scroll position after the content update
+                requestAnimationFrame(() => {
+                    const updatedContainer = this._root.querySelector('.entities-container');
+                    if (updatedContainer) {
+                        updatedContainer.scrollTop = scrollPosition;
+                    }
+                });
             }
         };
         this._togglePersistence = () => {

@@ -322,6 +322,10 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _resetToPowerDefaultEntities = () => {
+    // Find the scrollable container and save its scroll position
+    const container = this._root.querySelector('.entities-container');
+    const scrollPosition = container ? container.scrollTop : 0;
+    
     // Get current entities
     const entities = getPowerEntities(this._hass);
     
@@ -339,9 +343,21 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._savePowerToggleStates();
     this._updatePowerEntities();
     this._updateContent();
+    
+    // Restore the scroll position after the content update
+    requestAnimationFrame(() => {
+      const updatedContainer = this._root.querySelector('.entities-container');
+      if (updatedContainer) {
+        updatedContainer.scrollTop = scrollPosition;
+      }
+    });
   }
 
   _clearAllPowerEntities = () => {
+    // Find the scrollable container and save its scroll position
+    const container = this._root.querySelector('.entities-container');
+    const scrollPosition = container ? container.scrollTop : 0;
+    
     const entities = getPowerEntities(this._hass);
     const newToggleStates: Record<string, boolean> = {};
     
@@ -354,9 +370,21 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._savePowerToggleStates();
     this._updatePowerEntities();
     this._updateContent();
+    
+    // Restore the scroll position after the content update
+    requestAnimationFrame(() => {
+      const updatedContainer = this._root.querySelector('.entities-container');
+      if (updatedContainer) {
+        updatedContainer.scrollTop = scrollPosition;
+      }
+    });
   }
 
   _selectAllPowerEntities = () => {
+    // Find the scrollable container and save its scroll position
+    const container = this._root.querySelector('.entities-container');
+    const scrollPosition = container ? container.scrollTop : 0;
+    
     const entities = getPowerEntities(this._hass);
     const newToggleStates: Record<string, boolean> = {};
     
@@ -369,19 +397,44 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._savePowerToggleStates();
     this._updatePowerEntities();
     this._updateContent();
+    
+    // Restore the scroll position after the content update
+    requestAnimationFrame(() => {
+      const updatedContainer = this._root.querySelector('.entities-container');
+      if (updatedContainer) {
+        updatedContainer.scrollTop = scrollPosition;
+      }
+    });
   }
 
   _togglePowerEntity = (e: Event) => {
     const target = e.currentTarget as HTMLElement;
     const entityId = target.dataset.entity;
     if (entityId) {
+      // Find the scrollable container and save its scroll position
+      const container = this._root.querySelector('.entities-container');
+      const scrollPosition = container ? container.scrollTop : 0;
+      
+      // Toggle the entity state
       this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
       this._updatePowerEntities();
       this._updateContent();
+      
+      // Restore the scroll position after the content update
+      requestAnimationFrame(() => {
+        const updatedContainer = this._root.querySelector('.entities-container');
+        if (updatedContainer) {
+          updatedContainer.scrollTop = scrollPosition;
+        }
+      });
     }
   }
 
   _resetToEnergyDefaultEntities = () => {
+    // Find the scrollable container and save its scroll position
+    const container = this._root.querySelector('.entities-container');
+    const scrollPosition = container ? container.scrollTop : 0;
+    
     // Get current energy entities
     const entities = getEnergyEntities(this._hass);
     
@@ -399,9 +452,21 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._saveEnergyToggleStates();
     this._updateEnergyEntities();
     this._updateContent();
+    
+    // Restore the scroll position after the content update
+    requestAnimationFrame(() => {
+      const updatedContainer = this._root.querySelector('.entities-container');
+      if (updatedContainer) {
+        updatedContainer.scrollTop = scrollPosition;
+      }
+    });
   }
 
   _clearAllEnergyEntities = () => {
+    // Find the scrollable container and save its scroll position
+    const container = this._root.querySelector('.entities-container');
+    const scrollPosition = container ? container.scrollTop : 0;
+    
     const entities = getEnergyEntities(this._hass);
     const newToggleStates: Record<string, boolean> = {};
     
@@ -414,9 +479,21 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._saveEnergyToggleStates();
     this._updateEnergyEntities();
     this._updateContent();
+    
+    // Restore the scroll position after the content update
+    requestAnimationFrame(() => {
+      const updatedContainer = this._root.querySelector('.entities-container');
+      if (updatedContainer) {
+        updatedContainer.scrollTop = scrollPosition;
+      }
+    });
   }
 
   _selectAllEnergyEntities = () => {
+    // Find the scrollable container and save its scroll position
+    const container = this._root.querySelector('.entities-container');
+    const scrollPosition = container ? container.scrollTop : 0;
+    
     const entities = getEnergyEntities(this._hass);
     const newToggleStates: Record<string, boolean> = {};
     
@@ -429,15 +506,36 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._saveEnergyToggleStates();
     this._updateEnergyEntities();
     this._updateContent();
+    
+    // Restore the scroll position after the content update
+    requestAnimationFrame(() => {
+      const updatedContainer = this._root.querySelector('.entities-container');
+      if (updatedContainer) {
+        updatedContainer.scrollTop = scrollPosition;
+      }
+    });
   }
 
   _toggleEnergyEntity = (e: Event) => {
     const target = e.currentTarget as HTMLElement;
     const entityId = target.dataset.entity;
     if (entityId) {
+      // Find the scrollable container and save its scroll position
+      const container = this._root.querySelector('.entities-container');
+      const scrollPosition = container ? container.scrollTop : 0;
+      
+      // Toggle the entity state
       this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
       this._updateEnergyEntities();
       this._updateContent();
+      
+      // Restore the scroll position after the content update
+      requestAnimationFrame(() => {
+        const updatedContainer = this._root.querySelector('.entities-container');
+        if (updatedContainer) {
+          updatedContainer.scrollTop = scrollPosition;
+        }
+      });
     }
   }
 
