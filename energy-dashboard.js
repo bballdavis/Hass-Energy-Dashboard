@@ -1689,26 +1689,40 @@ class EnergyDashboardChartCard extends HTMLElement {
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
         // Validate entities
-        if (!Array.isArray(entities) || entities.some(entity => typeof entity !== 'string')) {
-            console.error('Invalid entities array:', entities);
+        if (!Array.isArray(entities) || entities.length === 0) {
+            console.error('Invalid or empty entities array:', entities);
             return null;
         }
-        // Strictly minimal series config matching apexcharts-card schema
-        const series = entities.map(entityId => {
+        // Map entities to series data with proper validation
+        const validEntities = entities.filter(entityId => {
+            if (!entityId || typeof entityId !== 'string') {
+                console.warn('Invalid entity ID found:', entityId);
+                return false;
+            }
+            if (!this._hass.states[entityId]) {
+                console.warn(`Entity ${entityId} not found in Home Assistant states.`);
+                return false;
+            }
+            return true;
+        });
+        if (validEntities.length === 0) {
+            console.error('No valid entities found after filtering.');
+            return null;
+        }
+        // Create series array with valid entities only
+        const series = validEntities.map(entityId => {
             var _a;
             const state = this._hass.states[entityId];
-            if (!state) {
-                console.warn(`Entity ${entityId} not found in Home Assistant states.`);
-                return null;
-            }
             return {
                 entity: entityId,
                 name: ((_a = state.attributes) === null || _a === void 0 ? void 0 : _a.friendly_name) || entityId,
-                color: getEntityColor(entityId) // Use entity color utility
+                color: getEntityColor(entityId),
+                show: true // Explicitly set show property to ensure series visibility
             };
-        }).filter(Boolean); // Remove null values
-        if (!series.length) {
-            console.error('No valid series generated for chart configuration.');
+        });
+        // Final validation of series array
+        if (!series || series.length === 0) {
+            console.error('Failed to generate valid series data for chart.');
             return null;
         }
         // --- Y Axis Auto-Range Logic ---
@@ -1748,7 +1762,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
         // Ensure consistent decimal formatting
         const decimals = ((_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.decimals) !== undefined ? options.y_axis.decimals : (isEnergy ? 2 : 0);
-        // Minimal config object matching apexcharts-card schema
+        // Create apexcharts-card compatible config object
         const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
             header: {
@@ -1756,11 +1770,11 @@ class EnergyDashboardChartCard extends HTMLElement {
             },
             graph_span: `${hoursToShow}h`,
             chart_type: chartType,
-            series,
+            series: series, // Use our validated series array
             yaxis: [{
                     min: yMin,
-                    max: yMax, // Apply max value from config - undefined will be auto
-                    decimals: decimals // Default to 2 decimal places for energy, 0 for power
+                    max: yMax,
+                    decimals: decimals
                 }],
             apex_config: {
                 chart: {
@@ -1776,13 +1790,6 @@ class EnergyDashboardChartCard extends HTMLElement {
                             zoomout: true,
                             pan: true,
                             reset: true
-                        }
-                    },
-                    // Ensure all elements remain visible when interacting with the chart
-                    events: {
-                        mouseLeave: () => {
-                            // Force redraw to ensure y-axis labels are visible
-                            return false; // Let default handler run
                         }
                     }
                 },
