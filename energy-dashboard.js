@@ -1709,26 +1709,6 @@ class EnergyDashboardChartCard extends HTMLElement {
             console.error('No valid entities found after filtering.');
             return null;
         }
-        // Create series array with valid entities only - using proper format for apexcharts-card v2.1.2
-        const series = validEntities.map(entityId => {
-            var _a;
-            const state = this._hass.states[entityId];
-            return {
-                entity: entityId,
-                name: ((_a = state.attributes) === null || _a === void 0 ? void 0 : _a.friendly_name) || entityId,
-                color: getEntityColor(entityId),
-                // Fix: Use object for show property instead of boolean
-                show: {
-                    in_chart: true, // Show in chart
-                    in_header: false // Don't show in header
-                }
-            };
-        });
-        // Final validation of series array
-        if (!series || series.length === 0) {
-            console.error('Failed to generate valid series data for chart.');
-            return null;
-        }
         // --- Y Axis Auto-Range Logic ---
         let yMin = (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min;
         let yMax = (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max;
@@ -1766,26 +1746,64 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
         // Ensure consistent decimal formatting
         const decimals = ((_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.decimals) !== undefined ? options.y_axis.decimals : (isEnergy ? 2 : 0);
+        // Create the entity series configuration for apexcharts-card
+        const seriesConfig = validEntities.map(entityId => {
+            var _a;
+            const state = this._hass.states[entityId];
+            const entityColor = getEntityColor(entityId);
+            return {
+                entity: entityId,
+                name: ((_a = state.attributes) === null || _a === void 0 ? void 0 : _a.friendly_name) || entityId,
+                type: chartType,
+                stroke_width: 2,
+                curve: smoothCurve ? 'smooth' : 'straight',
+                color: entityColor,
+                // Updated for apexcharts-card v2.1.2
+                show: {
+                    in_header: false,
+                    in_legend: true,
+                    in_chart: true
+                },
+                extend_to_end: true,
+                offset: 0,
+                group_by: {
+                    duration: '1h',
+                    func: 'avg'
+                }
+            };
+        });
         // Create apexcharts-card compatible config object
         const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
+            chart_type: chartType,
             header: {
                 show: false,
                 title: isEnergy ? 'Energy Consumption' : 'Power Consumption',
                 show_states: false
             },
-            graph_span: `${hoursToShow}h`,
-            chart_type: chartType,
-            series: series,
-            yaxis: [{
-                    min: yMin,
-                    max: yMax,
-                    decimals: decimals
-                }],
+            span: {
+                start: `${hoursToShow}h`,
+                end: "now"
+            },
+            all_series_config: {
+                stroke_width: 2,
+                curve: smoothCurve ? 'smooth' : 'straight',
+                extend_to_end: true,
+                show: {
+                    in_header: false
+                },
+                group_by: {
+                    duration: '1h',
+                    func: 'avg'
+                }
+            },
+            series: seriesConfig,
             apex_config: {
                 chart: {
                     height: this.config.chart_height || 300,
                     animations: { enabled: false },
+                    background: 'transparent',
+                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
                     toolbar: {
                         show: true,
                         tools: {
@@ -1799,47 +1817,12 @@ class EnergyDashboardChartCard extends HTMLElement {
                         }
                     }
                 },
-                yaxis: [{
-                        tickAmount,
-                        forceNiceScale: true, // Force nice rounded intervals
-                        title: {
-                            text: yTitle || '',
-                            style: {
-                                fontSize: '12px',
-                                fontWeight: 500,
-                                color: 'var(--primary-text-color, #000)'
-                            }
-                        },
-                        labels: {
-                            formatter: (val) => val.toFixed(decimals),
-                            style: {
-                                fontSize: '11px',
-                                fontFamily: 'Helvetica, Arial, sans-serif',
-                                color: 'var(--secondary-text-color, #666)'
-                            },
-                            show: true, // Ensure labels are always shown
-                            hideOverlappingLabels: false, // Don't hide overlapping labels
-                        },
-                        axisTicks: {
-                            show: true,
-                            color: 'var(--divider-color, #e0e0e0)',
-                            width: 1
-                        },
-                        axisBorder: {
-                            show: true,
-                            color: 'var(--divider-color, #e0e0e0)',
-                            width: 1
-                        },
-                        crosshairs: {
-                            show: true,
-                            position: 'back',
-                            stroke: {
-                                color: 'var(--primary-color, #03a9f4)',
-                                width: 1,
-                                dashArray: 0
-                            }
-                        }
-                    }],
+                colors: validEntities.map(entityId => getEntityColor(entityId)),
+                stroke: {
+                    curve: smoothCurve ? 'smooth' : 'straight',
+                    width: 2,
+                    lineCap: 'round',
+                },
                 grid: {
                     show: true,
                     borderColor: 'var(--divider-color, #e0e0e0)',
@@ -1864,84 +1847,97 @@ class EnergyDashboardChartCard extends HTMLElement {
                 },
                 markers: {
                     size: showPoints ? 4 : 0,
-                    colors: ['var(--primary-color, #03a9f4)'],
-                    strokeColors: 'var(--card-background-color, #fff)',
-                    strokeWidth: 2
+                    shape: 'circle',
+                    strokeColors: ['var(--card-background-color, #fff)'],
+                    strokeWidth: 2,
+                    hover: {
+                        size: showPoints ? 6 : 4
+                    }
                 },
-                stroke: {
-                    curve: smoothCurve ? 'smooth' : 'straight',
-                    width: 2,
-                    lineCap: 'round'
+                tooltip: {
+                    shared: true,
+                    intersect: false,
+                    theme: 'light',
+                    x: {
+                        format: 'MMM dd, HH:mm:ss'
+                    }
                 },
                 legend: {
                     show: showLegend,
                     position: 'bottom',
+                    horizontalAlign: 'center',
                     fontSize: '12px',
-                    fontFamily: 'Helvetica, Arial, sans-serif',
+                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
+                    offsetY: 8,
+                    itemMargin: {
+                        horizontal: 8,
+                        vertical: 4
+                    },
                     labels: {
                         colors: 'var(--primary-text-color, #000)'
                     },
                     onItemHover: {
-                        highlightDataSeries: true // Highlight the series when hovering legend items
+                        highlightDataSeries: true
                     },
                     onItemClick: {
-                        toggleDataSeries: true // Toggle data visibility when clicking legend
+                        toggleDataSeries: true
                     }
                 },
-                tooltip: {
-                    enabled: true,
-                    shared: true, // Share tooltip across all series - important
-                    intersect: false, // Don't require direct intersection
-                    theme: 'light',
-                    style: {
-                        fontSize: '12px',
-                        fontFamily: 'Helvetica, Arial, sans-serif'
+                xaxis: {
+                    type: 'datetime',
+                    labels: {
+                        style: {
+                            fontSize: '11px',
+                            fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
+                            color: 'var(--secondary-text-color, #666)'
+                        },
+                        format: 'HH:mm'
                     },
-                    x: {
-                        show: true
+                    axisBorder: {
+                        show: true,
+                        color: 'var(--divider-color, #e0e0e0)',
+                        height: 1,
                     },
-                    y: {
-                        show: true
+                    axisTicks: {
+                        show: true,
+                        color: 'var(--divider-color, #e0e0e0)'
                     },
-                    marker: {
-                        show: true
-                    },
-                    fixed: {
-                        enabled: false // Don't use fixed tooltip
+                    tooltip: {
+                        enabled: true
                     }
                 },
-                states: {
-                    hover: {
-                        filter: {
-                            type: 'lighten',
-                            value: 0.1
+                yaxis: {
+                    min: yMin,
+                    max: yMax,
+                    tickAmount: tickAmount,
+                    forceNiceScale: true,
+                    decimalsInFloat: decimals,
+                    labels: {
+                        formatter: (val) => val.toFixed(decimals),
+                        style: {
+                            fontSize: '11px',
+                            fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
+                            color: 'var(--secondary-text-color, #666)'
                         }
                     },
-                    active: {
-                        allowMultipleDataPointsSelection: false,
-                        filter: {
-                            type: 'darken',
-                            value: 0.35
-                        }
-                    },
-                    normal: {
-                        filter: {
-                            type: 'none'
+                    title: {
+                        text: yTitle,
+                        style: {
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: 'var(--primary-text-color, #000)'
                         }
                     }
                 },
-                // Add responsive settings to ensure consistent behavior across screen sizes
                 responsive: [{
                         breakpoint: 1000,
                         options: {
                             chart: {
                                 height: this.config.chart_height || 300
                             },
-                            yaxis: {
-                                labels: {
-                                    show: true,
-                                    minWidth: 20
-                                }
+                            legend: {
+                                position: 'bottom',
+                                offsetY: 0
                             }
                         }
                     }]
