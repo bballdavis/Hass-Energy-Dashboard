@@ -60,4 +60,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _renderPowerSection(): HTMLElement;
     private _renderEnergySection(): HTMLElement;
     private _updateContent(): void;
+    private _equalizeButtonHeights(buttonContainer: HTMLElement): void;
+    private _debugSection(section: HTMLElement, label: string): HTMLElement;
+    private _forceRecalculation(element: HTMLElement): number;
 }

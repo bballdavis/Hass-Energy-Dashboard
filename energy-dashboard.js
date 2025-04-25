@@ -340,6 +340,61 @@ const editorStyles = `
 `;
 
 class EnergyDashboardEntityCard extends HTMLElement {
+    // Helper method to equalize button heights with ResizeObserver
+    _equalizeButtonHeights(buttonContainer) {
+        if (!buttonContainer)
+            return;
+        const buttons = Array.from(buttonContainer.querySelectorAll('button'));
+        if (buttons.length === 0)
+            return;
+        // First, reset heights to auto to get natural height
+        buttons.forEach(btn => btn.style.height = 'auto');
+        // Use ResizeObserver for more reliable height adjustments
+        try {
+            const resizeObserver = new ResizeObserver(() => {
+                // Find tallest button
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                // Set all buttons to the tallest height
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            });
+            // Observe all buttons
+            buttons.forEach(button => resizeObserver.observe(button));
+            // Immediate equalization attempt
+            requestAnimationFrame(() => {
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            });
+            // Cleanup after 2 seconds (by then equalization should be stable)
+            setTimeout(() => {
+                resizeObserver.disconnect();
+            }, 2000);
+        }
+        catch (e) {
+            // Fallback if ResizeObserver is not supported
+            setTimeout(() => {
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            }, 100);
+        }
+    }
+    // Force browser to recalculate layout to ensure all heights are properly calculated
+    _forceRecalculation(element) {
+        // Reading offsetHeight forces a layout recalculation
+        const height = element.offsetHeight;
+        return height;
+    }
     // Define card name and icon for card picker
     static get cardType() {
         return 'energy-dashboard-entity-card';
@@ -762,6 +817,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
+            // Equalize button heights
+            this._equalizeButtonHeights(controlButtons);
             // Add persistence toggle
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';
@@ -1095,11 +1152,24 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Show either power section or energy section based on the current view mode
         if (this._viewMode === 'power') {
             // Power section
+            console.log("Rendering power section...");
+            console.log(`Power entities count: ${this.powerEntities.length}`);
             const powerSection = this._renderPowerSection();
+            // Debug the power section to ensure it has all expected children
+            const sectionChildren = Array.from(powerSection.children);
+            console.log(`Power section has ${sectionChildren.length} children`);
+            sectionChildren.forEach((child, index) => {
+                console.log(`Child ${index}: ${child.tagName} with class ${child.className}`);
+                if (child.className === 'entities-container') {
+                    console.log(`Entity container has ${child.childElementCount} entities`);
+                }
+            });
             card.appendChild(powerSection);
         }
         else {
             // Energy section (without separator when it's the only section shown)
+            console.log("Rendering energy section...");
+            console.log(`Energy entities count: ${this.energyEntities.length}`);
             const energySection = this._renderEnergySection();
             // If we're in energy view mode, remove the separator as it's not needed
             const separator = energySection.querySelector('.section-separator');
@@ -1108,32 +1178,28 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }
             card.appendChild(energySection);
         }
-        // Wait for the DOM to be fully rendered before equalizing button heights
-        setTimeout(() => {
-            const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
-            controlButtonsContainers.forEach(container => this._equalizeButtonHeights(container));
-        }, 50);
-    }
-    // Helper method to equalize button heights
-    _equalizeButtonHeights(buttonContainer) {
-        if (!buttonContainer)
-            return;
-        const buttons = Array.from(buttonContainer.querySelectorAll('button'));
-        if (buttons.length === 0)
-            return;
-        // First, reset heights to auto to get natural height
-        buttons.forEach(btn => btn.style.height = 'auto');
-        // Wait for the browser to recalculate natural heights
-        setTimeout(() => {
-            // Find tallest button
-            const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
-            // Set all buttons to the tallest height
-            if (maxHeight > 0) {
-                buttons.forEach(btn => {
-                    btn.style.height = `${maxHeight}px`;
+        // Force layout recalculation to ensure all elements have proper dimensions
+        requestAnimationFrame(() => {
+            this._forceRecalculation(card);
+            // Wait a bit for the DOM to be fully rendered before equalizing button heights
+            setTimeout(() => {
+                const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
+                console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
+                controlButtonsContainers.forEach((container, index) => {
+                    console.log(`Equalizing heights for container ${index}`);
+                    this._equalizeButtonHeights(container);
                 });
-            }
-        }, 10);
+                // Also check for entity lists and make sure they're visible
+                const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
+                console.log(`Found ${entityContainers.length} entity containers`);
+                entityContainers.forEach(container => {
+                    console.log(`Entity container has ${container.childElementCount} children`);
+                    if (container.childElementCount === 0) {
+                        console.warn("Entity container is empty!");
+                    }
+                });
+            }, 100);
+        });
     }
 }
 // Register the card with the custom elements registry
