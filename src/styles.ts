@@ -223,6 +223,15 @@ export const cardStyles = `
   .chart-container {
     transition: opacity 0.3s ease-in-out;
   }
+  .select-all-button {
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2;
+    min-height: 2.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 `;
 
 export const editorStyles = `

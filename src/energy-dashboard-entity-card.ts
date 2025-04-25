@@ -498,7 +498,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       clearButton.style.padding = '4px 8px';
       
       const selectAllButton = document.createElement('button');
-      selectAllButton.className = 'control-button';
+      selectAllButton.className = 'select-all-button';
       selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
       selectAllButton.addEventListener('click', this._selectAllPowerEntities);
       selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
@@ -672,7 +672,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       clearButton.style.padding = '4px 8px';
       
       const selectAllButton = document.createElement('button');
-      selectAllButton.className = 'control-button';
+      selectAllButton.className = 'select-all-button';
       selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
       selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
       selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
