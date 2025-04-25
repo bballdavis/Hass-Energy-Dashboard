@@ -7,7 +7,6 @@ export interface EntityInfo {
   energyValue?: number;
   isToggleable: boolean;
   isOn?: boolean;
-  color?: string;  // Color for consistent visualization between entity and chart
 }
 
 export interface EnergyDashboardConfig {

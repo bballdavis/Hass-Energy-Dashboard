@@ -13,7 +13,6 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _currentRefreshInterval;
     private _currentTimeRangeHours;
     private _viewMode;
-    private _viewModeChangeEvent;
     static get cardType(): string;
     static get displayName(): string;
     static get description(): string;

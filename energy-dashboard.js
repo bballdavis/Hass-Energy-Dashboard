@@ -1,32 +1,3 @@
-// Predefined colors for entities - a vibrant palette that works well with charts
-const ENTITY_COLORS = [
-    '#3498db', // blue
-    '#e74c3c', // red
-    '#2ecc71', // green
-    '#9b59b6', // purple
-    '#f39c12', // orange
-    '#1abc9c', // turquoise
-    '#d35400', // pumpkin
-    '#8e44ad', // wisteria
-    '#27ae60', // nephritis
-    '#c0392b', // pomegranate
-    '#16a085', // green sea
-    '#f1c40f', // sunflower
-    '#7f8c8d', // asbestos
-    '#3498db', // peter river
-    '#e67e22', // carrot
-];
-// Generate a consistent color for an entity based on its ID
-function getEntityColor(entityId) {
-    // Create a simple hash of the entity ID to get a consistent index
-    let hash = 0;
-    for (let i = 0; i < entityId.length; i++) {
-        hash = entityId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    // Map the hash to our color array
-    const index = Math.abs(hash) % ENTITY_COLORS.length;
-    return ENTITY_COLORS[index];
-}
 function getPowerEntities(hass) {
     return Object.keys(hass.states)
         .filter(entityId => {
@@ -57,8 +28,7 @@ function getPowerEntities(hass) {
             state: stateObj.state,
             unit: stateObj.attributes.unit_of_measurement,
             powerValue,
-            isToggleable,
-            color: getEntityColor(entityId) // Add consistent color to the entity
+            isToggleable
         };
     })
         .sort((a, b) => b.powerValue - a.powerValue);
@@ -93,8 +63,7 @@ function getEnergyEntities(hass) {
             state: stateObj.state,
             unit: stateObj.attributes.unit_of_measurement,
             energyValue,
-            isToggleable,
-            color: getEntityColor(entityId) // Add consistent color to the entity
+            isToggleable
         };
     })
         .sort((a, b) => b.energyValue - a.energyValue);
@@ -371,6 +340,61 @@ const editorStyles = `
 `;
 
 class EnergyDashboardEntityCard extends HTMLElement {
+    // Helper method to equalize button heights with ResizeObserver
+    _equalizeButtonHeights(buttonContainer) {
+        if (!buttonContainer)
+            return;
+        const buttons = Array.from(buttonContainer.querySelectorAll('button'));
+        if (buttons.length === 0)
+            return;
+        // First, reset heights to auto to get natural height
+        buttons.forEach(btn => btn.style.height = 'auto');
+        // Use ResizeObserver for more reliable height adjustments
+        try {
+            const resizeObserver = new ResizeObserver(() => {
+                // Find tallest button
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                // Set all buttons to the tallest height
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            });
+            // Observe all buttons
+            buttons.forEach(button => resizeObserver.observe(button));
+            // Immediate equalization attempt
+            requestAnimationFrame(() => {
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            });
+            // Cleanup after 2 seconds (by then equalization should be stable)
+            setTimeout(() => {
+                resizeObserver.disconnect();
+            }, 2000);
+        }
+        catch (e) {
+            // Fallback if ResizeObserver is not supported
+            setTimeout(() => {
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            }, 100);
+        }
+    }
+    // Force browser to recalculate layout to ensure all heights are properly calculated
+    _forceRecalculation(element) {
+        // Reading offsetHeight forces a layout recalculation
+        const height = element.offsetHeight;
+        return height;
+    }
     // Define card name and icon for card picker
     static get cardType() {
         return 'energy-dashboard-entity-card';
@@ -781,24 +805,20 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
-            resetButton.style.backgroundColor = 'var(--card-background-color, white)';
-            resetButton.style.border = '1px solid var(--primary-color)';
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.addEventListener('click', this._clearAllPowerEntities);
-            clearButton.style.backgroundColor = 'var(--card-background-color, white)';
-            clearButton.style.border = '1px solid var(--primary-color)';
             const selectAllButton = document.createElement('button');
-            selectAllButton.className = 'control-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+            selectAllButton.className = 'select-all-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
             selectAllButton.addEventListener('click', this._selectAllPowerEntities);
-            selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
-            selectAllButton.style.border = '1px solid var(--primary-color)';
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
+            // Equalize button heights
+            this._equalizeButtonHeights(controlButtons);
             // Add persistence toggle
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';
@@ -916,24 +936,20 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
-            resetButton.style.backgroundColor = 'var(--card-background-color, white)';
-            resetButton.style.border = '1px solid var(--primary-color)';
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.addEventListener('click', this._clearAllEnergyEntities);
-            clearButton.style.backgroundColor = 'var(--card-background-color, white)';
-            clearButton.style.border = '1px solid var(--primary-color)';
             const selectAllButton = document.createElement('button');
-            selectAllButton.className = 'control-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+            selectAllButton.className = 'select-all-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
             selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
-            selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
-            selectAllButton.style.border = '1px solid var(--primary-color)';
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
+            // Equalize button heights
+            this._equalizeButtonHeights(controlButtons);
             // Add persistence toggle
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';
@@ -1136,11 +1152,24 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Show either power section or energy section based on the current view mode
         if (this._viewMode === 'power') {
             // Power section
+            console.log("Rendering power section...");
+            console.log(`Power entities count: ${this.powerEntities.length}`);
             const powerSection = this._renderPowerSection();
+            // Debug the power section to ensure it has all expected children
+            const sectionChildren = Array.from(powerSection.children);
+            console.log(`Power section has ${sectionChildren.length} children`);
+            sectionChildren.forEach((child, index) => {
+                console.log(`Child ${index}: ${child.tagName} with class ${child.className}`);
+                if (child.className === 'entities-container') {
+                    console.log(`Entity container has ${child.childElementCount} entities`);
+                }
+            });
             card.appendChild(powerSection);
         }
         else {
             // Energy section (without separator when it's the only section shown)
+            console.log("Rendering energy section...");
+            console.log(`Energy entities count: ${this.energyEntities.length}`);
             const energySection = this._renderEnergySection();
             // If we're in energy view mode, remove the separator as it's not needed
             const separator = energySection.querySelector('.section-separator');
@@ -1149,6 +1178,28 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }
             card.appendChild(energySection);
         }
+        // Force layout recalculation to ensure all elements have proper dimensions
+        requestAnimationFrame(() => {
+            this._forceRecalculation(card);
+            // Wait a bit for the DOM to be fully rendered before equalizing button heights
+            setTimeout(() => {
+                const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
+                console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
+                controlButtonsContainers.forEach((container, index) => {
+                    console.log(`Equalizing heights for container ${index}`);
+                    this._equalizeButtonHeights(container);
+                });
+                // Also check for entity lists and make sure they're visible
+                const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
+                console.log(`Found ${entityContainers.length} entity containers`);
+                entityContainers.forEach(container => {
+                    console.log(`Entity container has ${container.childElementCount} children`);
+                    if (container.childElementCount === 0) {
+                        console.warn("Entity container is empty!");
+                    }
+                });
+            }, 100);
+        });
     }
 }
 // Register the card with the custom elements registry
@@ -1395,13 +1446,10 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._currentRefreshInterval = 30; // Default to 30 seconds
         this._currentTimeRangeHours = 24; // Default to 24 hours
         this._viewMode = 'power'; // Default to power view
-        // Custom event type definition for view mode changes
-        this._viewModeChangeEvent = 'view-mode-changed';
         // Handle view mode changes from entity card
         this._handleViewModeChange = (event) => {
-            const customEvent = event;
-            if (customEvent.detail && customEvent.detail.mode) {
-                this._viewMode = customEvent.detail.mode;
+            if (event.detail && event.detail.mode) {
+                this._viewMode = event.detail.mode;
                 console.log(`View mode changed to: ${this._viewMode}`);
                 // Update the chart display based on view mode
                 this._updateContent();
@@ -1428,7 +1476,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         // Load the selected view mode from localStorage
         this._viewMode = this._loadViewMode();
         // Add event listener for view mode changes from entity card
-        window.addEventListener(this._viewModeChangeEvent, this._handleViewModeChange);
+        window.addEventListener('view-mode-changed', this._handleViewModeChange);
         this._loadSelectedEntities();
         this._checkApexChartsRegistration();
         // First update the content without starting the timer
@@ -1447,7 +1495,7 @@ class EnergyDashboardChartCard extends HTMLElement {
     disconnectedCallback() {
         this._stopUpdateInterval();
         // Remove event listener when component is removed
-        window.removeEventListener(this._viewModeChangeEvent, this._handleViewModeChange);
+        window.removeEventListener('view-mode-changed', this._handleViewModeChange);
     }
     // Home Assistant specific method to set config
     setConfig(config) {
@@ -1566,30 +1614,18 @@ class EnergyDashboardChartCard extends HTMLElement {
             ? this.config.energy_chart_options
             : this.config.power_chart_options;
         const chartType = this.config.chart_type || 'line';
+        const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
-        // Validate entities
-        if (!Array.isArray(entities) || entities.length === 0) {
-            console.error('Invalid or empty entities array:', entities);
-            return null;
-        }
-        // Map entities to series data with proper validation
-        const validEntities = entities.filter(entityId => {
-            if (!entityId || typeof entityId !== 'string') {
-                console.warn('Invalid entity ID found:', entityId);
-                return false;
-            }
-            if (!this._hass.states[entityId]) {
-                console.warn(`Entity ${entityId} not found in Home Assistant states.`);
-                return false;
-            }
-            return true;
+        // Strictly minimal series config matching apexcharts-card schema
+        const series = entities.map(entityId => {
+            var _a, _b;
+            return ({
+                entity: entityId,
+                name: ((_b = (_a = this._hass.states[entityId]) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.friendly_name) || entityId
+            });
         });
-        if (validEntities.length === 0) {
-            console.error('No valid entities found after filtering.');
-            return null;
-        }
         // --- Y Axis Auto-Range Logic ---
         let yMin = (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min;
         let yMax = (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max;
@@ -1627,56 +1663,24 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
         // Ensure consistent decimal formatting
         const decimals = ((_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.decimals) !== undefined ? options.y_axis.decimals : (isEnergy ? 2 : 0);
-        // Create the entity series configuration for apexcharts-card
-        const seriesConfig = validEntities.map(entityId => {
-            var _a;
-            const state = this._hass.states[entityId];
-            const entityColor = getEntityColor(entityId);
-            return {
-                entity: entityId,
-                name: ((_a = state.attributes) === null || _a === void 0 ? void 0 : _a.friendly_name) || entityId,
-                type: chartType,
-                stroke_width: 2,
-                curve: smoothCurve ? 'smooth' : 'straight',
-                color: entityColor,
-                show: {
-                    in_header: false,
-                    in_legend: true,
-                    in_chart: true
-                },
-                // Remove extend_to_end - not compatible with v2.1.2
-                offset: '0', // Change to string type
-                group_by: {
-                    duration: '1h',
-                    func: 'avg'
-                }
-            };
-        });
-        // Ensure hours_to_show is a valid number and fallback to 24
-        const hoursToShow = typeof this.config.hours_to_show === 'number' && this.config.hours_to_show > 0 ? this.config.hours_to_show : 24;
-        // Create apexcharts-card compatible config object
+        // Minimal config object matching apexcharts-card schema
         const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
+            header: {
+                show: false
+            },
+            graph_span: `${hoursToShow}h`,
             chart_type: chartType,
-            header: { show: false, title: isEnergy ? 'Energy Consumption' : 'Power Consumption', show_states: false },
-            span: {
-                start: 'hour',
-                offset: `-${hoursToShow}h`,
-                end: 'hour'
-            },
-            all_series_config: {
-                stroke_width: 2,
-                curve: smoothCurve ? 'smooth' : 'straight',
-                show: { in_header: false },
-                group_by: { duration: '1h', func: 'avg' }
-            },
-            series: seriesConfig,
+            series,
+            yaxis: [{
+                    min: yMin,
+                    max: yMax, // Apply max value from config - undefined will be auto
+                    decimals: decimals // Default to 2 decimal places for energy, 0 for power
+                }],
             apex_config: {
                 chart: {
                     height: this.config.chart_height || 300,
                     animations: { enabled: false },
-                    background: 'transparent',
-                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
                     toolbar: {
                         show: true,
                         tools: {
@@ -1688,14 +1692,56 @@ class EnergyDashboardChartCard extends HTMLElement {
                             pan: true,
                             reset: true
                         }
+                    },
+                    // Ensure all elements remain visible when interacting with the chart
+                    events: {
+                        mouseLeave: () => {
+                            // Force redraw to ensure y-axis labels are visible
+                            return false; // Let default handler run
+                        }
                     }
                 },
-                colors: validEntities.map(entityId => getEntityColor(entityId)),
-                stroke: {
-                    curve: smoothCurve ? 'smooth' : 'straight',
-                    width: 2,
-                    lineCap: 'round',
-                },
+                yaxis: [{
+                        tickAmount,
+                        forceNiceScale: true, // Force nice rounded intervals
+                        title: {
+                            text: yTitle || '',
+                            style: {
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: 'var(--primary-text-color, #000)'
+                            }
+                        },
+                        labels: {
+                            formatter: (val) => val.toFixed(decimals),
+                            style: {
+                                fontSize: '11px',
+                                fontFamily: 'Helvetica, Arial, sans-serif',
+                                color: 'var(--secondary-text-color, #666)'
+                            },
+                            show: true, // Ensure labels are always shown
+                            hideOverlappingLabels: false, // Don't hide overlapping labels
+                        },
+                        axisTicks: {
+                            show: true,
+                            color: 'var(--divider-color, #e0e0e0)',
+                            width: 1
+                        },
+                        axisBorder: {
+                            show: true,
+                            color: 'var(--divider-color, #e0e0e0)',
+                            width: 1
+                        },
+                        crosshairs: {
+                            show: true,
+                            position: 'back',
+                            stroke: {
+                                color: 'var(--primary-color, #03a9f4)',
+                                width: 1,
+                                dashArray: 0
+                            }
+                        }
+                    }],
                 grid: {
                     show: true,
                     borderColor: 'var(--divider-color, #e0e0e0)',
@@ -1720,97 +1766,84 @@ class EnergyDashboardChartCard extends HTMLElement {
                 },
                 markers: {
                     size: showPoints ? 4 : 0,
-                    shape: 'circle',
-                    strokeColors: ['var(--card-background-color, #fff)'],
-                    strokeWidth: 2,
-                    hover: {
-                        size: showPoints ? 6 : 4
-                    }
+                    colors: ['var(--primary-color, #03a9f4)'],
+                    strokeColors: 'var(--card-background-color, #fff)',
+                    strokeWidth: 2
                 },
-                tooltip: {
-                    shared: true,
-                    intersect: false,
-                    theme: 'light',
-                    x: {
-                        format: 'MMM dd, HH:mm:ss'
-                    }
+                stroke: {
+                    curve: smoothCurve ? 'smooth' : 'straight',
+                    width: 2,
+                    lineCap: 'round'
                 },
                 legend: {
                     show: showLegend,
                     position: 'bottom',
-                    horizontalAlign: 'center',
                     fontSize: '12px',
-                    fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
-                    offsetY: 8,
-                    itemMargin: {
-                        horizontal: 8,
-                        vertical: 4
-                    },
+                    fontFamily: 'Helvetica, Arial, sans-serif',
                     labels: {
                         colors: 'var(--primary-text-color, #000)'
                     },
                     onItemHover: {
-                        highlightDataSeries: true
+                        highlightDataSeries: true // Highlight the series when hovering legend items
                     },
                     onItemClick: {
-                        toggleDataSeries: true
+                        toggleDataSeries: true // Toggle data visibility when clicking legend
                     }
                 },
-                xaxis: {
-                    type: 'datetime',
-                    labels: {
-                        style: {
-                            fontSize: '11px',
-                            fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
-                            color: 'var(--secondary-text-color, #666)'
-                        },
-                        format: 'HH:mm'
+                tooltip: {
+                    enabled: true,
+                    shared: true, // Share tooltip across all series - important
+                    intersect: false, // Don't require direct intersection
+                    theme: 'light',
+                    style: {
+                        fontSize: '12px',
+                        fontFamily: 'Helvetica, Arial, sans-serif'
                     },
-                    axisBorder: {
-                        show: true,
-                        color: 'var(--divider-color, #e0e0e0)',
-                        height: 1,
+                    x: {
+                        show: true
                     },
-                    axisTicks: {
-                        show: true,
-                        color: 'var(--divider-color, #e0e0e0)'
+                    y: {
+                        show: true
                     },
-                    tooltip: {
-                        enabled: true
+                    marker: {
+                        show: true
+                    },
+                    fixed: {
+                        enabled: false // Don't use fixed tooltip
                     }
                 },
-                yaxis: {
-                    min: yMin,
-                    max: yMax,
-                    tickAmount: tickAmount,
-                    forceNiceScale: true,
-                    decimalsInFloat: decimals,
-                    labels: {
-                        formatter: (val) => val.toFixed(decimals),
-                        style: {
-                            fontSize: '11px',
-                            fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
-                            color: 'var(--secondary-text-color, #666)'
+                states: {
+                    hover: {
+                        filter: {
+                            type: 'lighten',
+                            value: 0.1
                         }
                     },
-                    title: {
-                        text: yTitle,
-                        style: {
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            color: 'var(--primary-text-color, #000)'
+                    active: {
+                        allowMultipleDataPointsSelection: false,
+                        filter: {
+                            type: 'darken',
+                            value: 0.35
+                        }
+                    },
+                    normal: {
+                        filter: {
+                            type: 'none'
                         }
                     }
                 },
+                // Add responsive settings to ensure consistent behavior across screen sizes
                 responsive: [{
                         breakpoint: 1000,
                         options: {
                             chart: {
                                 height: this.config.chart_height || 300
                             },
-                            legend: {
-                                position: 'bottom',
-                                offsetY: 0
+                            yaxis: {
+                                labels: {
+                                    show: true,
+                                    minWidth: 20
+                                }
                             }
                         }
                     }]
@@ -1850,23 +1883,15 @@ class EnergyDashboardChartCard extends HTMLElement {
                 ]);
             }
             const apexCard = document.createElement('apexcharts-card');
-            // Ensure the DOM is ready before applying the configuration
-            setTimeout(() => {
-                try {
-                    if (typeof apexCard.setConfig === 'function') {
-                        apexCard.setConfig(chartConfig);
-                    }
-                    else {
-                        throw new Error('setConfig method is not available on apexcharts-card');
-                    }
-                    apexCard.hass = this._hass;
-                }
-                catch (configError) {
-                    console.error('Error configuring apexcharts-card:', configError);
-                    chartElement.appendChild(this._createErrorMessage('Error configuring chart', ['The chart configuration is invalid',
-                        'Check the console for more details']));
-                }
-            }, 0); // Delay to ensure DOM readiness
+            try {
+                apexCard.setConfig(chartConfig);
+                apexCard.hass = this._hass;
+            }
+            catch (configError) {
+                console.error('Error configuring apexcharts-card:', configError);
+                return this._createErrorMessage('Error configuring chart', ['The chart configuration is invalid',
+                    'Check the console for more details']);
+            }
             chartElement.appendChild(apexCard);
         }
         catch (err) {
@@ -2181,35 +2206,12 @@ class EnergyDashboardChartCard extends HTMLElement {
         if (this._apexChartCardRegistered !== null)
             return;
         this._isLoading = true;
-        // Track retry attempts
-        let retryCount = 0;
-        const maxRetries = 5;
-        const retryDelay = 1000; // 1 second between retries
-        const checkRegistration = () => {
-            // Check if apexcharts-card is registered as a custom element
-            const isRegistered = !!customElements.get('apexcharts-card');
-            console.log(`ApexCharts registration check: ${isRegistered} (attempt ${retryCount + 1})`);
-            if (isRegistered) {
-                // Success! Component is registered
-                this._apexChartCardRegistered = true;
-                this._isLoading = false;
-                this._updateContent();
-            }
-            else if (retryCount < maxRetries) {
-                // Not registered yet, retry after delay
-                retryCount++;
-                setTimeout(checkRegistration, retryDelay);
-            }
-            else {
-                // Max retries reached, give up and show error
-                console.error("apexcharts-card not found after multiple attempts");
-                this._apexChartCardRegistered = false;
-                this._isLoading = false;
-                this._updateContent(); // This will show error message about missing dependency
-            }
-        };
-        // Start the registration check process
-        checkRegistration();
+        setTimeout(() => {
+            this._apexChartCardRegistered = !!customElements.get('apexcharts-card');
+            console.log(`ApexCharts registration check: ${this._apexChartCardRegistered}`);
+            this._isLoading = false;
+            this._updateContent();
+        }, 500);
     }
     _setRefreshInterval(seconds) {
         console.log(`Setting refresh interval to: ${seconds} seconds`);

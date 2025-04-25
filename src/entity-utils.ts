@@ -1,36 +1,5 @@
 import { EntityInfo } from './types';
 
-// Predefined colors for entities - a vibrant palette that works well with charts
-const ENTITY_COLORS = [
-  '#3498db', // blue
-  '#e74c3c', // red
-  '#2ecc71', // green
-  '#9b59b6', // purple
-  '#f39c12', // orange
-  '#1abc9c', // turquoise
-  '#d35400', // pumpkin
-  '#8e44ad', // wisteria
-  '#27ae60', // nephritis
-  '#c0392b', // pomegranate
-  '#16a085', // green sea
-  '#f1c40f', // sunflower
-  '#7f8c8d', // asbestos
-  '#3498db', // peter river
-  '#e67e22', // carrot
-];
-
-// Generate a consistent color for an entity based on its ID
-export function getEntityColor(entityId: string): string {
-  // Create a simple hash of the entity ID to get a consistent index
-  let hash = 0;
-  for (let i = 0; i < entityId.length; i++) {
-    hash = entityId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  // Map the hash to our color array
-  const index = Math.abs(hash) % ENTITY_COLORS.length;
-  return ENTITY_COLORS[index];
-}
-
 export function getPowerEntities(hass: any): EntityInfo[] {
   return Object.keys(hass.states)
     .filter(entityId => {
@@ -61,8 +30,7 @@ export function getPowerEntities(hass: any): EntityInfo[] {
         state: stateObj.state,
         unit: stateObj.attributes.unit_of_measurement,
         powerValue,
-        isToggleable,
-        color: getEntityColor(entityId) // Add consistent color to the entity
+        isToggleable
       };
     })
     .sort((a, b) => b.powerValue! - a.powerValue!);
@@ -98,8 +66,7 @@ export function getEnergyEntities(hass: any): EntityInfo[] {
         state: stateObj.state,
         unit: stateObj.attributes.unit_of_measurement,
         energyValue,
-        isToggleable,
-        color: getEntityColor(entityId) // Add consistent color to the entity
+        isToggleable
       };
     })
     .sort((a, b) => b.energyValue! - a.energyValue!);

@@ -14,6 +14,67 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _energyInitialized: boolean = false;
   private _root: ShadowRoot;
   private _viewMode: 'power' | 'energy' = 'power'; // Default view mode
+  
+  // Helper method to equalize button heights with ResizeObserver
+  private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
+    if (!buttonContainer) return;
+    
+    const buttons = Array.from(buttonContainer.querySelectorAll('button'));
+    if (buttons.length === 0) return;
+
+    // First, reset heights to auto to get natural height
+    buttons.forEach(btn => btn.style.height = 'auto');
+    
+    // Use ResizeObserver for more reliable height adjustments
+    try {
+      const resizeObserver = new ResizeObserver(() => {
+        // Find tallest button
+        const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+        
+        // Set all buttons to the tallest height
+        if (maxHeight > 0) {
+          buttons.forEach(btn => {
+            btn.style.height = `${maxHeight}px`;
+          });
+        }
+      });
+      
+      // Observe all buttons
+      buttons.forEach(button => resizeObserver.observe(button));
+      
+      // Immediate equalization attempt
+      requestAnimationFrame(() => {
+        const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+        if (maxHeight > 0) {
+          buttons.forEach(btn => {
+            btn.style.height = `${maxHeight}px`;
+          });
+        }
+      });
+      
+      // Cleanup after 2 seconds (by then equalization should be stable)
+      setTimeout(() => {
+        resizeObserver.disconnect();
+      }, 2000);
+    } catch (e) {
+      // Fallback if ResizeObserver is not supported
+      setTimeout(() => {
+        const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+        if (maxHeight > 0) {
+          buttons.forEach(btn => {
+            btn.style.height = `${maxHeight}px`;
+          });
+        }
+      }, 100);
+    }
+  }
+  
+  // Force browser to recalculate layout to ensure all heights are properly calculated
+  private _forceRecalculation(element: HTMLElement): number {
+    // Reading offsetHeight forces a layout recalculation
+    const height = element.offsetHeight;
+    return height;
+  }
 
   // Define card name and icon for card picker
   static get cardType() {
@@ -479,28 +540,25 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       resetButton.className = 'control-button';
       resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
       resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
-      resetButton.style.backgroundColor = 'var(--card-background-color, white)';
-      resetButton.style.border = '1px solid var(--primary-color)';
       
       const clearButton = document.createElement('button');
       clearButton.className = 'control-button';
       clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
       clearButton.addEventListener('click', this._clearAllPowerEntities);
-      clearButton.style.backgroundColor = 'var(--card-background-color, white)';
-      clearButton.style.border = '1px solid var(--primary-color)';
       
       const selectAllButton = document.createElement('button');
-      selectAllButton.className = 'control-button';
-      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+      selectAllButton.className = 'select-all-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
       selectAllButton.addEventListener('click', this._selectAllPowerEntities);
-      selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
-      selectAllButton.style.border = '1px solid var(--primary-color)';
       
       controlButtons.appendChild(resetButton);
       controlButtons.appendChild(clearButton);
       controlButtons.appendChild(selectAllButton);
       section.appendChild(controlButtons);
       
+      // Equalize button heights
+      this._equalizeButtonHeights(controlButtons);
+
       // Add persistence toggle
       const persistenceToggle = document.createElement('div');
       persistenceToggle.className = 'persistence-toggle';
@@ -641,27 +699,24 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       resetButton.className = 'control-button';
       resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
       resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
-      resetButton.style.backgroundColor = 'var(--card-background-color, white)';
-      resetButton.style.border = '1px solid var(--primary-color)';
       
       const clearButton = document.createElement('button');
       clearButton.className = 'control-button';
       clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
       clearButton.addEventListener('click', this._clearAllEnergyEntities);
-      clearButton.style.backgroundColor = 'var(--card-background-color, white)';
-      clearButton.style.border = '1px solid var(--primary-color)';
       
       const selectAllButton = document.createElement('button');
-      selectAllButton.className = 'control-button';
-      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+      selectAllButton.className = 'select-all-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
       selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
-      selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
-      selectAllButton.style.border = '1px solid var(--primary-color)';
       
       controlButtons.appendChild(resetButton);
       controlButtons.appendChild(clearButton);
       controlButtons.appendChild(selectAllButton);
       section.appendChild(controlButtons);
+      
+      // Equalize button heights
+      this._equalizeButtonHeights(controlButtons);
       
       // Add persistence toggle
       const persistenceToggle = document.createElement('div');
@@ -897,10 +952,25 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     // Show either power section or energy section based on the current view mode
     if (this._viewMode === 'power') {
       // Power section
+      console.log("Rendering power section...");
+      console.log(`Power entities count: ${this.powerEntities.length}`);
       const powerSection = this._renderPowerSection();
+      
+      // Debug the power section to ensure it has all expected children
+      const sectionChildren = Array.from(powerSection.children);
+      console.log(`Power section has ${sectionChildren.length} children`);
+      sectionChildren.forEach((child, index) => {
+        console.log(`Child ${index}: ${child.tagName} with class ${child.className}`);
+        if (child.className === 'entities-container') {
+          console.log(`Entity container has ${child.childElementCount} entities`);
+        }
+      });
+      
       card.appendChild(powerSection);
     } else {
       // Energy section (without separator when it's the only section shown)
+      console.log("Rendering energy section...");
+      console.log(`Energy entities count: ${this.energyEntities.length}`);
       const energySection = this._renderEnergySection();
       
       // If we're in energy view mode, remove the separator as it's not needed
@@ -911,6 +981,31 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       card.appendChild(energySection);
     }
+    
+    // Force layout recalculation to ensure all elements have proper dimensions
+    requestAnimationFrame(() => {
+      this._forceRecalculation(card as HTMLElement);
+      
+      // Wait a bit for the DOM to be fully rendered before equalizing button heights
+      setTimeout(() => {
+        const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
+        console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
+        controlButtonsContainers.forEach((container, index) => {
+          console.log(`Equalizing heights for container ${index}`);
+          this._equalizeButtonHeights(container as HTMLElement);
+        });
+        
+        // Also check for entity lists and make sure they're visible
+        const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
+        console.log(`Found ${entityContainers.length} entity containers`);
+        entityContainers.forEach(container => {
+          console.log(`Entity container has ${container.childElementCount} children`);
+          if (container.childElementCount === 0) {
+            console.warn("Entity container is empty!");
+          }
+        });
+      }, 100);
+    });
   }
 }
 

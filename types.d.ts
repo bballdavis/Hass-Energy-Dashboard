@@ -7,7 +7,6 @@ export interface EntityInfo {
     energyValue?: number;
     isToggleable: boolean;
     isOn?: boolean;
-    color?: string;
 }
 export interface EnergyDashboardConfig {
     title: string;

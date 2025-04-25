@@ -10,6 +10,8 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _energyInitialized;
     private _root;
     private _viewMode;
+    private _equalizeButtonHeights;
+    private _forceRecalculation;
     static get cardType(): string;
     static get displayName(): string;
     static get description(): string;
