@@ -32,6 +32,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
         chart_height?: number | undefined;
         show_points?: boolean | undefined;
         smooth_curve?: boolean | undefined;
+        stroke_width?: number | undefined;
         update_interval?: number | undefined;
         hours_to_show?: number | undefined;
         aggregate_func?: string | undefined;

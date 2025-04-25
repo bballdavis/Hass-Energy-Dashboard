@@ -21,6 +21,21 @@ interface HaFormElement extends HTMLElement {
   addEventListener(event: string, handler: (event: Event) => void): void;
 }
 
+// Define types for custom elements used in HA
+interface HaSlider extends HTMLElement {
+  min: string;
+  max: string;
+  step: string;
+  value: string;
+  style: CSSStyleDeclaration;
+  addEventListener(event: string, handler: (event: Event) => void): void;
+}
+
+interface HaSwitch extends HTMLElement {
+  checked: boolean;
+  addEventListener(event: string, handler: (event: Event) => void): void;
+}
+
 export class EnergyDashboardChartCardEditor extends HTMLElement {
   // Properties
   hass: any;
@@ -177,76 +192,129 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     // SECTION: Chart Settings
     this._addSectionTitle(form as HTMLElement, 'Chart Settings');
 
-    // Chart Type dropdown
-    const chartTypeRow = this._createRow();
-    const chartTypeField = document.createElement('ha-select') as HaFormElement;
-    chartTypeField.className = 'value';
-    chartTypeField.label = 'Chart Type';
-    chartTypeField.configValue = 'chart_type';
+    // Chart appearance options
+    const chartAppearance = document.createElement('div');
+    chartAppearance.innerHTML = '<div class="title">Chart Appearance</div>';
     
-    // Set options for the chart type dropdown
-    chartTypeField.options = [
-      { value: 'line', label: 'Line' },
-      { value: 'area', label: 'Area' },
-      { value: 'bar', label: 'Bar' }
-    ];
+    // Chart Type
+    const chartTypeRow = document.createElement('div');
+    chartTypeRow.className = 'row';
+    const chartTypeLabel = document.createElement('div');
+    chartTypeLabel.textContent = 'Chart Type';
     
-    chartTypeField.value = this.config.chart_type || 'line';
-    chartTypeField.addEventListener('change', this.valueChanged);
-    chartTypeRow.appendChild(chartTypeField);
-    form.appendChild(chartTypeRow);
-
-    // Chart Height field
-    const chartHeightRow = this._createRow();
-    const chartHeightField = document.createElement('ha-textfield') as HaFormElement;
-    chartHeightField.className = 'value';
-    chartHeightField.label = 'Chart Height (pixels)';
-    chartHeightField.type = 'number';
-    chartHeightField.min = '100';
-    chartHeightField.max = '1000';
-    chartHeightField.value = String(this.config.chart_height || 300);
-    chartHeightField.configValue = 'chart_height';
-    chartHeightField.addEventListener('change', this.valueChanged);
-    chartHeightRow.appendChild(chartHeightField);
-    form.appendChild(chartHeightRow);
-
-    // Hours to Show field
-    const hoursToShowRow = this._createRow();
-    const hoursToShowField = document.createElement('ha-textfield') as HaFormElement;
-    hoursToShowField.className = 'value';
-    hoursToShowField.label = 'Hours to Show';
-    hoursToShowField.type = 'number';
-    hoursToShowField.min = '1';
-    hoursToShowField.max = '168'; // 7 days
-    hoursToShowField.value = String(this.config.hours_to_show || 24);
-    hoursToShowField.configValue = 'hours_to_show';
-    hoursToShowField.addEventListener('change', this.valueChanged);
-    hoursToShowRow.appendChild(hoursToShowField);
-    form.appendChild(hoursToShowRow);
-
-    // Show Points toggle
-    const showPointsRow = this._createRow();
-    const showPointsSwitch = document.createElement('ha-switch') as HaFormElement;
-    showPointsSwitch.checked = this.config.show_points === true;
-    showPointsSwitch.configValue = 'show_points';
-    showPointsSwitch.addEventListener('change', this.valueChanged);
+    const chartTypeSelect = document.createElement('select');
+    chartTypeSelect.className = 'value';
+    const chartTypes = ['line', 'area', 'bar'];
+    chartTypes.forEach(type => {
+      const option = document.createElement('option');
+      option.value = type;
+      option.text = type.charAt(0).toUpperCase() + type.slice(1);
+      option.selected = this.config?.chart_type === type;
+      chartTypeSelect.appendChild(option);
+    });
+    chartTypeSelect.addEventListener('change', (e) => {
+      this.config = { ...this.config as EnergyDashboardChartConfig, chart_type: (e.target as HTMLSelectElement).value };
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+    });
+    
+    chartTypeRow.appendChild(chartTypeLabel);
+    chartTypeRow.appendChild(chartTypeSelect);
+    chartAppearance.appendChild(chartTypeRow);
+    
+    // Chart Height
+    const chartHeightRow = document.createElement('div');
+    chartHeightRow.className = 'row';
+    const chartHeightLabel = document.createElement('div');
+    chartHeightLabel.textContent = 'Chart Height (px)';
+    
+    const chartHeightInput = document.createElement('input');
+    chartHeightInput.className = 'value';
+    chartHeightInput.type = 'number';
+    chartHeightInput.min = '100';
+    chartHeightInput.max = '1000';
+    chartHeightInput.value = this.config?.chart_height?.toString() || '300';
+    chartHeightInput.addEventListener('change', (e) => {
+      this.config = { ...this.config as EnergyDashboardChartConfig, chart_height: Number((e.target as HTMLInputElement).value) };
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+    });
+    
+    chartHeightRow.appendChild(chartHeightLabel);
+    chartHeightRow.appendChild(chartHeightInput);
+    chartAppearance.appendChild(chartHeightRow);
+    
+    // Stroke Width slider
+    const strokeWidthRow = document.createElement('div');
+    strokeWidthRow.className = 'row';
+    const strokeWidthLabel = document.createElement('div');
+    strokeWidthLabel.textContent = 'Line Thickness';
+    
+    const strokeWidthContainer = document.createElement('div');
+    strokeWidthContainer.className = 'value';
+    strokeWidthContainer.style.display = 'flex';
+    strokeWidthContainer.style.flexDirection = 'row';
+    strokeWidthContainer.style.alignItems = 'center';
+    
+    const strokeWidthInput = document.createElement('ha-slider') as HaSlider;
+    strokeWidthInput.min = '1';
+    strokeWidthInput.max = '5';
+    strokeWidthInput.step = '1';
+    strokeWidthInput.value = (this.config?.stroke_width || 2).toString();
+    strokeWidthInput.style.flex = '1';
+    strokeWidthInput.addEventListener('change', (e) => {
+      const value = Number((e.target as HTMLInputElement).value);
+      this.config = { ...this.config as EnergyDashboardChartConfig, stroke_width: value };
+      strokeWidthValueLabel.textContent = value.toString();
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+    });
+    
+    const strokeWidthValueLabel = document.createElement('span');
+    strokeWidthValueLabel.textContent = (this.config?.stroke_width || 2).toString();
+    strokeWidthValueLabel.style.minWidth = '20px';
+    strokeWidthValueLabel.style.textAlign = 'right';
+    strokeWidthValueLabel.style.marginLeft = '8px';
+    
+    strokeWidthContainer.appendChild(strokeWidthInput);
+    strokeWidthContainer.appendChild(strokeWidthValueLabel);
+    
+    strokeWidthRow.appendChild(strokeWidthLabel);
+    strokeWidthRow.appendChild(strokeWidthContainer);
+    chartAppearance.appendChild(strokeWidthRow);
+    
+    // Show Points Toggle
+    const showPointsRow = document.createElement('div');
+    showPointsRow.className = 'row';
     const showPointsLabel = document.createElement('div');
     showPointsLabel.textContent = 'Show Data Points';
-    showPointsRow.appendChild(showPointsSwitch);
+    
+    const showPointsToggle = document.createElement('ha-switch') as HaSwitch;
+    showPointsToggle.checked = this.config?.show_points || false;
+    showPointsToggle.addEventListener('change', (e) => {
+      this.config = { ...this.config as EnergyDashboardChartConfig, show_points: (e.target as HTMLInputElement).checked };
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+    });
+    
+    showPointsRow.appendChild(showPointsToggle);
     showPointsRow.appendChild(showPointsLabel);
-    form.appendChild(showPointsRow);
-
-    // Smooth Curve toggle
-    const smoothCurveRow = this._createRow();
-    const smoothCurveSwitch = document.createElement('ha-switch') as HaFormElement;
-    smoothCurveSwitch.checked = this.config.smooth_curve !== false;
-    smoothCurveSwitch.configValue = 'smooth_curve';
-    smoothCurveSwitch.addEventListener('change', this.valueChanged);
+    chartAppearance.appendChild(showPointsRow);
+    
+    // Smooth Curve Toggle
+    const smoothCurveRow = document.createElement('div');
+    smoothCurveRow.className = 'row';
     const smoothCurveLabel = document.createElement('div');
     smoothCurveLabel.textContent = 'Smooth Curve';
-    smoothCurveRow.appendChild(smoothCurveSwitch);
+    
+    const smoothCurveToggle = document.createElement('ha-switch') as HaSwitch;
+    smoothCurveToggle.checked = this.config?.smooth_curve !== false; // True by default
+    smoothCurveToggle.addEventListener('change', (e) => {
+      this.config = { ...this.config as EnergyDashboardChartConfig, smooth_curve: (e.target as HTMLInputElement).checked };
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+    });
+    
+    smoothCurveRow.appendChild(smoothCurveToggle);
     smoothCurveRow.appendChild(smoothCurveLabel);
-    form.appendChild(smoothCurveRow);
+    chartAppearance.appendChild(smoothCurveRow);
+    
+    form.appendChild(chartAppearance);
 
     // Show Legend toggle
     const showLegendRow = this._createRow();

@@ -233,11 +233,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
       ? this.config.energy_chart_options
       : this.config.power_chart_options;
 
+    // Generate Apexcharts configuration
     const chartType = this.config.chart_type || 'line';
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
+    const strokeWidth = this.config.stroke_width || 2; // Get the stroke width from config
 
     // Strictly minimal series config matching apexcharts-card schema
     const series = entities.map(entityId => ({
@@ -382,7 +384,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
         },
         stroke: { 
           curve: smoothCurve ? 'smooth' : 'straight', 
-          width: 2,
+          width: strokeWidth, // Apply the configured stroke width
           lineCap: 'round'
         },
         legend: { 

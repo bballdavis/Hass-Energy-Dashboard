@@ -1422,6 +1422,7 @@ function getDefaultChartConfig() {
         chart_height: 300,
         show_points: false,
         smooth_curve: true,
+        stroke_width: 2, // Default line thickness
         update_interval: 30, // Set default to 30 seconds
         hours_to_show: 24,
         aggregate_func: 'avg',
@@ -1639,11 +1640,13 @@ class EnergyDashboardChartCard extends HTMLElement {
         const options = isEnergy
             ? this.config.energy_chart_options
             : this.config.power_chart_options;
+        // Generate Apexcharts configuration
         const chartType = this.config.chart_type || 'line';
         const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
+        const strokeWidth = this.config.stroke_width || 2; // Get the stroke width from config
         // Strictly minimal series config matching apexcharts-card schema
         const series = entities.map(entityId => {
             var _a, _b;
@@ -1789,7 +1792,7 @@ class EnergyDashboardChartCard extends HTMLElement {
                 },
                 stroke: {
                     curve: smoothCurve ? 'smooth' : 'straight',
-                    width: 2,
+                    width: strokeWidth, // Apply the configured stroke width
                     lineCap: 'round'
                 },
                 legend: {
@@ -2659,7 +2662,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         this._updateForm();
     }
     _updateForm() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3;
         if (!this.config)
             return;
         // Get or create the form element
@@ -2695,70 +2698,111 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         form.appendChild(headerRow);
         // SECTION: Chart Settings
         this._addSectionTitle(form, 'Chart Settings');
-        // Chart Type dropdown
-        const chartTypeRow = this._createRow();
-        const chartTypeField = document.createElement('ha-select');
-        chartTypeField.className = 'value';
-        chartTypeField.label = 'Chart Type';
-        chartTypeField.configValue = 'chart_type';
-        // Set options for the chart type dropdown
-        chartTypeField.options = [
-            { value: 'line', label: 'Line' },
-            { value: 'area', label: 'Area' },
-            { value: 'bar', label: 'Bar' }
-        ];
-        chartTypeField.value = this.config.chart_type || 'line';
-        chartTypeField.addEventListener('change', this.valueChanged);
-        chartTypeRow.appendChild(chartTypeField);
-        form.appendChild(chartTypeRow);
-        // Chart Height field
-        const chartHeightRow = this._createRow();
-        const chartHeightField = document.createElement('ha-textfield');
-        chartHeightField.className = 'value';
-        chartHeightField.label = 'Chart Height (pixels)';
-        chartHeightField.type = 'number';
-        chartHeightField.min = '100';
-        chartHeightField.max = '1000';
-        chartHeightField.value = String(this.config.chart_height || 300);
-        chartHeightField.configValue = 'chart_height';
-        chartHeightField.addEventListener('change', this.valueChanged);
-        chartHeightRow.appendChild(chartHeightField);
-        form.appendChild(chartHeightRow);
-        // Hours to Show field
-        const hoursToShowRow = this._createRow();
-        const hoursToShowField = document.createElement('ha-textfield');
-        hoursToShowField.className = 'value';
-        hoursToShowField.label = 'Hours to Show';
-        hoursToShowField.type = 'number';
-        hoursToShowField.min = '1';
-        hoursToShowField.max = '168'; // 7 days
-        hoursToShowField.value = String(this.config.hours_to_show || 24);
-        hoursToShowField.configValue = 'hours_to_show';
-        hoursToShowField.addEventListener('change', this.valueChanged);
-        hoursToShowRow.appendChild(hoursToShowField);
-        form.appendChild(hoursToShowRow);
-        // Show Points toggle
-        const showPointsRow = this._createRow();
-        const showPointsSwitch = document.createElement('ha-switch');
-        showPointsSwitch.checked = this.config.show_points === true;
-        showPointsSwitch.configValue = 'show_points';
-        showPointsSwitch.addEventListener('change', this.valueChanged);
+        // Chart appearance options
+        const chartAppearance = document.createElement('div');
+        chartAppearance.innerHTML = '<div class="title">Chart Appearance</div>';
+        // Chart Type
+        const chartTypeRow = document.createElement('div');
+        chartTypeRow.className = 'row';
+        const chartTypeLabel = document.createElement('div');
+        chartTypeLabel.textContent = 'Chart Type';
+        const chartTypeSelect = document.createElement('select');
+        chartTypeSelect.className = 'value';
+        const chartTypes = ['line', 'area', 'bar'];
+        chartTypes.forEach(type => {
+            var _a;
+            const option = document.createElement('option');
+            option.value = type;
+            option.text = type.charAt(0).toUpperCase() + type.slice(1);
+            option.selected = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_type) === type;
+            chartTypeSelect.appendChild(option);
+        });
+        chartTypeSelect.addEventListener('change', (e) => {
+            this.config = { ...this.config, chart_type: e.target.value };
+            this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+        });
+        chartTypeRow.appendChild(chartTypeLabel);
+        chartTypeRow.appendChild(chartTypeSelect);
+        chartAppearance.appendChild(chartTypeRow);
+        // Chart Height
+        const chartHeightRow = document.createElement('div');
+        chartHeightRow.className = 'row';
+        const chartHeightLabel = document.createElement('div');
+        chartHeightLabel.textContent = 'Chart Height (px)';
+        const chartHeightInput = document.createElement('input');
+        chartHeightInput.className = 'value';
+        chartHeightInput.type = 'number';
+        chartHeightInput.min = '100';
+        chartHeightInput.max = '1000';
+        chartHeightInput.value = ((_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) === null || _b === void 0 ? void 0 : _b.toString()) || '300';
+        chartHeightInput.addEventListener('change', (e) => {
+            this.config = { ...this.config, chart_height: Number(e.target.value) };
+            this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+        });
+        chartHeightRow.appendChild(chartHeightLabel);
+        chartHeightRow.appendChild(chartHeightInput);
+        chartAppearance.appendChild(chartHeightRow);
+        // Stroke Width slider
+        const strokeWidthRow = document.createElement('div');
+        strokeWidthRow.className = 'row';
+        const strokeWidthLabel = document.createElement('div');
+        strokeWidthLabel.textContent = 'Line Thickness';
+        const strokeWidthContainer = document.createElement('div');
+        strokeWidthContainer.className = 'value';
+        strokeWidthContainer.style.display = 'flex';
+        strokeWidthContainer.style.flexDirection = 'row';
+        strokeWidthContainer.style.alignItems = 'center';
+        const strokeWidthInput = document.createElement('ha-slider');
+        strokeWidthInput.min = '1';
+        strokeWidthInput.max = '5';
+        strokeWidthInput.step = '1';
+        strokeWidthInput.value = (((_c = this.config) === null || _c === void 0 ? void 0 : _c.stroke_width) || 2).toString();
+        strokeWidthInput.style.flex = '1';
+        strokeWidthInput.addEventListener('change', (e) => {
+            const value = Number(e.target.value);
+            this.config = { ...this.config, stroke_width: value };
+            strokeWidthValueLabel.textContent = value.toString();
+            this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+        });
+        const strokeWidthValueLabel = document.createElement('span');
+        strokeWidthValueLabel.textContent = (((_d = this.config) === null || _d === void 0 ? void 0 : _d.stroke_width) || 2).toString();
+        strokeWidthValueLabel.style.minWidth = '20px';
+        strokeWidthValueLabel.style.textAlign = 'right';
+        strokeWidthValueLabel.style.marginLeft = '8px';
+        strokeWidthContainer.appendChild(strokeWidthInput);
+        strokeWidthContainer.appendChild(strokeWidthValueLabel);
+        strokeWidthRow.appendChild(strokeWidthLabel);
+        strokeWidthRow.appendChild(strokeWidthContainer);
+        chartAppearance.appendChild(strokeWidthRow);
+        // Show Points Toggle
+        const showPointsRow = document.createElement('div');
+        showPointsRow.className = 'row';
         const showPointsLabel = document.createElement('div');
         showPointsLabel.textContent = 'Show Data Points';
-        showPointsRow.appendChild(showPointsSwitch);
+        const showPointsToggle = document.createElement('ha-switch');
+        showPointsToggle.checked = ((_e = this.config) === null || _e === void 0 ? void 0 : _e.show_points) || false;
+        showPointsToggle.addEventListener('change', (e) => {
+            this.config = { ...this.config, show_points: e.target.checked };
+            this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+        });
+        showPointsRow.appendChild(showPointsToggle);
         showPointsRow.appendChild(showPointsLabel);
-        form.appendChild(showPointsRow);
-        // Smooth Curve toggle
-        const smoothCurveRow = this._createRow();
-        const smoothCurveSwitch = document.createElement('ha-switch');
-        smoothCurveSwitch.checked = this.config.smooth_curve !== false;
-        smoothCurveSwitch.configValue = 'smooth_curve';
-        smoothCurveSwitch.addEventListener('change', this.valueChanged);
+        chartAppearance.appendChild(showPointsRow);
+        // Smooth Curve Toggle
+        const smoothCurveRow = document.createElement('div');
+        smoothCurveRow.className = 'row';
         const smoothCurveLabel = document.createElement('div');
         smoothCurveLabel.textContent = 'Smooth Curve';
-        smoothCurveRow.appendChild(smoothCurveSwitch);
+        const smoothCurveToggle = document.createElement('ha-switch');
+        smoothCurveToggle.checked = ((_f = this.config) === null || _f === void 0 ? void 0 : _f.smooth_curve) !== false; // True by default
+        smoothCurveToggle.addEventListener('change', (e) => {
+            this.config = { ...this.config, smooth_curve: e.target.checked };
+            this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+        });
+        smoothCurveRow.appendChild(smoothCurveToggle);
         smoothCurveRow.appendChild(smoothCurveLabel);
-        form.appendChild(smoothCurveRow);
+        chartAppearance.appendChild(smoothCurveRow);
+        form.appendChild(chartAppearance);
         // Show Legend toggle
         const showLegendRow = this._createRow();
         const showLegendSwitch = document.createElement('ha-switch');
@@ -2807,7 +2851,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         const powerYTitleField = document.createElement('ha-textfield');
         powerYTitleField.className = 'value';
         powerYTitleField.label = 'Y-Axis Title';
-        powerYTitleField.value = ((_b = (_a = this.config.power_chart_options) === null || _a === void 0 ? void 0 : _a.y_axis) === null || _b === void 0 ? void 0 : _b.title) || 'Power';
+        powerYTitleField.value = ((_h = (_g = this.config.power_chart_options) === null || _g === void 0 ? void 0 : _g.y_axis) === null || _h === void 0 ? void 0 : _h.title) || 'Power';
         powerYTitleField.configValue = 'power_chart_options.y_axis.title';
         powerYTitleField.addEventListener('change', this.valueChanged);
         powerYTitleRow.appendChild(powerYTitleField);
@@ -2817,7 +2861,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         const powerYUnitField = document.createElement('ha-textfield');
         powerYUnitField.className = 'value';
         powerYUnitField.label = 'Y-Axis Unit';
-        powerYUnitField.value = ((_d = (_c = this.config.power_chart_options) === null || _c === void 0 ? void 0 : _c.y_axis) === null || _d === void 0 ? void 0 : _d.unit) || 'W';
+        powerYUnitField.value = ((_k = (_j = this.config.power_chart_options) === null || _j === void 0 ? void 0 : _j.y_axis) === null || _k === void 0 ? void 0 : _k.unit) || 'W';
         powerYUnitField.configValue = 'power_chart_options.y_axis.unit';
         powerYUnitField.addEventListener('change', this.valueChanged);
         powerYUnitRow.appendChild(powerYUnitField);
@@ -2830,7 +2874,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         powerYDecimalsField.type = 'number';
         powerYDecimalsField.min = '0';
         powerYDecimalsField.max = '5';
-        powerYDecimalsField.value = String((_g = (_f = (_e = this.config.power_chart_options) === null || _e === void 0 ? void 0 : _e.y_axis) === null || _f === void 0 ? void 0 : _f.decimals) !== null && _g !== void 0 ? _g : 1);
+        powerYDecimalsField.value = String((_o = (_m = (_l = this.config.power_chart_options) === null || _l === void 0 ? void 0 : _l.y_axis) === null || _m === void 0 ? void 0 : _m.decimals) !== null && _o !== void 0 ? _o : 1);
         powerYDecimalsField.configValue = 'power_chart_options.y_axis.decimals';
         powerYDecimalsField.addEventListener('change', this.valueChanged);
         powerYDecimalsRow.appendChild(powerYDecimalsField);
@@ -2841,7 +2885,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         powerYMinField.className = 'value';
         powerYMinField.label = 'Y-Axis Minimum (empty for auto)';
         powerYMinField.type = 'number';
-        powerYMinField.value = ((_j = (_h = this.config.power_chart_options) === null || _h === void 0 ? void 0 : _h.y_axis) === null || _j === void 0 ? void 0 : _j.min) !== undefined ?
+        powerYMinField.value = ((_q = (_p = this.config.power_chart_options) === null || _p === void 0 ? void 0 : _p.y_axis) === null || _q === void 0 ? void 0 : _q.min) !== undefined ?
             String(this.config.power_chart_options.y_axis.min) : '';
         powerYMinField.configValue = 'power_chart_options.y_axis.min';
         powerYMinField.addEventListener('change', this.valueChanged);
@@ -2853,7 +2897,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         powerYMaxField.className = 'value';
         powerYMaxField.label = 'Y-Axis Maximum (empty for auto)';
         powerYMaxField.type = 'number';
-        powerYMaxField.value = ((_l = (_k = this.config.power_chart_options) === null || _k === void 0 ? void 0 : _k.y_axis) === null || _l === void 0 ? void 0 : _l.max) !== undefined ?
+        powerYMaxField.value = ((_s = (_r = this.config.power_chart_options) === null || _r === void 0 ? void 0 : _r.y_axis) === null || _s === void 0 ? void 0 : _s.max) !== undefined ?
             String(this.config.power_chart_options.y_axis.max) : '';
         powerYMaxField.configValue = 'power_chart_options.y_axis.max';
         powerYMaxField.addEventListener('change', this.valueChanged);
@@ -2866,7 +2910,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         const energyYTitleField = document.createElement('ha-textfield');
         energyYTitleField.className = 'value';
         energyYTitleField.label = 'Y-Axis Title';
-        energyYTitleField.value = ((_o = (_m = this.config.energy_chart_options) === null || _m === void 0 ? void 0 : _m.y_axis) === null || _o === void 0 ? void 0 : _o.title) || 'Energy';
+        energyYTitleField.value = ((_u = (_t = this.config.energy_chart_options) === null || _t === void 0 ? void 0 : _t.y_axis) === null || _u === void 0 ? void 0 : _u.title) || 'Energy';
         energyYTitleField.configValue = 'energy_chart_options.y_axis.title';
         energyYTitleField.addEventListener('change', this.valueChanged);
         energyYTitleRow.appendChild(energyYTitleField);
@@ -2876,7 +2920,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         const energyYUnitField = document.createElement('ha-textfield');
         energyYUnitField.className = 'value';
         energyYUnitField.label = 'Y-Axis Unit';
-        energyYUnitField.value = ((_q = (_p = this.config.energy_chart_options) === null || _p === void 0 ? void 0 : _p.y_axis) === null || _q === void 0 ? void 0 : _q.unit) || 'kWh';
+        energyYUnitField.value = ((_w = (_v = this.config.energy_chart_options) === null || _v === void 0 ? void 0 : _v.y_axis) === null || _w === void 0 ? void 0 : _w.unit) || 'kWh';
         energyYUnitField.configValue = 'energy_chart_options.y_axis.unit';
         energyYUnitField.addEventListener('change', this.valueChanged);
         energyYUnitRow.appendChild(energyYUnitField);
@@ -2889,7 +2933,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         energyYDecimalsField.type = 'number';
         energyYDecimalsField.min = '0';
         energyYDecimalsField.max = '5';
-        energyYDecimalsField.value = String((_t = (_s = (_r = this.config.energy_chart_options) === null || _r === void 0 ? void 0 : _r.y_axis) === null || _s === void 0 ? void 0 : _s.decimals) !== null && _t !== void 0 ? _t : 2);
+        energyYDecimalsField.value = String((_z = (_y = (_x = this.config.energy_chart_options) === null || _x === void 0 ? void 0 : _x.y_axis) === null || _y === void 0 ? void 0 : _y.decimals) !== null && _z !== void 0 ? _z : 2);
         energyYDecimalsField.configValue = 'energy_chart_options.y_axis.decimals';
         energyYDecimalsField.addEventListener('change', this.valueChanged);
         energyYDecimalsRow.appendChild(energyYDecimalsField);
@@ -2900,7 +2944,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         energyYMinField.className = 'value';
         energyYMinField.label = 'Y-Axis Minimum (empty for auto)';
         energyYMinField.type = 'number';
-        energyYMinField.value = ((_v = (_u = this.config.energy_chart_options) === null || _u === void 0 ? void 0 : _u.y_axis) === null || _v === void 0 ? void 0 : _v.min) !== undefined ?
+        energyYMinField.value = ((_1 = (_0 = this.config.energy_chart_options) === null || _0 === void 0 ? void 0 : _0.y_axis) === null || _1 === void 0 ? void 0 : _1.min) !== undefined ?
             String(this.config.energy_chart_options.y_axis.min) : '';
         energyYMinField.configValue = 'energy_chart_options.y_axis.min';
         energyYMinField.addEventListener('change', this.valueChanged);
@@ -2912,7 +2956,7 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
         energyYMaxField.className = 'value';
         energyYMaxField.label = 'Y-Axis Maximum (empty for auto)';
         energyYMaxField.type = 'number';
-        energyYMaxField.value = ((_x = (_w = this.config.energy_chart_options) === null || _w === void 0 ? void 0 : _w.y_axis) === null || _x === void 0 ? void 0 : _x.max) !== undefined ?
+        energyYMaxField.value = ((_3 = (_2 = this.config.energy_chart_options) === null || _2 === void 0 ? void 0 : _2.y_axis) === null || _3 === void 0 ? void 0 : _3.max) !== undefined ?
             String(this.config.energy_chart_options.y_axis.max) : '';
         energyYMaxField.configValue = 'energy_chart_options.y_axis.max';
         energyYMaxField.addEventListener('change', this.valueChanged);

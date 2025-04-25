@@ -21,6 +21,7 @@ export interface EnergyDashboardChartConfig extends EnergyDashboardConfig {
     chart_height: number;
     show_points: boolean;
     smooth_curve: boolean;
+    stroke_width: number;
     update_interval: number;
     hours_to_show: number;
     aggregate_func: string;

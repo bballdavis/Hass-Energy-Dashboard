@@ -25,6 +25,7 @@ export interface EnergyDashboardChartConfig extends EnergyDashboardConfig {
   chart_height: number;
   show_points: boolean;
   smooth_curve: boolean;
+  stroke_width: number; // Controls the thickness of chart lines
   update_interval: number; // In seconds
   hours_to_show: number;
   aggregate_func: string; // 'avg', 'min', 'max', 'sum', etc.
@@ -46,6 +47,7 @@ export function getDefaultChartConfig(): Partial<EnergyDashboardChartConfig> {
     chart_height: 300,
     show_points: false,
     smooth_curve: true,
+    stroke_width: 2, // Default line thickness
     update_interval: 30, // Set default to 30 seconds
     hours_to_show: 24,
     aggregate_func: 'avg',
