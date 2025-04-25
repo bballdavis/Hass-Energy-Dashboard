@@ -136,17 +136,18 @@ const cardStyles = `
     font-weight: 500;
     cursor: pointer;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     flex: 1;
     margin: 0; /* Remove margin in favor of gap on the parent */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    height: var(--button-height);
     min-height: var(--button-height);
     box-sizing: border-box;
-    white-space: nowrap;
-    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2;
   }
   .control-button:first-child {
     margin-left: 0;
@@ -154,11 +155,11 @@ const cardStyles = `
   .control-button:last-child {
     margin-right: 0;
   }
-  .control-button:hover, .select-all-button:hover {
+  .control-button:hover {
     background-color: var(--primary-color);
     color: var(--text-primary-color);
   }
-  .control-button ha-icon, .select-all-button ha-icon {
+  .control-button ha-icon {
     margin-right: 4px;
     --mdc-icon-size: 18px;
     display: flex;
@@ -744,7 +745,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
     }
     _renderPowerSection() {
-        var _a, _b, _c;
         const section = document.createElement('div');
         if (this.powerEntities.length > 0) {
             // Control buttons
@@ -754,134 +754,31 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
-            resetButton.style.backgroundColor = 'var(--card-background-color, white)';
-            resetButton.style.border = '1px solid var(--primary-color)';
-            resetButton.style.whiteSpace = 'normal';
-            resetButton.style.lineHeight = '1.2';
-            resetButton.style.flexDirection = 'column';
-            resetButton.style.padding = '4px 8px';
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.addEventListener('click', this._clearAllPowerEntities);
-            clearButton.style.backgroundColor = 'var(--card-background-color, white)';
-            clearButton.style.border = '1px solid var(--primary-color)';
-            clearButton.style.whiteSpace = 'normal';
-            clearButton.style.lineHeight = '1.2';
-            clearButton.style.flexDirection = 'column';
-            clearButton.style.padding = '4px 8px';
             const selectAllButton = document.createElement('button');
             selectAllButton.className = 'select-all-button';
             selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
             selectAllButton.addEventListener('click', this._selectAllPowerEntities);
-            selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
-            selectAllButton.style.border = '1px solid var(--primary-color)';
-            selectAllButton.style.whiteSpace = 'normal';
-            selectAllButton.style.lineHeight = '1.2';
-            selectAllButton.style.flexDirection = 'column';
-            selectAllButton.style.padding = '4px 8px';
-            selectAllButton.style.borderRadius = '8px';
-            const maxHeight = Math.max(selectAllButton.offsetHeight, resetButton.offsetHeight, clearButton.offsetHeight);
-            selectAllButton.style.height = `${maxHeight}px`;
-            resetButton.style.height = `${maxHeight}px`;
-            clearButton.style.height = `${maxHeight}px`;
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
-            // Add persistence toggle
-            const persistenceToggle = document.createElement('div');
-            persistenceToggle.className = 'persistence-toggle';
-            persistenceToggle.style.display = 'flex';
-            persistenceToggle.style.alignItems = 'center';
-            persistenceToggle.style.justifyContent = 'center';
-            persistenceToggle.style.marginTop = '8px';
-            persistenceToggle.style.marginBottom = '8px';
-            persistenceToggle.style.cursor = 'pointer';
-            persistenceToggle.addEventListener('click', this._togglePersistence);
-            const toggleLabel = document.createElement('span');
-            toggleLabel.style.marginRight = '8px';
-            toggleLabel.textContent = 'Remember Selection: ';
-            const toggleSwitch = document.createElement('span');
-            toggleSwitch.className = 'toggle-switch';
-            toggleSwitch.style.position = 'relative';
-            toggleSwitch.style.display = 'inline-block';
-            toggleSwitch.style.width = '36px';
-            toggleSwitch.style.height = '20px';
-            const toggleSlider = document.createElement('span');
-            toggleSlider.className = 'toggle-slider';
-            toggleSlider.style.position = 'absolute';
-            toggleSlider.style.cursor = 'pointer';
-            toggleSlider.style.top = '0';
-            toggleSlider.style.left = '0';
-            toggleSlider.style.right = '0';
-            toggleSlider.style.bottom = '0';
-            toggleSlider.style.backgroundColor = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
-            toggleSlider.style.borderRadius = '34px';
-            toggleSlider.style.transition = '.4s';
-            const toggleButton = document.createElement('span');
-            toggleButton.style.position = 'absolute';
-            toggleButton.style.content = '""';
-            toggleButton.style.height = '16px';
-            toggleButton.style.width = '16px';
-            toggleButton.style.left = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? '16px' : '4px';
-            toggleButton.style.bottom = '2px';
-            toggleButton.style.backgroundColor = 'white';
-            toggleButton.style.borderRadius = '50%';
-            toggleButton.style.transition = '.4s';
-            toggleSlider.appendChild(toggleButton);
-            toggleSwitch.appendChild(toggleSlider);
-            persistenceToggle.appendChild(toggleLabel);
-            persistenceToggle.appendChild(toggleSwitch);
-            section.appendChild(persistenceToggle);
-            // Section title
-            const sectionTitle = document.createElement('div');
-            sectionTitle.className = 'section-title';
-            sectionTitle.textContent = 'Power Entities';
-            section.appendChild(sectionTitle);
-            // Container
-            const containerWrapper = document.createElement('div');
-            containerWrapper.style.width = '100%';
-            containerWrapper.style.boxSizing = 'border-box';
-            const entitiesContainer = document.createElement('div');
-            entitiesContainer.className = 'entities-container';
-            if (((_c = this.config) === null || _c === void 0 ? void 0 : _c.max_height) && this.config.max_height > 0) {
-                entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
-                entitiesContainer.style.overflowY = 'auto';
-            }
-            // Add entities
-            this.powerEntities.forEach(entity => {
-                var _a;
-                const entityItem = document.createElement('div');
-                entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-                entityItem.dataset.entity = entity.entityId;
-                entityItem.style.gap = '4px';
-                entityItem.addEventListener('click', this._togglePowerEntity);
-                const entityLeft = document.createElement('div');
-                entityLeft.className = 'entity-left';
-                const entityName = document.createElement('div');
-                entityName.className = 'entity-name';
-                entityName.title = entity.name;
-                entityName.textContent = entity.name;
-                entityLeft.appendChild(entityName);
-                entityItem.appendChild(entityLeft);
-                const entityState = document.createElement('div');
-                entityState.className = 'entity-state';
-                const statusIndicator = document.createElement('div');
-                statusIndicator.className = 'status-indicator';
-                statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
-                const powerValue = document.createElement('div');
-                powerValue.className = 'power-value';
-                if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_state) {
-                    powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+            // Set up dynamic resize observer to maintain equal button heights
+            // This ensures all buttons have the same height after DOM is fully rendered
+            setTimeout(() => {
+                const buttons = [resetButton, clearButton, selectAllButton];
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                    // Set a CSS variable for consistent button height across components
+                    document.documentElement.style.setProperty('--button-height', `${maxHeight}px`);
                 }
-                entityState.appendChild(statusIndicator);
-                entityState.appendChild(powerValue);
-                entityItem.appendChild(entityState);
-                entitiesContainer.appendChild(entityItem);
-            });
-            containerWrapper.appendChild(entitiesContainer);
-            section.appendChild(containerWrapper);
+            }, 0);
         }
         else {
             // Empty message
@@ -906,41 +803,28 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
-            resetButton.style.backgroundColor = 'var(--card-background-color, white)';
-            resetButton.style.border = '1px solid var(--primary-color)';
-            resetButton.style.whiteSpace = 'normal';
-            resetButton.style.lineHeight = '1.2';
-            resetButton.style.flexDirection = 'column';
-            resetButton.style.padding = '4px 8px';
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.addEventListener('click', this._clearAllEnergyEntities);
-            clearButton.style.backgroundColor = 'var(--card-background-color, white)';
-            clearButton.style.border = '1px solid var(--primary-color)';
-            clearButton.style.whiteSpace = 'normal';
-            clearButton.style.lineHeight = '1.2';
-            clearButton.style.flexDirection = 'column';
-            clearButton.style.padding = '4px 8px';
             const selectAllButton = document.createElement('button');
             selectAllButton.className = 'select-all-button';
             selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
             selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
-            selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
-            selectAllButton.style.border = '1px solid var(--primary-color)';
-            selectAllButton.style.whiteSpace = 'normal';
-            selectAllButton.style.lineHeight = '1.2';
-            selectAllButton.style.flexDirection = 'column';
-            selectAllButton.style.padding = '4px 8px';
-            selectAllButton.style.borderRadius = '8px';
-            const maxHeight = Math.max(selectAllButton.offsetHeight, resetButton.offsetHeight, clearButton.offsetHeight);
-            selectAllButton.style.height = `${maxHeight}px`;
-            resetButton.style.height = `${maxHeight}px`;
-            clearButton.style.height = `${maxHeight}px`;
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
+            // Set up dynamic resize observer to maintain equal button heights
+            setTimeout(() => {
+                const buttons = [resetButton, clearButton, selectAllButton];
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            }, 0);
             // Add persistence toggle
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';

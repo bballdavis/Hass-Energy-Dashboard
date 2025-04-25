@@ -41,17 +41,18 @@ export const cardStyles = `
     font-weight: 500;
     cursor: pointer;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     flex: 1;
     margin: 0; /* Remove margin in favor of gap on the parent */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    height: var(--button-height);
     min-height: var(--button-height);
     box-sizing: border-box;
-    white-space: nowrap;
-    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2;
   }
   .control-button:first-child {
     margin-left: 0;
@@ -59,11 +60,11 @@ export const cardStyles = `
   .control-button:last-child {
     margin-right: 0;
   }
-  .control-button:hover, .select-all-button:hover {
+  .control-button:hover {
     background-color: var(--primary-color);
     color: var(--text-primary-color);
   }
-  .control-button ha-icon, .select-all-button ha-icon {
+  .control-button ha-icon {
     margin-right: 4px;
     --mdc-icon-size: 18px;
     display: flex;
