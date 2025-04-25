@@ -2203,12 +2203,14 @@ class EnergyDashboardChartCard extends HTMLElement {
         refreshTitle.style.fontWeight = '500';
         refreshTitle.style.fontSize = '0.9em';
         refreshTitle.style.marginRight = '8px';
+        refreshTitle.style.whiteSpace = 'nowrap'; // Prevent text wrapping
         const buttonsContainer = document.createElement('div');
         buttonsContainer.className = 'buttons-container';
         buttonsContainer.style.display = 'flex';
         buttonsContainer.style.justifyContent = 'flex-end';
         buttonsContainer.style.alignItems = 'center';
         buttonsContainer.style.gap = '0'; // Remove gap between buttons
+        buttonsContainer.style.flexShrink = '0'; // Prevent shrinking
         // --- Time Range Controls ---
         const timeRangeTitle = document.createElement('div');
         timeRangeTitle.className = 'time-range-title';
@@ -2217,12 +2219,14 @@ class EnergyDashboardChartCard extends HTMLElement {
         timeRangeTitle.style.fontSize = '0.9em';
         timeRangeTitle.style.marginRight = '8px';
         timeRangeTitle.style.marginLeft = '8px'; // Add left margin
+        timeRangeTitle.style.whiteSpace = 'nowrap'; // Prevent text wrapping
         const timeRangeContainer = document.createElement('div');
         timeRangeContainer.className = 'time-range-container';
         timeRangeContainer.style.display = 'flex';
         timeRangeContainer.style.justifyContent = 'flex-end';
         timeRangeContainer.style.alignItems = 'center';
         timeRangeContainer.style.gap = '0'; // Remove gap between buttons
+        timeRangeContainer.style.flexShrink = '0'; // Prevent shrinking
         // --- Max Range Controls ---
         const maxRangeTitle = document.createElement('div');
         maxRangeTitle.className = 'y-axis-title';
@@ -2231,12 +2235,14 @@ class EnergyDashboardChartCard extends HTMLElement {
         maxRangeTitle.style.fontSize = '0.9em';
         maxRangeTitle.style.marginRight = '8px';
         maxRangeTitle.style.marginLeft = '8px'; // Add left margin
+        maxRangeTitle.style.whiteSpace = 'nowrap'; // Prevent text wrapping
         const maxRangeContainer = document.createElement('div');
         maxRangeContainer.className = 'y-axis-container';
         maxRangeContainer.style.display = 'flex';
         maxRangeContainer.style.justifyContent = 'flex-end';
         maxRangeContainer.style.alignItems = 'center';
         maxRangeContainer.style.gap = '0'; // Remove gap between buttons
+        maxRangeContainer.style.flexShrink = '0'; // Prevent shrinking
         // Helper for all controls
         const createButton = (text, title, value, controlType, index, total) => {
             const button = document.createElement('button');
@@ -2307,6 +2313,8 @@ class EnergyDashboardChartCard extends HTMLElement {
                 button.className = 'refresh-button control-button';
                 button.addEventListener('click', () => this._manualRefresh());
             }
+            // Prevent text wrapping within buttons
+            button.style.whiteSpace = 'nowrap';
             return button;
         };
         // Refresh rate buttons
@@ -2356,6 +2364,8 @@ class EnergyDashboardChartCard extends HTMLElement {
         refreshGroup.style.display = 'flex';
         refreshGroup.style.alignItems = 'center';
         refreshGroup.style.margin = '4px 0';
+        refreshGroup.style.whiteSpace = 'nowrap'; // Keep group items on same line
+        refreshGroup.style.flexShrink = '0'; // Don't shrink the group
         refreshGroup.appendChild(refreshTitle);
         refreshGroup.appendChild(buttonsContainer);
         const timeRangeGroup = document.createElement('div');
@@ -2363,6 +2373,8 @@ class EnergyDashboardChartCard extends HTMLElement {
         timeRangeGroup.style.display = 'flex';
         timeRangeGroup.style.alignItems = 'center';
         timeRangeGroup.style.margin = '4px 0';
+        timeRangeGroup.style.whiteSpace = 'nowrap'; // Keep group items on same line
+        timeRangeGroup.style.flexShrink = '0'; // Don't shrink the group
         timeRangeGroup.appendChild(timeRangeTitle);
         timeRangeGroup.appendChild(timeRangeContainer);
         const maxRangeGroup = document.createElement('div');
@@ -2370,6 +2382,8 @@ class EnergyDashboardChartCard extends HTMLElement {
         maxRangeGroup.style.display = 'flex';
         maxRangeGroup.style.alignItems = 'center';
         maxRangeGroup.style.margin = '4px 0';
+        maxRangeGroup.style.whiteSpace = 'nowrap'; // Keep group items on same line
+        maxRangeGroup.style.flexShrink = '0'; // Don't shrink the group
         maxRangeGroup.appendChild(maxRangeTitle);
         maxRangeGroup.appendChild(maxRangeContainer);
         // Add a flex container for the controls that can wrap
