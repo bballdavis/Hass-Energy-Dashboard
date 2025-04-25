@@ -545,7 +545,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _removeBordersFromApexchartsCard(element: HTMLElement) {
     if (!element || !element.shadowRoot) return;
     
-    console.log('Removing borders from apexcharts-card');
+    console.log('Styling apexcharts-card to remove its internal borders');
     
     // Apply styles to all ha-card elements in shadow DOM
     const haCards = element.shadowRoot.querySelectorAll('ha-card');
