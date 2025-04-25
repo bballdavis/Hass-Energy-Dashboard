@@ -54,18 +54,13 @@ export const cardStyles = `
     word-break: break-word;
     line-height: 1.2;
   }
-  .control-button:first-child {
-    margin-left: 0;
-  }
-  .control-button:last-child {
-    margin-right: 0;
-  }
-  .control-button:hover {
+  .control-button:hover, .select-all-button:hover {
     background-color: var(--primary-color);
     color: var(--text-primary-color);
   }
-  .control-button ha-icon {
-    margin-right: 4px;
+  .control-button ha-icon, .select-all-button ha-icon {
+    margin-right: 0;
+    margin-bottom: 4px;
     --mdc-icon-size: 18px;
     display: flex;
     align-items: center;

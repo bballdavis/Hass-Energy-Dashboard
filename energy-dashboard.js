@@ -149,18 +149,13 @@ const cardStyles = `
     word-break: break-word;
     line-height: 1.2;
   }
-  .control-button:first-child {
-    margin-left: 0;
-  }
-  .control-button:last-child {
-    margin-right: 0;
-  }
-  .control-button:hover {
+  .control-button:hover, .select-all-button:hover {
     background-color: var(--primary-color);
     color: var(--text-primary-color);
   }
-  .control-button ha-icon {
-    margin-right: 4px;
+  .control-button ha-icon, .select-all-button ha-icon {
+    margin-right: 0;
+    margin-bottom: 4px;
     --mdc-icon-size: 18px;
     display: flex;
     align-items: center;
@@ -745,6 +740,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
     }
     _renderPowerSection() {
+        var _a, _b, _c;
         const section = document.createElement('div');
         if (this.powerEntities.length > 0) {
             // Control buttons
@@ -766,8 +762,99 @@ class EnergyDashboardEntityCard extends HTMLElement {
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
-            // Equalize button heights
-            this._equalizeButtonHeights(controlButtons);
+            // Add persistence toggle
+            const persistenceToggle = document.createElement('div');
+            persistenceToggle.className = 'persistence-toggle';
+            persistenceToggle.style.display = 'flex';
+            persistenceToggle.style.alignItems = 'center';
+            persistenceToggle.style.justifyContent = 'center';
+            persistenceToggle.style.marginTop = '8px';
+            persistenceToggle.style.marginBottom = '8px';
+            persistenceToggle.style.cursor = 'pointer';
+            persistenceToggle.addEventListener('click', this._togglePersistence);
+            const toggleLabel = document.createElement('span');
+            toggleLabel.style.marginRight = '8px';
+            toggleLabel.textContent = 'Remember Selection: ';
+            const toggleSwitch = document.createElement('span');
+            toggleSwitch.className = 'toggle-switch';
+            toggleSwitch.style.position = 'relative';
+            toggleSwitch.style.display = 'inline-block';
+            toggleSwitch.style.width = '36px';
+            toggleSwitch.style.height = '20px';
+            const toggleSlider = document.createElement('span');
+            toggleSlider.className = 'toggle-slider';
+            toggleSlider.style.position = 'absolute';
+            toggleSlider.style.cursor = 'pointer';
+            toggleSlider.style.top = '0';
+            toggleSlider.style.left = '0';
+            toggleSlider.style.right = '0';
+            toggleSlider.style.bottom = '0';
+            toggleSlider.style.backgroundColor = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
+            toggleSlider.style.borderRadius = '34px';
+            toggleSlider.style.transition = '.4s';
+            const toggleButton = document.createElement('span');
+            toggleButton.style.position = 'absolute';
+            toggleButton.style.content = '""';
+            toggleButton.style.height = '16px';
+            toggleButton.style.width = '16px';
+            toggleButton.style.left = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? '16px' : '4px';
+            toggleButton.style.bottom = '2px';
+            toggleButton.style.backgroundColor = 'white';
+            toggleButton.style.borderRadius = '50%';
+            toggleButton.style.transition = '.4s';
+            toggleSlider.appendChild(toggleButton);
+            toggleSwitch.appendChild(toggleSlider);
+            persistenceToggle.appendChild(toggleLabel);
+            persistenceToggle.appendChild(toggleSwitch);
+            section.appendChild(persistenceToggle);
+            // Section title
+            const sectionTitle = document.createElement('div');
+            sectionTitle.className = 'section-title';
+            sectionTitle.textContent = 'Power Entities';
+            section.appendChild(sectionTitle);
+            // Container
+            const containerWrapper = document.createElement('div');
+            containerWrapper.style.width = '100%';
+            containerWrapper.style.boxSizing = 'border-box';
+            const entitiesContainer = document.createElement('div');
+            entitiesContainer.className = 'entities-container';
+            if (((_c = this.config) === null || _c === void 0 ? void 0 : _c.max_height) && this.config.max_height > 0) {
+                entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
+                entitiesContainer.style.overflowY = 'auto';
+            }
+            // Add entities
+            this.powerEntities.forEach(entity => {
+                var _a;
+                const entityItem = document.createElement('div');
+                entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
+                entityItem.dataset.entity = entity.entityId;
+                entityItem.style.gap = '4px';
+                entityItem.addEventListener('click', this._togglePowerEntity);
+                const entityLeft = document.createElement('div');
+                entityLeft.className = 'entity-left';
+                const entityName = document.createElement('div');
+                entityName.className = 'entity-name';
+                entityName.title = entity.name;
+                entityName.textContent = entity.name;
+                entityLeft.appendChild(entityName);
+                entityItem.appendChild(entityLeft);
+                const entityState = document.createElement('div');
+                entityState.className = 'entity-state';
+                const statusIndicator = document.createElement('div');
+                statusIndicator.className = 'status-indicator';
+                statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+                const powerValue = document.createElement('div');
+                powerValue.className = 'power-value';
+                if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_state) {
+                    powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+                }
+                entityState.appendChild(statusIndicator);
+                entityState.appendChild(powerValue);
+                entityItem.appendChild(entityState);
+                entitiesContainer.appendChild(entityItem);
+            });
+            containerWrapper.appendChild(entitiesContainer);
+            section.appendChild(containerWrapper);
         }
         else {
             // Empty message
