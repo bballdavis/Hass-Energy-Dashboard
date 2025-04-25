@@ -18,6 +18,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _currentTimeRangeHours: number = 24; // Default to 24 hours
   private _viewMode: 'power' | 'energy' = 'power'; // Default to power view
 
+  // Custom event type definition for view mode changes
+  private _viewModeChangeEvent: string = 'view-mode-changed';
+  
   // Define card name and icon for card picker
   static get cardType() {
     return 'energy-dashboard-chart-card';
@@ -61,7 +64,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this._viewMode = this._loadViewMode();
     
     // Add event listener for view mode changes from entity card
-    window.addEventListener('view-mode-changed', this._handleViewModeChange as EventListener);
+    window.addEventListener(this._viewModeChangeEvent, this._handleViewModeChange as EventListener);
     
     this._loadSelectedEntities();
     this._checkApexChartsRegistration();
@@ -85,13 +88,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
   disconnectedCallback() {
     this._stopUpdateInterval();
     // Remove event listener when component is removed
-    window.removeEventListener('view-mode-changed', this._handleViewModeChange as EventListener);
+    window.removeEventListener(this._viewModeChangeEvent, this._handleViewModeChange as EventListener);
   }
 
   // Handle view mode changes from entity card
-  private _handleViewModeChange = (event: CustomEvent) => {
-    if (event.detail && event.detail.mode) {
-      this._viewMode = event.detail.mode;
+  private _handleViewModeChange = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    if (customEvent.detail && customEvent.detail.mode) {
+      this._viewMode = customEvent.detail.mode;
       console.log(`View mode changed to: ${this._viewMode}`);
       // Update the chart display based on view mode
       this._updateContent();
@@ -880,13 +884,37 @@ export class EnergyDashboardChartCard extends HTMLElement {
     if (this._apexChartCardRegistered !== null) return;
 
     this._isLoading = true;
-
-    setTimeout(() => {
-      this._apexChartCardRegistered = !!customElements.get('apexcharts-card');
-      console.log(`ApexCharts registration check: ${this._apexChartCardRegistered}`);
-      this._isLoading = false;
-      this._updateContent();
-    }, 500);
+    
+    // Track retry attempts
+    let retryCount = 0;
+    const maxRetries = 5;
+    const retryDelay = 1000; // 1 second between retries
+    
+    const checkRegistration = () => {
+      // Check if apexcharts-card is registered as a custom element
+      const isRegistered = !!customElements.get('apexcharts-card');
+      console.log(`ApexCharts registration check: ${isRegistered} (attempt ${retryCount + 1})`);
+      
+      if (isRegistered) {
+        // Success! Component is registered
+        this._apexChartCardRegistered = true;
+        this._isLoading = false;
+        this._updateContent();
+      } else if (retryCount < maxRetries) {
+        // Not registered yet, retry after delay
+        retryCount++;
+        setTimeout(checkRegistration, retryDelay);
+      } else {
+        // Max retries reached, give up and show error
+        console.error("apexcharts-card not found after multiple attempts");
+        this._apexChartCardRegistered = false;
+        this._isLoading = false;
+        this._updateContent(); // This will show error message about missing dependency
+      }
+    };
+    
+    // Start the registration check process
+    checkRegistration();
   }
 
   private _setRefreshInterval(seconds: number) {
