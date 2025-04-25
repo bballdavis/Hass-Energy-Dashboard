@@ -128,22 +128,22 @@ const cardStyles = `
   }
   .control-button, .select-all-button {
     background-color: var(--card-background-color, white);
-    border: 1px solid var(--primary-color);
-    border-radius: 8px;
-    padding: 6px min(12px, 2%); /* Reduce padding on smaller screens */
+    border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: 6px;
+    padding: 4px 8px; /* Reduced padding for more compact look */
     color: var(--primary-text-color);
-    font-size: 0.9em;
+    font-size: 0.85em; /* Slightly smaller font */
     font-weight: 500;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
+    flex-direction: row; /* Changed to row for more compact layout */
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     flex: 1;
-    margin: 0; /* Remove margin in favor of gap on the parent */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    min-height: var(--button-height);
+    margin: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    min-height: 28px; /* Reduced height */
     box-sizing: border-box;
     white-space: normal;
     word-break: break-word;
@@ -154,9 +154,9 @@ const cardStyles = `
     color: var(--text-primary-color);
   }
   .control-button ha-icon, .select-all-button ha-icon {
-    margin-right: 0;
-    margin-bottom: 4px;
-    --mdc-icon-size: 18px;
+    margin-right: 4px; /* Small right margin for icon */
+    margin-bottom: 0px; /* Removed bottom margin */
+    --mdc-icon-size: 16px; /* Smaller icons */
     display: flex;
     align-items: center;
     justify-content: center;
