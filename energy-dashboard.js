@@ -2327,6 +2327,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         refreshButton.style.minWidth = '30px'; // Smaller
         refreshButton.style.width = '30px';
         refreshButton.style.marginRight = '4px'; // Add space between refresh and interval buttons
+        refreshButton.style.height = '28px'; // Match the height of other buttons
         // Make interval buttons as a single connected group
         const refreshOptions = [
             { text: 'Off', title: 'Disable automatic refresh', value: '0' },
@@ -2343,10 +2344,11 @@ class EnergyDashboardChartCard extends HTMLElement {
             else {
                 btn.style.minWidth = '40px'; // Minimum width for other options
             }
+            btn.style.height = '28px'; // Ensure consistent height
             buttonsContainer.appendChild(btn);
         });
         buttonsContainer.insertBefore(refreshButton, buttonsContainer.firstChild);
-        // Time range buttons (1h, 3h, 12h, 24h, 3d, 1w) as a single connected group
+        // Time range buttons with minimum width to prevent wrapping
         const timeRanges = [
             { label: '1h', hours: 1 },
             { label: '3h', hours: 3 },
@@ -2359,9 +2361,10 @@ class EnergyDashboardChartCard extends HTMLElement {
             const btn = createButton(range.label, `Show last ${range.label}`, String(range.hours), 'time', index, timeRanges.length);
             // Set consistent min-width to prevent wrapping
             btn.style.minWidth = '36px';
+            btn.style.height = '28px'; // Ensure consistent height
             timeRangeContainer.appendChild(btn);
         });
-        // Y-axis preset buttons (Auto, 500, 2000, 3000) as a single connected group
+        // Y-axis preset buttons with minimum width to prevent wrapping
         const yAxisPresets = [
             { label: 'Auto', value: 'auto' },
             { label: '500', value: '500' },
@@ -2380,6 +2383,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             else {
                 btn.style.minWidth = '40px'; // Standard width for other buttons
             }
+            btn.style.height = '28px'; // Ensure consistent height
             maxRangeContainer.appendChild(btn);
         });
         // Create control groups that can wrap properly
