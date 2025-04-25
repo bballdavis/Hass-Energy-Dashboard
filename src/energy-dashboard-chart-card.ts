@@ -1007,8 +1007,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         button.className = 'refresh-button control-button';
         button.addEventListener('click', () => this._manualRefresh());
       }
-      // Prevent text wrapping within buttons
-      button.style.whiteSpace = 'nowrap';
       
       return button;
     };
@@ -1018,7 +1016,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     refreshButton.style.minWidth = '30px'; // Smaller
     refreshButton.style.width = '30px';
     refreshButton.style.marginRight = '4px'; // Add space between refresh and interval buttons
-    // Do NOT override height here to ensure it uses the same height as other buttons
     
     // Make interval buttons as a single connected group
     const refreshOptions = [
@@ -1036,10 +1033,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
       } else {
         btn.style.minWidth = '40px'; // Minimum width for other options
       }
-      // Do NOT override height here to ensure it uses CSS variable
       buttonsContainer.appendChild(btn);
     });
     
+    buttonsContainer.insertBefore(refreshButton, buttonsContainer.firstChild);
+
     // Time range buttons with minimum width to prevent wrapping
     const timeRanges = [
       { label: '1h', hours: 1 },
