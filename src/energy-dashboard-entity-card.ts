@@ -720,27 +720,24 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       resetButton.className = 'control-button';
       resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
       resetButton.style.flex = '1 1 0';
-      resetButton.style.minWidth = '60px';
-      resetButton.style.height = '32px';
-      resetButton.style.margin = '0';
+      resetButton.style.minWidth = '50px'; // Reduced from 60px
+      // Height set by CSS class now
       resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
       
       const clearButton = document.createElement('button');
       clearButton.className = 'control-button';
       clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
       clearButton.style.flex = '1 1 0';
-      clearButton.style.minWidth = '60px';
-      clearButton.style.height = '32px';
-      clearButton.style.margin = '0';
+      clearButton.style.minWidth = '50px'; // Reduced from 60px
+      // Height set by CSS class now
       clearButton.addEventListener('click', this._clearAllEnergyEntities);
       
       const selectAllButton = document.createElement('button');
       selectAllButton.className = 'select-all-button';
-      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>'; // Changed from 'Select All' to just 'All'
       selectAllButton.style.flex = '1 1 0';
-      selectAllButton.style.minWidth = '70px';
-      selectAllButton.style.height = '32px';
-      selectAllButton.style.margin = '0';
+      selectAllButton.style.minWidth = '50px'; // Reduced from 70px
+      // Height set by CSS class now
       selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
       
       controlButtons.appendChild(resetButton);
