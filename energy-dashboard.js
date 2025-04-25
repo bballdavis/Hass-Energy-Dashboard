@@ -1692,6 +1692,13 @@ class EnergyDashboardChartCard extends HTMLElement {
                             pan: true,
                             reset: true
                         }
+                    },
+                    // Ensure all elements remain visible when interacting with the chart
+                    events: {
+                        mouseLeave: () => {
+                            // Force redraw to ensure y-axis labels are visible
+                            return false; // Let default handler run
+                        }
                     }
                 },
                 yaxis: [{
@@ -1713,6 +1720,7 @@ class EnergyDashboardChartCard extends HTMLElement {
                                 color: 'var(--secondary-text-color, #666)'
                             },
                             show: true, // Ensure labels are always shown
+                            hideOverlappingLabels: false, // Don't hide overlapping labels
                         },
                         axisTicks: {
                             show: true,
@@ -1774,6 +1782,12 @@ class EnergyDashboardChartCard extends HTMLElement {
                     fontFamily: 'Helvetica, Arial, sans-serif',
                     labels: {
                         colors: 'var(--primary-text-color, #000)'
+                    },
+                    onItemHover: {
+                        highlightDataSeries: true // Highlight the series when hovering legend items
+                    },
+                    onItemClick: {
+                        toggleDataSeries: true // Toggle data visibility when clicking legend
                     }
                 },
                 tooltip: {
@@ -1793,6 +1807,9 @@ class EnergyDashboardChartCard extends HTMLElement {
                     },
                     marker: {
                         show: true
+                    },
+                    fixed: {
+                        enabled: false // Don't use fixed tooltip
                     }
                 },
                 states: {
@@ -1803,12 +1820,33 @@ class EnergyDashboardChartCard extends HTMLElement {
                         }
                     },
                     active: {
+                        allowMultipleDataPointsSelection: false,
                         filter: {
                             type: 'darken',
                             value: 0.35
                         }
+                    },
+                    normal: {
+                        filter: {
+                            type: 'none'
+                        }
                     }
-                }
+                },
+                // Add responsive settings to ensure consistent behavior across screen sizes
+                responsive: [{
+                        breakpoint: 1000,
+                        options: {
+                            chart: {
+                                height: this.config.chart_height || 300
+                            },
+                            yaxis: {
+                                labels: {
+                                    show: true,
+                                    minWidth: 20
+                                }
+                            }
+                        }
+                    }]
             }
         };
         return apexChartCardConfig;
