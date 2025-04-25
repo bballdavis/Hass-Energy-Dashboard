@@ -1,5 +1,5 @@
 import { createStyles, cardStyles } from './styles';
-import { loadToggleStates } from './entity-utils';
+import { loadToggleStates, getEntityColor } from './entity-utils';
 import { EnergyDashboardChartConfig, getDefaultChartConfig } from './energy-dashboard-chart-config';
 
 export class EnergyDashboardChartCard extends HTMLElement {
@@ -242,7 +242,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
     // Strictly minimal series config matching apexcharts-card schema
     const series = entities.map(entityId => ({
       entity: entityId,
-      name: this._hass.states[entityId]?.attributes?.friendly_name || entityId
+      name: this._hass.states[entityId]?.attributes?.friendly_name || entityId,
+      color: getEntityColor(entityId) // Use entity color utility
     }));
 
     // --- Y Axis Auto-Range Logic ---

@@ -1,3 +1,32 @@
+// Predefined colors for entities - a vibrant palette that works well with charts
+const ENTITY_COLORS = [
+    '#3498db', // blue
+    '#e74c3c', // red
+    '#2ecc71', // green
+    '#9b59b6', // purple
+    '#f39c12', // orange
+    '#1abc9c', // turquoise
+    '#d35400', // pumpkin
+    '#8e44ad', // wisteria
+    '#27ae60', // nephritis
+    '#c0392b', // pomegranate
+    '#16a085', // green sea
+    '#f1c40f', // sunflower
+    '#7f8c8d', // asbestos
+    '#3498db', // peter river
+    '#e67e22', // carrot
+];
+// Generate a consistent color for an entity based on its ID
+function getEntityColor(entityId) {
+    // Create a simple hash of the entity ID to get a consistent index
+    let hash = 0;
+    for (let i = 0; i < entityId.length; i++) {
+        hash = entityId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // Map the hash to our color array
+    const index = Math.abs(hash) % ENTITY_COLORS.length;
+    return ENTITY_COLORS[index];
+}
 function getPowerEntities(hass) {
     return Object.keys(hass.states)
         .filter(entityId => {
@@ -28,7 +57,8 @@ function getPowerEntities(hass) {
             state: stateObj.state,
             unit: stateObj.attributes.unit_of_measurement,
             powerValue,
-            isToggleable
+            isToggleable,
+            color: getEntityColor(entityId) // Add consistent color to the entity
         };
     })
         .sort((a, b) => b.powerValue - a.powerValue);
@@ -63,7 +93,8 @@ function getEnergyEntities(hass) {
             state: stateObj.state,
             unit: stateObj.attributes.unit_of_measurement,
             energyValue,
-            isToggleable
+            isToggleable,
+            color: getEntityColor(entityId) // Add consistent color to the entity
         };
     })
         .sort((a, b) => b.energyValue - a.energyValue);
@@ -887,6 +918,16 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 entityItem.dataset.entity = entity.entityId;
                 entityItem.style.gap = '4px';
                 entityItem.addEventListener('click', this._togglePowerEntity);
+                // Add color indicator for visual link to chart line
+                const colorIndicator = document.createElement('div');
+                colorIndicator.className = 'entity-color-indicator';
+                colorIndicator.style.width = '8px';
+                colorIndicator.style.height = '100%';
+                colorIndicator.style.backgroundColor = entity.color || 'transparent';
+                colorIndicator.style.borderRadius = '4px 0 0 4px';
+                colorIndicator.style.marginRight = '8px';
+                colorIndicator.style.flexShrink = '0';
+                entityItem.appendChild(colorIndicator);
                 const entityLeft = document.createElement('div');
                 entityLeft.className = 'entity-left';
                 const entityName = document.createElement('div');
@@ -1018,6 +1059,16 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 entityItem.dataset.entity = entity.entityId;
                 entityItem.style.gap = '4px';
                 entityItem.addEventListener('click', this._toggleEnergyEntity);
+                // Add color indicator for visual link to chart line
+                const colorIndicator = document.createElement('div');
+                colorIndicator.className = 'entity-color-indicator';
+                colorIndicator.style.width = '8px';
+                colorIndicator.style.height = '100%';
+                colorIndicator.style.backgroundColor = entity.color || 'transparent';
+                colorIndicator.style.borderRadius = '4px 0 0 4px';
+                colorIndicator.style.marginRight = '8px';
+                colorIndicator.style.flexShrink = '0';
+                entityItem.appendChild(colorIndicator);
                 const entityLeft = document.createElement('div');
                 entityLeft.className = 'entity-left';
                 const entityName = document.createElement('div');
@@ -1623,7 +1674,8 @@ class EnergyDashboardChartCard extends HTMLElement {
             var _a, _b;
             return ({
                 entity: entityId,
-                name: ((_b = (_a = this._hass.states[entityId]) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.friendly_name) || entityId
+                name: ((_b = (_a = this._hass.states[entityId]) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.friendly_name) || entityId,
+                color: getEntityColor(entityId) // Use entity color utility
             });
         });
         // --- Y Axis Auto-Range Logic ---

@@ -638,6 +638,17 @@ export class EnergyDashboardEntityCard extends HTMLElement {
         entityItem.style.gap = '4px';
         entityItem.addEventListener('click', this._togglePowerEntity);
         
+        // Add color indicator for visual link to chart line
+        const colorIndicator = document.createElement('div');
+        colorIndicator.className = 'entity-color-indicator';
+        colorIndicator.style.width = '8px';
+        colorIndicator.style.height = '100%';
+        colorIndicator.style.backgroundColor = entity.color || 'transparent';
+        colorIndicator.style.borderRadius = '4px 0 0 4px';
+        colorIndicator.style.marginRight = '8px';
+        colorIndicator.style.flexShrink = '0';
+        entityItem.appendChild(colorIndicator);
+        
         const entityLeft = document.createElement('div');
         entityLeft.className = 'entity-left';
         
@@ -796,6 +807,17 @@ export class EnergyDashboardEntityCard extends HTMLElement {
         entityItem.dataset.entity = entity.entityId;
         entityItem.style.gap = '4px';
         entityItem.addEventListener('click', this._toggleEnergyEntity);
+        
+        // Add color indicator for visual link to chart line
+        const colorIndicator = document.createElement('div');
+        colorIndicator.className = 'entity-color-indicator';
+        colorIndicator.style.width = '8px';
+        colorIndicator.style.height = '100%';
+        colorIndicator.style.backgroundColor = entity.color || 'transparent';
+        colorIndicator.style.borderRadius = '4px 0 0 4px';
+        colorIndicator.style.marginRight = '8px';
+        colorIndicator.style.flexShrink = '0';
+        entityItem.appendChild(colorIndicator);
         
         const entityLeft = document.createElement('div');
         entityLeft.className = 'entity-left';
