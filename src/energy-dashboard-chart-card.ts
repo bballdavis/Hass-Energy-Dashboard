@@ -333,26 +333,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const apexChartCardConfig = {
       type: 'custom:apexcharts-card',
       chart_type: chartType,
-      header: {
-        show: false,
-        title: isEnergy ? 'Energy Consumption' : 'Power Consumption',
-        show_states: false
-      },
-      span: {
-        start: 'hour',
-        end: 'hour'
-      },
+      header: { show: false, title: isEnergy ? 'Energy Consumption' : 'Power Consumption', show_states: false },
+      hours_to_show: this.config.hours_to_show,
+      update_interval: this.config.update_interval,
       all_series_config: {
         stroke_width: 2,
         curve: smoothCurve ? 'smooth' : 'straight',
-        // Remove extend_to_end property
-        show: {
-          in_header: false
-        },
-        group_by: {
-          duration: '1h',
-          func: 'avg'
-        }
+        show: { in_header: false },
+        group_by: { duration: '1h', func: 'avg' }
       },
       series: seriesConfig,
       apex_config: {
