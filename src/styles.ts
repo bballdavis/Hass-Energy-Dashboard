@@ -117,7 +117,7 @@ export const cardStyles = `
     min-width: 100%;
     max-width: 100%;
     margin-bottom: 2px;
-    border: none; /* No border for unselected */
+    border: 1px solid var(--divider-color, #e0e0e0); /* Light grey border for unselected */
   }
   .entity-item:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
