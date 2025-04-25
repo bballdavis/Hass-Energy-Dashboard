@@ -219,9 +219,7 @@ const cardStyles = `
     transform: translateY(-1px);
   }
   .entity-item.on {
-    background-color: var(--ha-card-background, var(--card-background-color, white));
-    color: var(--primary-text-color);
-    border: 1px solid var(--primary-color); /* Match control button border thickness */
+    border: 2px solid var(--entity-selected-border-color, var(--primary-color)); /* Highlight border when selected */
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   }
   .entity-left {
