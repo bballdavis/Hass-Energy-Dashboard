@@ -12,6 +12,9 @@ export const cardStyles = `
     --button-height: 32px;
     --entity-font-size: 0.95em;
     --section-title-font-size: 0.9975em;
+    /* Override variables specifically for apexcharts-card */
+    --ha-card-border-width: 0;
+    --ha-card-border-color: transparent;
   }
   .card-header {
     padding: var(--card-padding);
@@ -229,27 +232,58 @@ export const cardStyles = `
     border: none !important;
     box-shadow: none !important;
     overflow: visible !important;
+    border-radius: 0 !important;
+    background: transparent !important;
   }
   
-  /* Target apexcharts-card element */
-  apexcharts-card {
+  /* Target apexcharts-card element with more specific selectors */
+  apexcharts-card, 
+  apexcharts-card[data-optimistic],
+  :host apexcharts-card {
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    /* Apply variables directly to element */
     --apex-card-padding: 0px;
     --apex-card-margin: 0px;
     --ha-card-border-radius: 0px;
+    --ha-card-border-width: 0;
+    --ha-card-border-color: transparent;
     --ha-card-box-shadow: none;
     --apex-card-background: transparent;
+    --card-background-color: transparent;
   }
 
-  /* Target the inner card inside apexcharts-card shadow DOM */
-  apexcharts-card::part(card) {
+  /* Target the ha-card element inside apexcharts-card */
+  apexcharts-card ha-card,
+  apexcharts-card[data-optimistic] ha-card {
     border: none !important;
     box-shadow: none !important;
     margin: 0 !important;
     padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Target the card inside the shadow DOM with ::part */
+  apexcharts-card::part(card),
+  ha-card::part(card) {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  /* More specific selectors for deep elements */
+  .chart-container .power-chart-container apexcharts-card,
+  .chart-container .energy-chart-container apexcharts-card {
+    border: none !important;
+    box-shadow: none !important;
   }
 `;
 
