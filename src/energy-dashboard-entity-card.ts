@@ -495,19 +495,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       controlButtons.appendChild(selectAllButton);
       section.appendChild(controlButtons);
 
-      // Set up dynamic resize observer to maintain equal button heights
-      // This ensures all buttons have the same height after DOM is fully rendered
-      setTimeout(() => {
-        const buttons = [resetButton, clearButton, selectAllButton];
-        const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
-        if (maxHeight > 0) {
-          buttons.forEach(btn => {
-            btn.style.height = `${maxHeight}px`;
-          });
-          // Set a CSS variable for consistent button height across components
-          document.documentElement.style.setProperty('--button-height', `${maxHeight}px`);
-        }
-      }, 0);
+      // Equalize button heights
+      this._equalizeButtonHeights(controlButtons);
     } else {
       // Empty message
       const emptyMessage = document.createElement('div');
@@ -551,16 +540,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       controlButtons.appendChild(selectAllButton);
       section.appendChild(controlButtons);
       
-      // Set up dynamic resize observer to maintain equal button heights
-      setTimeout(() => {
-        const buttons = [resetButton, clearButton, selectAllButton];
-        const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
-        if (maxHeight > 0) {
-          buttons.forEach(btn => {
-            btn.style.height = `${maxHeight}px`;
-          });
-        }
-      }, 0);
+      // Equalize button heights
+      this._equalizeButtonHeights(controlButtons);
       
       // Add persistence toggle
       const persistenceToggle = document.createElement('div');
@@ -810,6 +791,36 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       card.appendChild(energySection);
     }
+    
+    // Wait for the DOM to be fully rendered before equalizing button heights
+    setTimeout(() => {
+      const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
+      controlButtonsContainers.forEach(container => this._equalizeButtonHeights(container as HTMLElement));
+    }, 50);
+  }
+
+  // Helper method to equalize button heights
+  _equalizeButtonHeights(buttonContainer: HTMLElement): void {
+    if (!buttonContainer) return;
+    
+    const buttons = Array.from(buttonContainer.querySelectorAll('button'));
+    if (buttons.length === 0) return;
+
+    // First, reset heights to auto to get natural height
+    buttons.forEach(btn => btn.style.height = 'auto');
+    
+    // Wait for the browser to recalculate natural heights
+    setTimeout(() => {
+      // Find tallest button
+      const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+      
+      // Set all buttons to the tallest height
+      if (maxHeight > 0) {
+        buttons.forEach(btn => {
+          btn.style.height = `${maxHeight}px`;
+        });
+      }
+    }, 10);
   }
 }
 
