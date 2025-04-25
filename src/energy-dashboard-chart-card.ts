@@ -481,19 +481,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
     if (this._isLoading) {
       return this._createLoadingIndicator();
     }
-    
+
     const entities = isEnergy ? this._energyEntities : this._powerEntities;
-    
+
     if (!entities || entities.length === 0) {
       return this._createEmptyCard(isEnergy);
     }
-    
+
     if (!this._hass) {
       return this._createLoadingIndicator();
     }
-    
+
     const chartConfig = this._generateApexchartsConfig(entities, isEnergy);
-    
+
     if (!chartConfig) {
       return this._createErrorMessage(
         `Failed to generate chart configuration for ${isEnergy ? 'energy' : 'power'} chart`,
@@ -501,14 +501,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
          'Refresh the page and try again']
       );
     }
-    
+
     const chartElement = document.createElement('div');
     chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
     chartElement.style.width = '100%';
     chartElement.style.marginBottom = '16px';
     chartElement.style.position = 'relative';
     chartElement.style.minHeight = `${this.config?.chart_height || 300}px`;
-    
+
     try {
       if (this._apexChartCardRegistered === false) {
         return this._createErrorMessage(
@@ -520,11 +520,17 @@ export class EnergyDashboardChartCard extends HTMLElement {
           ]
         );
       }
-      
+
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
-      
+
       try {
-        (apexCard as any).setConfig(chartConfig);
+        // Validate and set the configuration
+        if (typeof (apexCard as any).setConfig === 'function') {
+          (apexCard as any).setConfig(chartConfig);
+        } else {
+          throw new Error('setConfig method is not available on apexcharts-card');
+        }
+
         (apexCard as any).hass = this._hass;
       } catch (configError) {
         console.error('Error configuring apexcharts-card:', configError);
@@ -534,7 +540,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
            'Check the console for more details']
         );
       }
-      
+
       chartElement.appendChild(apexCard);
     } catch (err) {
       console.error(`Error creating ${isEnergy ? 'energy' : 'power'} chart:`, err);
@@ -547,7 +553,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
         ]
       );
     }
-    
+
     return chartElement;
   }
 

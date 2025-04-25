@@ -1955,7 +1955,13 @@ class EnergyDashboardChartCard extends HTMLElement {
             }
             const apexCard = document.createElement('apexcharts-card');
             try {
-                apexCard.setConfig(chartConfig);
+                // Validate and set the configuration
+                if (typeof apexCard.setConfig === 'function') {
+                    apexCard.setConfig(chartConfig);
+                }
+                else {
+                    throw new Error('setConfig method is not available on apexcharts-card');
+                }
                 apexCard.hass = this._hass;
             }
             catch (configError) {
