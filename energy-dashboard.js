@@ -825,7 +825,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             clearButton.addEventListener('click', this._clearAllPowerEntities);
             const selectAllButton = document.createElement('button');
             selectAllButton.className = 'select-all-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
             selectAllButton.style.flex = '1 1 0';
             selectAllButton.style.minWidth = '70px';
             selectAllButton.style.height = '32px';
@@ -974,7 +974,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             clearButton.addEventListener('click', this._clearAllEnergyEntities);
             const selectAllButton = document.createElement('button');
             selectAllButton.className = 'select-all-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
             selectAllButton.style.flex = '1 1 0';
             selectAllButton.style.minWidth = '70px';
             selectAllButton.style.height = '32px';
