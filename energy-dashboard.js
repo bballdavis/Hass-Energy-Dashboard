@@ -129,34 +129,35 @@ const cardStyles = `
   .control-button, .select-all-button {
     background-color: var(--card-background-color, white);
     border: 1px solid var(--divider-color, #e0e0e0);
-    border-radius: 6px;
-    padding: 4px 8px; /* Reduced padding for more compact look */
+    border-radius: 4px; /* Reduced from 6px */
+    padding: 2px 6px; /* Further reduced padding */
     color: var(--primary-text-color);
-    font-size: 0.85em; /* Slightly smaller font */
+    font-size: 0.8em; /* Even smaller font */
     font-weight: 500;
     cursor: pointer;
     display: flex;
-    flex-direction: row; /* Changed to row for more compact layout */
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     flex: 1;
     margin: 0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-    min-height: 28px; /* Reduced height */
+    box-shadow: none; /* Removed for flatter appearance */
+    min-height: 22px; /* Further reduced height */
+    max-height: 22px; /* Added max-height to enforce compactness */
     box-sizing: border-box;
-    white-space: normal;
-    word-break: break-word;
-    line-height: 1.2;
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden; /* Prevent content overflow */
+    line-height: 1; /* Tighter line height */
   }
   .control-button:hover, .select-all-button:hover {
     background-color: var(--primary-color);
     color: var(--text-primary-color);
   }
   .control-button ha-icon, .select-all-button ha-icon {
-    margin-right: 4px; /* Small right margin for icon */
-    margin-bottom: 0px; /* Removed bottom margin */
-    --mdc-icon-size: 16px; /* Smaller icons */
+    margin-right: 3px; /* Further reduced margin */
+    margin-bottom: 0px;
+    --mdc-icon-size: 14px; /* Even smaller icons */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -803,8 +804,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
             const controlButtons = document.createElement('div');
             controlButtons.className = 'control-buttons';
             controlButtons.style.display = 'flex';
-            controlButtons.style.flexWrap = 'wrap';
-            controlButtons.style.alignItems = 'center'; // Changed from 'stretch' to 'center'
+            controlButtons.style.flexWrap = 'nowrap'; // Changed from 'wrap' to 'nowrap' to ensure single line
+            controlButtons.style.alignItems = 'center';
             controlButtons.style.gap = '4px';
             controlButtons.style.margin = '0 0 8px 0';
             controlButtons.style.padding = '0';
@@ -812,22 +813,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.style.flex = '1 1 0';
-            resetButton.style.minWidth = '50px'; // Reduced from 60px
-            // Height set by CSS class now
+            resetButton.style.minWidth = '40px'; // Further reduced from 50px
             resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.style.flex = '1 1 0';
-            clearButton.style.minWidth = '50px'; // Reduced from 60px
-            // Height set by CSS class now
+            clearButton.style.minWidth = '40px'; // Further reduced from 50px
             clearButton.addEventListener('click', this._clearAllPowerEntities);
             const selectAllButton = document.createElement('button');
             selectAllButton.className = 'select-all-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>'; // Changed from 'Select All' to just 'All'
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
             selectAllButton.style.flex = '1 1 0';
-            selectAllButton.style.minWidth = '50px'; // Reduced from 70px
-            // Height set by CSS class now
+            selectAllButton.style.minWidth = '40px'; // Further reduced from 50px
             selectAllButton.addEventListener('click', this._selectAllPowerEntities);
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
