@@ -123,8 +123,10 @@ export const cardStyles = `
     transform: translateY(-1px);
   }
   .entity-item.on {
-    background-color: var(--primary-color);
-    color: var(--text-primary-color);
+    background-color: var(--ha-card-background, var(--card-background-color, white));
+    color: var(--primary-text-color);
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   }
   .entity-left {
     display: flex;
