@@ -451,7 +451,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const chartElement = document.createElement('div');
     chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
     chartElement.style.width = '100%';
-    chartElement.style.marginBottom = '16px';
+    chartElement.style.marginBottom = '0'; // Reduced margin from 16px to 0
     chartElement.style.position = 'relative';
     chartElement.style.minHeight = `${this.config?.chart_height || 300}px`;
     
@@ -468,6 +468,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
       }
       
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
+      
+      // Add some styling directly to apexcharts-card for better integration
+      apexCard.style.border = 'none';
+      apexCard.style.boxShadow = 'none';
+      apexCard.style.margin = '0';
+      apexCard.style.padding = '0';
+      apexCard.style.width = '100%';
+      apexCard.style.display = 'block';
       
       try {
         (apexCard as any).setConfig(chartConfig);
