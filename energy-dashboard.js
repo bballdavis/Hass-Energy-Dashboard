@@ -916,18 +916,23 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 const entityItem = document.createElement('div');
                 entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
                 entityItem.dataset.entity = entity.entityId;
-                entityItem.style.gap = '4px';
-                entityItem.addEventListener('click', this._togglePowerEntity);
                 // Add color indicator for visual link to chart line
+                const entityContent = document.createElement('div');
+                entityContent.style.display = 'flex';
+                entityContent.style.flexDirection = 'row';
+                entityContent.style.alignItems = 'center';
+                entityContent.style.width = '100%';
+                entityContent.style.gap = '4px';
                 const colorIndicator = document.createElement('div');
                 colorIndicator.className = 'entity-color-indicator';
                 colorIndicator.style.width = '8px';
                 colorIndicator.style.height = '100%';
+                colorIndicator.style.minHeight = '24px';
                 colorIndicator.style.backgroundColor = entity.color || 'transparent';
                 colorIndicator.style.borderRadius = '4px 0 0 4px';
                 colorIndicator.style.marginRight = '8px';
                 colorIndicator.style.flexShrink = '0';
-                entityItem.appendChild(colorIndicator);
+                entityContent.appendChild(colorIndicator);
                 const entityLeft = document.createElement('div');
                 entityLeft.className = 'entity-left';
                 const entityName = document.createElement('div');
@@ -935,7 +940,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 entityName.title = entity.name;
                 entityName.textContent = entity.name;
                 entityLeft.appendChild(entityName);
-                entityItem.appendChild(entityLeft);
+                entityContent.appendChild(entityLeft);
                 const entityState = document.createElement('div');
                 entityState.className = 'entity-state';
                 const statusIndicator = document.createElement('div');
@@ -948,7 +953,10 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 }
                 entityState.appendChild(statusIndicator);
                 entityState.appendChild(powerValue);
-                entityItem.appendChild(entityState);
+                entityContent.appendChild(entityState);
+                entityItem.appendChild(entityContent);
+                // Add click event listener to the entityItem
+                entityItem.addEventListener('click', this._togglePowerEntity);
                 entitiesContainer.appendChild(entityItem);
             });
             containerWrapper.appendChild(entitiesContainer);
@@ -1057,18 +1065,23 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 const entityItem = document.createElement('div');
                 entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
                 entityItem.dataset.entity = entity.entityId;
-                entityItem.style.gap = '4px';
-                entityItem.addEventListener('click', this._toggleEnergyEntity);
-                // Add color indicator for visual link to chart line
+                // Add color indicator for visual link to chart line - with proper wrapper
+                const entityContent = document.createElement('div');
+                entityContent.style.display = 'flex';
+                entityContent.style.flexDirection = 'row';
+                entityContent.style.alignItems = 'center';
+                entityContent.style.width = '100%';
+                entityContent.style.gap = '4px';
                 const colorIndicator = document.createElement('div');
                 colorIndicator.className = 'entity-color-indicator';
                 colorIndicator.style.width = '8px';
                 colorIndicator.style.height = '100%';
+                colorIndicator.style.minHeight = '24px';
                 colorIndicator.style.backgroundColor = entity.color || 'transparent';
                 colorIndicator.style.borderRadius = '4px 0 0 4px';
                 colorIndicator.style.marginRight = '8px';
                 colorIndicator.style.flexShrink = '0';
-                entityItem.appendChild(colorIndicator);
+                entityContent.appendChild(colorIndicator);
                 const entityLeft = document.createElement('div');
                 entityLeft.className = 'entity-left';
                 const entityName = document.createElement('div');
@@ -1076,7 +1089,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 entityName.title = entity.name;
                 entityName.textContent = entity.name;
                 entityLeft.appendChild(entityName);
-                entityItem.appendChild(entityLeft);
+                entityContent.appendChild(entityLeft);
                 const entityState = document.createElement('div');
                 entityState.className = 'entity-state';
                 const statusIndicator = document.createElement('div');
@@ -1089,7 +1102,10 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 }
                 entityState.appendChild(statusIndicator);
                 entityState.appendChild(powerValue);
-                entityItem.appendChild(entityState);
+                entityContent.appendChild(entityState);
+                entityItem.appendChild(entityContent);
+                // Add click event listener to the entityItem
+                entityItem.addEventListener('click', this._toggleEnergyEntity);
                 entitiesContainer.appendChild(entityItem);
             });
             containerWrapper.appendChild(entitiesContainer);
