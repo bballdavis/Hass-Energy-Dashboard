@@ -217,9 +217,37 @@ export const cardStyles = `
     margin-top: 8px;
     margin-bottom: 4px;
   }
-  
   .chart-container {
     transition: opacity 0.3s ease-in-out;
+  }
+  
+  /* Ensure apexcharts-card has no borders */
+  .power-chart-container, .energy-chart-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  
+  apexcharts-card {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    --apex-card-padding: 0px;
+    --apex-card-margin: 0px;
+    --ha-card-border-radius: 0px;
+    --ha-card-box-shadow: none;
+    --apex-card-background: transparent;
+  }
+
+  /* Target the shadow DOM elements inside apexcharts-card */
+  ::part(ha-card) {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 `;
 

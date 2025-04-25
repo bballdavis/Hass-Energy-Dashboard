@@ -451,9 +451,16 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const chartElement = document.createElement('div');
     chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
     chartElement.style.width = '100%';
-    chartElement.style.marginBottom = '0'; // Reduced margin from 16px to 0
+    chartElement.style.marginBottom = '0';
+    chartElement.style.marginTop = '0';
     chartElement.style.position = 'relative';
     chartElement.style.minHeight = `${this.config?.chart_height || 300}px`;
+    // Remove any borders from the chart container
+    chartElement.style.border = 'none';
+    chartElement.style.boxShadow = 'none';
+    chartElement.style.overflow = 'visible';
+    chartElement.style.padding = '0';
+    chartElement.style.boxSizing = 'border-box';
     
     try {
       if (this._apexChartCardRegistered === false) {
@@ -469,13 +476,20 @@ export class EnergyDashboardChartCard extends HTMLElement {
       
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
       
-      // Add some styling directly to apexcharts-card for better integration
+      // Comprehensive styling to remove borders and padding
       apexCard.style.border = 'none';
       apexCard.style.boxShadow = 'none';
       apexCard.style.margin = '0';
       apexCard.style.padding = '0';
       apexCard.style.width = '100%';
       apexCard.style.display = 'block';
+      
+      // Set CSS custom properties for apex-card
+      apexCard.style.setProperty('--apex-card-padding', '0px');
+      apexCard.style.setProperty('--apex-card-margin', '0px');
+      apexCard.style.setProperty('--ha-card-border-radius', '0px');
+      apexCard.style.setProperty('--ha-card-box-shadow', 'none');
+      apexCard.style.setProperty('--apex-card-background', 'transparent');
       
       try {
         (apexCard as any).setConfig(chartConfig);

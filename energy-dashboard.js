@@ -312,9 +312,37 @@ const cardStyles = `
     margin-top: 8px;
     margin-bottom: 4px;
   }
-  
   .chart-container {
     transition: opacity 0.3s ease-in-out;
+  }
+  
+  /* Ensure apexcharts-card has no borders */
+  .power-chart-container, .energy-chart-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  
+  apexcharts-card {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    --apex-card-padding: 0px;
+    --apex-card-margin: 0px;
+    --ha-card-border-radius: 0px;
+    --ha-card-box-shadow: none;
+    --apex-card-background: transparent;
+  }
+
+  /* Target the shadow DOM elements inside apexcharts-card */
+  ::part(ha-card) {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 `;
 const editorStyles = `
@@ -1931,9 +1959,16 @@ class EnergyDashboardChartCard extends HTMLElement {
         const chartElement = document.createElement('div');
         chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
         chartElement.style.width = '100%';
-        chartElement.style.marginBottom = '0'; // Reduced margin from 16px to 0
+        chartElement.style.marginBottom = '0';
+        chartElement.style.marginTop = '0';
         chartElement.style.position = 'relative';
         chartElement.style.minHeight = `${((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) || 300}px`;
+        // Remove any borders from the chart container
+        chartElement.style.border = 'none';
+        chartElement.style.boxShadow = 'none';
+        chartElement.style.overflow = 'visible';
+        chartElement.style.padding = '0';
+        chartElement.style.boxSizing = 'border-box';
         try {
             if (this._apexChartCardRegistered === false) {
                 return this._createErrorMessage('The apexcharts-card integration is not installed', [
@@ -1943,13 +1978,19 @@ class EnergyDashboardChartCard extends HTMLElement {
                 ]);
             }
             const apexCard = document.createElement('apexcharts-card');
-            // Add some styling directly to apexcharts-card for better integration
+            // Comprehensive styling to remove borders and padding
             apexCard.style.border = 'none';
             apexCard.style.boxShadow = 'none';
             apexCard.style.margin = '0';
             apexCard.style.padding = '0';
             apexCard.style.width = '100%';
             apexCard.style.display = 'block';
+            // Set CSS custom properties for apex-card
+            apexCard.style.setProperty('--apex-card-padding', '0px');
+            apexCard.style.setProperty('--apex-card-margin', '0px');
+            apexCard.style.setProperty('--ha-card-border-radius', '0px');
+            apexCard.style.setProperty('--ha-card-box-shadow', 'none');
+            apexCard.style.setProperty('--apex-card-background', 'transparent');
             try {
                 apexCard.setConfig(chartConfig);
                 apexCard.hass = this._hass;
