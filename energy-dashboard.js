@@ -2255,8 +2255,8 @@ class EnergyDashboardChartCard extends HTMLElement {
             button.style.alignItems = 'center';
             button.style.justifyContent = 'center';
             button.style.transition = 'all 0.2s ease-in-out';
-            button.style.height = 'var(--button-height, 32px)'; // Use CSS variable
-            button.style.minHeight = 'var(--button-height, 32px)'; // Use CSS variable
+            button.style.height = 'var(--button-height, 32px)';
+            button.style.minHeight = 'var(--button-height, 32px)';
             button.style.fontSize = '0.9em';
             button.style.margin = '0';
             button.style.position = 'relative';
@@ -2323,9 +2323,20 @@ class EnergyDashboardChartCard extends HTMLElement {
         };
         // Refresh rate buttons
         const refreshButton = createButton('<ha-icon icon="mdi:refresh"></ha-icon>', 'Refresh now');
-        refreshButton.style.minWidth = '30px'; // Smaller
-        refreshButton.style.width = '30px';
+        refreshButton.style.minWidth = '32px';
+        refreshButton.style.width = '32px';
         refreshButton.style.marginRight = '4px'; // Add space between refresh and interval buttons
+        refreshButton.style.display = 'flex'; // Ensure flex display for proper centering
+        refreshButton.style.alignItems = 'center'; // Ensure vertical centering
+        refreshButton.style.justifyContent = 'center'; // Ensure horizontal centering
+        // Fix the icon size and positioning
+        const refreshIcon = refreshButton.querySelector('ha-icon');
+        if (refreshIcon) {
+            refreshIcon.style.margin = '0'; // Remove any margin
+            refreshIcon.style.display = 'flex'; // Use flex for proper centering
+            refreshIcon.style.alignItems = 'center';
+            refreshIcon.style.justifyContent = 'center';
+        }
         // Make interval buttons as a single connected group
         const refreshOptions = [
             { text: 'Off', title: 'Disable automatic refresh', value: '0' },
