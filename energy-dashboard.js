@@ -947,7 +947,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             const controlButtons = document.createElement('div');
             controlButtons.className = 'control-buttons';
             controlButtons.style.display = 'flex';
-            controlButtons.style.flexWrap = 'wrap';
+            controlButtons.style.flexWrap = 'nowrap'; // Changed from 'wrap' to 'nowrap' for single line
             controlButtons.style.alignItems = 'center';
             controlButtons.style.gap = '4px';
             controlButtons.style.margin = '0 0 8px 0';
@@ -956,22 +956,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.style.flex = '1 1 0';
-            resetButton.style.minWidth = '50px'; // Reduced from 60px
-            // Height set by CSS class now
+            resetButton.style.minWidth = '40px'; // Further reduced from 50px
             resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.style.flex = '1 1 0';
-            clearButton.style.minWidth = '50px'; // Reduced from 60px
-            // Height set by CSS class now
+            clearButton.style.minWidth = '40px'; // Further reduced from 50px
             clearButton.addEventListener('click', this._clearAllEnergyEntities);
             const selectAllButton = document.createElement('button');
             selectAllButton.className = 'select-all-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>'; // Changed from 'Select All' to just 'All'
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
             selectAllButton.style.flex = '1 1 0';
-            selectAllButton.style.minWidth = '50px'; // Reduced from 70px
-            // Height set by CSS class now
+            selectAllButton.style.minWidth = '40px'; // Further reduced from 50px
             selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
@@ -2277,7 +2274,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             const button = document.createElement('button');
             button.style.padding = '4px 8px';
             button.style.border = '1px solid var(--divider-color)';
-            button.style.backgroundColor = 'var(--secondary-background-color)';
+            button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color to card-background-color
             button.style.color = 'var(--primary-text-color)';
             button.style.cursor = 'pointer';
             button.style.display = 'flex';

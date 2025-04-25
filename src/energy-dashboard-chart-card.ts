@@ -936,7 +936,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       const button = document.createElement('button');
       button.style.padding = '4px 8px';
       button.style.border = '1px solid var(--divider-color)';
-      button.style.backgroundColor = 'var(--secondary-background-color)';
+      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color to card-background-color
       button.style.color = 'var(--primary-text-color)';
       button.style.cursor = 'pointer';
       button.style.display = 'flex';
