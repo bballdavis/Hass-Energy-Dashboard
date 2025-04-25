@@ -212,7 +212,7 @@ const cardStyles = `
     min-width: 100%;
     max-width: 100%;
     margin-bottom: 2px;
-    border: 1px solid var(--primary-color); /* Match control button border thickness */
+    border: 1px solid var(--divider-color, #e0e0e0); /* Grey border for unselected */
   }
   .entity-item:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
