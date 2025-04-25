@@ -1657,10 +1657,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             type: 'custom:apexcharts-card',
             chart_type: chartType,
             header: { show: false, title: isEnergy ? 'Energy Consumption' : 'Power Consumption', show_states: false },
-            span: {
-                start: `-${this.config.hours_to_show}h`,
-                end: 'now'
-            },
+            span: `-${this.config.hours_to_show}h`,
             all_series_config: {
                 stroke_width: 2,
                 curve: smoothCurve ? 'smooth' : 'straight',
