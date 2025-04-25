@@ -1151,7 +1151,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.interval-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--secondary-background-color, #f0f0f0)';
+      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
@@ -1169,7 +1169,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.time-range-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--secondary-background-color, #f0f0f0)';
+      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
@@ -1197,7 +1197,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.yaxis-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--secondary-background-color, #f0f0f0)';
+      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
