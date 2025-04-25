@@ -943,7 +943,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
       button.style.alignItems = 'center';
       button.style.justifyContent = 'center';
       button.style.transition = 'all 0.2s ease-in-out';
-      button.style.minHeight = '28px'; // Slightly smaller
+      button.style.height = 'var(--button-height, 32px)'; // Use CSS variable
+      button.style.minHeight = 'var(--button-height, 32px)'; // Use CSS variable
       button.style.fontSize = '0.9em';
       button.style.margin = '0';
       button.style.position = 'relative';
@@ -1017,7 +1018,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     refreshButton.style.minWidth = '30px'; // Smaller
     refreshButton.style.width = '30px';
     refreshButton.style.marginRight = '4px'; // Add space between refresh and interval buttons
-    refreshButton.style.height = '28px'; // Match the height of other buttons
+    // Do NOT override height here to ensure it uses the same height as other buttons
     
     // Make interval buttons as a single connected group
     const refreshOptions = [
@@ -1035,12 +1036,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
       } else {
         btn.style.minWidth = '40px'; // Minimum width for other options
       }
-      btn.style.height = '28px'; // Ensure consistent height
+      // Do NOT override height here to ensure it uses CSS variable
       buttonsContainer.appendChild(btn);
     });
     
-    buttonsContainer.insertBefore(refreshButton, buttonsContainer.firstChild);
-
     // Time range buttons with minimum width to prevent wrapping
     const timeRanges = [
       { label: '1h', hours: 1 },
@@ -1061,7 +1060,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       );
       // Set consistent min-width to prevent wrapping
       btn.style.minWidth = '36px';
-      btn.style.height = '28px'; // Ensure consistent height
+      // Do NOT override height here to ensure it uses CSS variable
       timeRangeContainer.appendChild(btn);
     });
 
@@ -1089,7 +1088,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       } else {
         btn.style.minWidth = '40px'; // Standard width for other buttons
       }
-      btn.style.height = '28px'; // Ensure consistent height
+      // Do NOT override height here to ensure it uses CSS variable
       maxRangeContainer.appendChild(btn);
     });
 
