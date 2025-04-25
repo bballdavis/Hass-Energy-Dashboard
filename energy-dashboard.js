@@ -126,7 +126,7 @@ const cardStyles = `
     align-items: center;
     gap: min(4px, 1%); /* Use dynamic gap that shrinks with card size */
   }
-  .control-button {
+  .control-button, .select-all-button {
     background-color: var(--card-background-color, white);
     border: 1px solid var(--primary-color);
     border-radius: 8px;
@@ -154,11 +154,11 @@ const cardStyles = `
   .control-button:last-child {
     margin-right: 0;
   }
-  .control-button:hover {
+  .control-button:hover, .select-all-button:hover {
     background-color: var(--primary-color);
     color: var(--text-primary-color);
   }
-  .control-button ha-icon {
+  .control-button ha-icon, .select-all-button ha-icon {
     margin-right: 4px;
     --mdc-icon-size: 18px;
     display: flex;
@@ -317,15 +317,6 @@ const cardStyles = `
   
   .chart-container {
     transition: opacity 0.3s ease-in-out;
-  }
-  .select-all-button {
-    white-space: normal;
-    word-break: break-word;
-    line-height: 1.2;
-    min-height: 2.4em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 `;
 const editorStyles = `
