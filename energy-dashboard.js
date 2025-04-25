@@ -1688,15 +1688,29 @@ class EnergyDashboardChartCard extends HTMLElement {
         const showPoints = this.config.show_points || false;
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
+        // Validate entities
+        if (!Array.isArray(entities) || entities.some(entity => typeof entity !== 'string')) {
+            console.error('Invalid entities array:', entities);
+            return null;
+        }
         // Strictly minimal series config matching apexcharts-card schema
         const series = entities.map(entityId => {
-            var _a, _b;
-            return ({
+            var _a;
+            const state = this._hass.states[entityId];
+            if (!state) {
+                console.warn(`Entity ${entityId} not found in Home Assistant states.`);
+                return null;
+            }
+            return {
                 entity: entityId,
-                name: ((_b = (_a = this._hass.states[entityId]) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.friendly_name) || entityId,
+                name: ((_a = state.attributes) === null || _a === void 0 ? void 0 : _a.friendly_name) || entityId,
                 color: getEntityColor(entityId) // Use entity color utility
-            });
-        });
+            };
+        }).filter(Boolean); // Remove null values
+        if (!series.length) {
+            console.error('No valid series generated for chart configuration.');
+            return null;
+        }
         // --- Y Axis Auto-Range Logic ---
         let yMin = (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min;
         let yMax = (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max;
@@ -1954,21 +1968,23 @@ class EnergyDashboardChartCard extends HTMLElement {
                 ]);
             }
             const apexCard = document.createElement('apexcharts-card');
-            try {
-                // Validate and set the configuration
-                if (typeof apexCard.setConfig === 'function') {
-                    apexCard.setConfig(chartConfig);
+            // Ensure the DOM is ready before applying the configuration
+            setTimeout(() => {
+                try {
+                    if (typeof apexCard.setConfig === 'function') {
+                        apexCard.setConfig(chartConfig);
+                    }
+                    else {
+                        throw new Error('setConfig method is not available on apexcharts-card');
+                    }
+                    apexCard.hass = this._hass;
                 }
-                else {
-                    throw new Error('setConfig method is not available on apexcharts-card');
+                catch (configError) {
+                    console.error('Error configuring apexcharts-card:', configError);
+                    chartElement.appendChild(this._createErrorMessage('Error configuring chart', ['The chart configuration is invalid',
+                        'Check the console for more details']));
                 }
-                apexCard.hass = this._hass;
-            }
-            catch (configError) {
-                console.error('Error configuring apexcharts-card:', configError);
-                return this._createErrorMessage('Error configuring chart', ['The chart configuration is invalid',
-                    'Check the console for more details']);
-            }
+            }, 0); // Delay to ensure DOM readiness
             chartElement.appendChild(apexCard);
         }
         catch (err) {

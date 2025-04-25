@@ -243,12 +243,30 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
 
+    // Validate entities
+    if (!Array.isArray(entities) || entities.some(entity => typeof entity !== 'string')) {
+      console.error('Invalid entities array:', entities);
+      return null;
+    }
+
     // Strictly minimal series config matching apexcharts-card schema
-    const series = entities.map(entityId => ({
-      entity: entityId,
-      name: this._hass.states[entityId]?.attributes?.friendly_name || entityId,
-      color: getEntityColor(entityId) // Use entity color utility
-    }));
+    const series = entities.map(entityId => {
+      const state = this._hass.states[entityId];
+      if (!state) {
+        console.warn(`Entity ${entityId} not found in Home Assistant states.`);
+        return null;
+      }
+      return {
+        entity: entityId,
+        name: state.attributes?.friendly_name || entityId,
+        color: getEntityColor(entityId) // Use entity color utility
+      };
+    }).filter(Boolean); // Remove null values
+
+    if (!series.length) {
+      console.error('No valid series generated for chart configuration.');
+      return null;
+    }
 
     // --- Y Axis Auto-Range Logic ---
     let yMin = options?.y_axis?.min;
@@ -523,23 +541,27 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
 
-      try {
-        // Validate and set the configuration
-        if (typeof (apexCard as any).setConfig === 'function') {
-          (apexCard as any).setConfig(chartConfig);
-        } else {
-          throw new Error('setConfig method is not available on apexcharts-card');
-        }
+      // Ensure the DOM is ready before applying the configuration
+      setTimeout(() => {
+        try {
+          if (typeof (apexCard as any).setConfig === 'function') {
+            (apexCard as any).setConfig(chartConfig);
+          } else {
+            throw new Error('setConfig method is not available on apexcharts-card');
+          }
 
-        (apexCard as any).hass = this._hass;
-      } catch (configError) {
-        console.error('Error configuring apexcharts-card:', configError);
-        return this._createErrorMessage(
-          'Error configuring chart',
-          ['The chart configuration is invalid', 
-           'Check the console for more details']
-        );
-      }
+          (apexCard as any).hass = this._hass;
+        } catch (configError) {
+          console.error('Error configuring apexcharts-card:', configError);
+          chartElement.appendChild(
+            this._createErrorMessage(
+              'Error configuring chart',
+              ['The chart configuration is invalid', 
+               'Check the console for more details']
+            )
+          );
+        }
+      }, 0); // Delay to ensure DOM readiness
 
       chartElement.appendChild(apexCard);
     } catch (err) {
