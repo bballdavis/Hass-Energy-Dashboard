@@ -1758,14 +1758,13 @@ class EnergyDashboardChartCard extends HTMLElement {
                 stroke_width: 2,
                 curve: smoothCurve ? 'smooth' : 'straight',
                 color: entityColor,
-                // Updated for apexcharts-card v2.1.2
                 show: {
                     in_header: false,
                     in_legend: true,
                     in_chart: true
                 },
-                extend_to_end: true,
-                offset: 0,
+                // Remove extend_to_end - not compatible with v2.1.2
+                offset: '0', // Change to string type
                 group_by: {
                     duration: '1h',
                     func: 'avg'
@@ -1782,13 +1781,15 @@ class EnergyDashboardChartCard extends HTMLElement {
                 show_states: false
             },
             span: {
-                start: `${hoursToShow}h`,
-                end: "now"
+                start: 'hour', // Change to supported date unit enum
+                offset: -hoursToShow, // Use offset for time calculation
+                end: 'hour', // End at current hour
+                offset_end: 0 // No offset for end time
             },
             all_series_config: {
                 stroke_width: 2,
                 curve: smoothCurve ? 'smooth' : 'straight',
-                extend_to_end: true,
+                // Remove extend_to_end property
                 show: {
                     in_header: false
                 },
