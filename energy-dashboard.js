@@ -1566,7 +1566,6 @@ class EnergyDashboardChartCard extends HTMLElement {
             ? this.config.energy_chart_options
             : this.config.power_chart_options;
         const chartType = this.config.chart_type || 'line';
-        const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
@@ -1663,9 +1662,8 @@ class EnergyDashboardChartCard extends HTMLElement {
                 show_states: false
             },
             span: {
-                type: 'time',
-                start: `-${hoursToShow}h`,
-                end: 'now'
+                start: 'hour',
+                end: 'hour'
             },
             all_series_config: {
                 stroke_width: 2,
