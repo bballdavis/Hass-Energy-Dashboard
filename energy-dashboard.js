@@ -1711,7 +1711,8 @@ class EnergyDashboardChartCard extends HTMLElement {
                                 fontSize: '11px',
                                 fontFamily: 'Helvetica, Arial, sans-serif',
                                 color: 'var(--secondary-text-color, #666)'
-                            }
+                            },
+                            show: true, // Ensure labels are always shown
                         },
                         axisTicks: {
                             show: true,
@@ -1776,10 +1777,22 @@ class EnergyDashboardChartCard extends HTMLElement {
                     }
                 },
                 tooltip: {
+                    enabled: true,
+                    shared: true, // Share tooltip across all series - important
+                    intersect: false, // Don't require direct intersection
                     theme: 'light',
                     style: {
                         fontSize: '12px',
                         fontFamily: 'Helvetica, Arial, sans-serif'
+                    },
+                    x: {
+                        show: true
+                    },
+                    y: {
+                        show: true
+                    },
+                    marker: {
+                        show: true
                     }
                 },
                 states: {
