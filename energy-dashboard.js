@@ -2260,6 +2260,11 @@ class EnergyDashboardChartCard extends HTMLElement {
             button.style.margin = '0';
             button.style.position = 'relative';
             button.style.boxSizing = 'border-box'; // Important to include borders in size
+            button.style.whiteSpace = 'nowrap'; // Prevent text wrapping
+            // Set minimum width to accommodate at least 5 characters
+            if (!text.includes('<ha-icon')) {
+                button.style.minWidth = '40px'; // Minimum width for text buttons
+            }
             // Handle button border radius based on position
             if (index !== undefined && total !== undefined) {
                 // First button - round left corners only
@@ -2331,6 +2336,13 @@ class EnergyDashboardChartCard extends HTMLElement {
         ];
         refreshOptions.forEach((option, index) => {
             const btn = createButton(option.text, option.title, option.value, 'refresh', index, refreshOptions.length);
+            // Ensure buttons are wide enough for their content
+            if (option.text === 'Off') {
+                btn.style.minWidth = '36px'; // Minimum width for "Off"
+            }
+            else {
+                btn.style.minWidth = '40px'; // Minimum width for other options
+            }
             buttonsContainer.appendChild(btn);
         });
         buttonsContainer.insertBefore(refreshButton, buttonsContainer.firstChild);
@@ -2345,6 +2357,8 @@ class EnergyDashboardChartCard extends HTMLElement {
         ];
         timeRanges.forEach((range, index) => {
             const btn = createButton(range.label, `Show last ${range.label}`, String(range.hours), 'time', index, timeRanges.length);
+            // Set consistent min-width to prevent wrapping
+            btn.style.minWidth = '36px';
             timeRangeContainer.appendChild(btn);
         });
         // Y-axis preset buttons (Auto, 500, 2000, 3000) as a single connected group
@@ -2356,6 +2370,16 @@ class EnergyDashboardChartCard extends HTMLElement {
         ];
         yAxisPresets.forEach((preset, index) => {
             const btn = createButton(preset.label, preset.value === 'auto' ? 'Automatic Y-axis scaling' : `Set Y-axis maximum to ${preset.value}`, preset.value, 'yaxis', index, yAxisPresets.length);
+            // Set width based on content
+            if (preset.label === 'Auto') {
+                btn.style.minWidth = '45px'; // Wider for "Auto"
+            }
+            else if (preset.label === '2000' || preset.label === '3000') {
+                btn.style.minWidth = '45px'; // Wider for 4-digit numbers
+            }
+            else {
+                btn.style.minWidth = '40px'; // Standard width for other buttons
+            }
             maxRangeContainer.appendChild(btn);
         });
         // Create control groups that can wrap properly

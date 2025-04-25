@@ -948,6 +948,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
       button.style.margin = '0';
       button.style.position = 'relative';
       button.style.boxSizing = 'border-box'; // Important to include borders in size
+      button.style.whiteSpace = 'nowrap'; // Prevent text wrapping
+      
+      // Set minimum width to accommodate at least 5 characters
+      if (!text.includes('<ha-icon')) {
+        button.style.minWidth = '40px'; // Minimum width for text buttons
+      }
       
       // Handle button border radius based on position
       if (index !== undefined && total !== undefined) {
@@ -1022,6 +1028,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
     
     refreshOptions.forEach((option, index) => {
       const btn = createButton(option.text, option.title, option.value, 'refresh', index, refreshOptions.length);
+      // Ensure buttons are wide enough for their content
+      if (option.text === 'Off') {
+        btn.style.minWidth = '36px'; // Minimum width for "Off"
+      } else {
+        btn.style.minWidth = '40px'; // Minimum width for other options
+      }
       buttonsContainer.appendChild(btn);
     });
     
@@ -1045,6 +1057,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
         index,
         timeRanges.length
       );
+      // Set consistent min-width to prevent wrapping
+      btn.style.minWidth = '36px';
       timeRangeContainer.appendChild(btn);
     });
 
@@ -1064,6 +1078,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
         index,
         yAxisPresets.length
       );
+      // Set width based on content
+      if (preset.label === 'Auto') {
+        btn.style.minWidth = '45px'; // Wider for "Auto"
+      } else if (preset.label === '2000' || preset.label === '3000') {
+        btn.style.minWidth = '45px'; // Wider for 4-digit numbers
+      } else {
+        btn.style.minWidth = '40px'; // Standard width for other buttons
+      }
       maxRangeContainer.appendChild(btn);
     });
 
