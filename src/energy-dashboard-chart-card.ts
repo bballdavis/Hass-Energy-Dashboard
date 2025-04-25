@@ -267,14 +267,18 @@ export class EnergyDashboardChartCard extends HTMLElement {
       return null;
     }
 
-    // Create series array with valid entities only
+    // Create series array with valid entities only - using proper format for apexcharts-card v2.1.2
     const series = validEntities.map(entityId => {
       const state = this._hass.states[entityId];
       return {
         entity: entityId,
         name: state.attributes?.friendly_name || entityId,
         color: getEntityColor(entityId),
-        show: true // Explicitly set show property to ensure series visibility
+        // Fix: Use object for show property instead of boolean
+        show: {
+          in_chart: true, // Show in chart
+          in_header: false // Don't show in header
+        }
       };
     });
 
@@ -325,12 +329,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const apexChartCardConfig = {
       type: 'custom:apexcharts-card',
       header: {
-        show: false
+        show: false,
+        title: isEnergy ? 'Energy Consumption' : 'Power Consumption',
+        show_states: false
       },
       graph_span: `${hoursToShow}h`,
       chart_type: chartType,
-      series: series, // Use our validated series array
-      yaxis: [{  // Include yaxis in the initial object creation
+      series: series,
+      yaxis: [{
         min: yMin,
         max: yMax,
         decimals: decimals
