@@ -371,61 +371,6 @@ const editorStyles = `
 `;
 
 class EnergyDashboardEntityCard extends HTMLElement {
-    // Helper method to equalize button heights with ResizeObserver
-    _equalizeButtonHeights(buttonContainer) {
-        if (!buttonContainer)
-            return;
-        const buttons = Array.from(buttonContainer.querySelectorAll('button'));
-        if (buttons.length === 0)
-            return;
-        // First, reset heights to auto to get natural height
-        buttons.forEach(btn => btn.style.height = 'auto');
-        // Use ResizeObserver for more reliable height adjustments
-        try {
-            const resizeObserver = new ResizeObserver(() => {
-                // Find tallest button
-                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
-                // Set all buttons to the tallest height
-                if (maxHeight > 0) {
-                    buttons.forEach(btn => {
-                        btn.style.height = `${maxHeight}px`;
-                    });
-                }
-            });
-            // Observe all buttons
-            buttons.forEach(button => resizeObserver.observe(button));
-            // Immediate equalization attempt
-            requestAnimationFrame(() => {
-                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
-                if (maxHeight > 0) {
-                    buttons.forEach(btn => {
-                        btn.style.height = `${maxHeight}px`;
-                    });
-                }
-            });
-            // Cleanup after 2 seconds (by then equalization should be stable)
-            setTimeout(() => {
-                resizeObserver.disconnect();
-            }, 2000);
-        }
-        catch (e) {
-            // Fallback if ResizeObserver is not supported
-            setTimeout(() => {
-                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
-                if (maxHeight > 0) {
-                    buttons.forEach(btn => {
-                        btn.style.height = `${maxHeight}px`;
-                    });
-                }
-            }, 100);
-        }
-    }
-    // Force browser to recalculate layout to ensure all heights are properly calculated
-    _forceRecalculation(element) {
-        // Reading offsetHeight forces a layout recalculation
-        const height = element.offsetHeight;
-        return height;
-    }
     // Define card name and icon for card picker
     static get cardType() {
         return 'energy-dashboard-entity-card';
@@ -836,20 +781,24 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
+            resetButton.style.backgroundColor = 'var(--card-background-color, white)';
+            resetButton.style.border = '1px solid var(--primary-color)';
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.addEventListener('click', this._clearAllPowerEntities);
+            clearButton.style.backgroundColor = 'var(--card-background-color, white)';
+            clearButton.style.border = '1px solid var(--primary-color)';
             const selectAllButton = document.createElement('button');
-            selectAllButton.className = 'select-all-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
+            selectAllButton.className = 'control-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
             selectAllButton.addEventListener('click', this._selectAllPowerEntities);
+            selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
+            selectAllButton.style.border = '1px solid var(--primary-color)';
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
-            // Equalize button heights
-            this._equalizeButtonHeights(controlButtons);
             // Add persistence toggle
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';
@@ -916,23 +865,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 const entityItem = document.createElement('div');
                 entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
                 entityItem.dataset.entity = entity.entityId;
-                // Add color indicator for visual link to chart line
-                const entityContent = document.createElement('div');
-                entityContent.style.display = 'flex';
-                entityContent.style.flexDirection = 'row';
-                entityContent.style.alignItems = 'center';
-                entityContent.style.width = '100%';
-                entityContent.style.gap = '4px';
-                const colorIndicator = document.createElement('div');
-                colorIndicator.className = 'entity-color-indicator';
-                colorIndicator.style.width = '8px';
-                colorIndicator.style.height = '100%';
-                colorIndicator.style.minHeight = '24px';
-                colorIndicator.style.backgroundColor = entity.color || 'transparent';
-                colorIndicator.style.borderRadius = '4px 0 0 4px';
-                colorIndicator.style.marginRight = '8px';
-                colorIndicator.style.flexShrink = '0';
-                entityContent.appendChild(colorIndicator);
+                entityItem.style.gap = '4px';
+                entityItem.addEventListener('click', this._togglePowerEntity);
                 const entityLeft = document.createElement('div');
                 entityLeft.className = 'entity-left';
                 const entityName = document.createElement('div');
@@ -940,7 +874,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 entityName.title = entity.name;
                 entityName.textContent = entity.name;
                 entityLeft.appendChild(entityName);
-                entityContent.appendChild(entityLeft);
+                entityItem.appendChild(entityLeft);
                 const entityState = document.createElement('div');
                 entityState.className = 'entity-state';
                 const statusIndicator = document.createElement('div');
@@ -953,10 +887,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 }
                 entityState.appendChild(statusIndicator);
                 entityState.appendChild(powerValue);
-                entityContent.appendChild(entityState);
-                entityItem.appendChild(entityContent);
-                // Add click event listener to the entityItem
-                entityItem.addEventListener('click', this._togglePowerEntity);
+                entityItem.appendChild(entityState);
                 entitiesContainer.appendChild(entityItem);
             });
             containerWrapper.appendChild(entitiesContainer);
@@ -985,20 +916,24 @@ class EnergyDashboardEntityCard extends HTMLElement {
             resetButton.className = 'control-button';
             resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
             resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
+            resetButton.style.backgroundColor = 'var(--card-background-color, white)';
+            resetButton.style.border = '1px solid var(--primary-color)';
             const clearButton = document.createElement('button');
             clearButton.className = 'control-button';
             clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
             clearButton.addEventListener('click', this._clearAllEnergyEntities);
+            clearButton.style.backgroundColor = 'var(--card-background-color, white)';
+            clearButton.style.border = '1px solid var(--primary-color)';
             const selectAllButton = document.createElement('button');
-            selectAllButton.className = 'select-all-button';
-            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
+            selectAllButton.className = 'control-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select All</span>';
             selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
+            selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
+            selectAllButton.style.border = '1px solid var(--primary-color)';
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             section.appendChild(controlButtons);
-            // Equalize button heights
-            this._equalizeButtonHeights(controlButtons);
             // Add persistence toggle
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';
@@ -1065,23 +1000,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 const entityItem = document.createElement('div');
                 entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
                 entityItem.dataset.entity = entity.entityId;
-                // Add color indicator for visual link to chart line - with proper wrapper
-                const entityContent = document.createElement('div');
-                entityContent.style.display = 'flex';
-                entityContent.style.flexDirection = 'row';
-                entityContent.style.alignItems = 'center';
-                entityContent.style.width = '100%';
-                entityContent.style.gap = '4px';
-                const colorIndicator = document.createElement('div');
-                colorIndicator.className = 'entity-color-indicator';
-                colorIndicator.style.width = '8px';
-                colorIndicator.style.height = '100%';
-                colorIndicator.style.minHeight = '24px';
-                colorIndicator.style.backgroundColor = entity.color || 'transparent';
-                colorIndicator.style.borderRadius = '4px 0 0 4px';
-                colorIndicator.style.marginRight = '8px';
-                colorIndicator.style.flexShrink = '0';
-                entityContent.appendChild(colorIndicator);
+                entityItem.style.gap = '4px';
+                entityItem.addEventListener('click', this._toggleEnergyEntity);
                 const entityLeft = document.createElement('div');
                 entityLeft.className = 'entity-left';
                 const entityName = document.createElement('div');
@@ -1089,7 +1009,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 entityName.title = entity.name;
                 entityName.textContent = entity.name;
                 entityLeft.appendChild(entityName);
-                entityContent.appendChild(entityLeft);
+                entityItem.appendChild(entityLeft);
                 const entityState = document.createElement('div');
                 entityState.className = 'entity-state';
                 const statusIndicator = document.createElement('div');
@@ -1102,10 +1022,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 }
                 entityState.appendChild(statusIndicator);
                 entityState.appendChild(powerValue);
-                entityContent.appendChild(entityState);
-                entityItem.appendChild(entityContent);
-                // Add click event listener to the entityItem
-                entityItem.addEventListener('click', this._toggleEnergyEntity);
+                entityItem.appendChild(entityState);
                 entitiesContainer.appendChild(entityItem);
             });
             containerWrapper.appendChild(entitiesContainer);
@@ -1219,24 +1136,11 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Show either power section or energy section based on the current view mode
         if (this._viewMode === 'power') {
             // Power section
-            console.log("Rendering power section...");
-            console.log(`Power entities count: ${this.powerEntities.length}`);
             const powerSection = this._renderPowerSection();
-            // Debug the power section to ensure it has all expected children
-            const sectionChildren = Array.from(powerSection.children);
-            console.log(`Power section has ${sectionChildren.length} children`);
-            sectionChildren.forEach((child, index) => {
-                console.log(`Child ${index}: ${child.tagName} with class ${child.className}`);
-                if (child.className === 'entities-container') {
-                    console.log(`Entity container has ${child.childElementCount} entities`);
-                }
-            });
             card.appendChild(powerSection);
         }
         else {
             // Energy section (without separator when it's the only section shown)
-            console.log("Rendering energy section...");
-            console.log(`Energy entities count: ${this.energyEntities.length}`);
             const energySection = this._renderEnergySection();
             // If we're in energy view mode, remove the separator as it's not needed
             const separator = energySection.querySelector('.section-separator');
@@ -1245,28 +1149,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }
             card.appendChild(energySection);
         }
-        // Force layout recalculation to ensure all elements have proper dimensions
-        requestAnimationFrame(() => {
-            this._forceRecalculation(card);
-            // Wait a bit for the DOM to be fully rendered before equalizing button heights
-            setTimeout(() => {
-                const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
-                console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
-                controlButtonsContainers.forEach((container, index) => {
-                    console.log(`Equalizing heights for container ${index}`);
-                    this._equalizeButtonHeights(container);
-                });
-                // Also check for entity lists and make sure they're visible
-                const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
-                console.log(`Found ${entityContainers.length} entity containers`);
-                entityContainers.forEach(container => {
-                    console.log(`Entity container has ${container.childElementCount} children`);
-                    if (container.childElementCount === 0) {
-                        console.warn("Entity container is empty!");
-                    }
-                });
-            }, 100);
-        });
     }
 }
 // Register the card with the custom elements registry
@@ -1781,10 +1663,9 @@ class EnergyDashboardChartCard extends HTMLElement {
                 show_states: false
             },
             span: {
-                start: 'hour', // Change to supported date unit enum
-                offset: -hoursToShow, // Use offset for time calculation
-                end: 'hour', // End at current hour
-                offset_end: 0 // No offset for end time
+                type: 'time',
+                start: `-${hoursToShow}h`, // Use correct string format with negative hours
+                end: 'now' // Use 'now' instead of hour with offset
             },
             all_series_config: {
                 stroke_width: 2,

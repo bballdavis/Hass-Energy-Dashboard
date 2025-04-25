@@ -340,10 +340,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
         show_states: false
       },
       span: {
-        start: 'hour',  // Change to supported date unit enum
-        offset: -hoursToShow, // Use offset for time calculation
-        end: 'hour',    // End at current hour
-        offset_end: 0   // No offset for end time
+        type: 'time',
+        start: `-${hoursToShow}h`,  // Use correct string format with negative hours
+        end: 'now'                  // Use 'now' instead of hour with offset
       },
       all_series_config: {
         stroke_width: 2,
