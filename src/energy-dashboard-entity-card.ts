@@ -507,6 +507,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       selectAllButton.style.lineHeight = '1.2';
       selectAllButton.style.flexDirection = 'column';
       selectAllButton.style.padding = '4px 8px';
+      selectAllButton.style.height = 'auto';
+      resetButton.style.height = 'auto';
+      clearButton.style.height = 'auto';
       
       controlButtons.appendChild(resetButton);
       controlButtons.appendChild(clearButton);
@@ -681,6 +684,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       selectAllButton.style.lineHeight = '1.2';
       selectAllButton.style.flexDirection = 'column';
       selectAllButton.style.padding = '4px 8px';
+      selectAllButton.style.height = 'auto';
+      resetButton.style.height = 'auto';
+      clearButton.style.height = 'auto';
       
       controlButtons.appendChild(resetButton);
       controlButtons.appendChild(clearButton);

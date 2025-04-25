@@ -1,4 +1,3 @@
-// filepath: rollup.config.js
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const pkg = require('./package.json'); // loading package.json without import assertions
@@ -9,7 +8,7 @@ export default {
   output: {
     file: pkg.main, // using package.json "main" property
     format: "es",
-    sourcemap: true
+    sourcemap: false
   },
   plugins: [
     typescript({

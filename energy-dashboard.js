@@ -318,6 +318,15 @@ const cardStyles = `
   .chart-container {
     transition: opacity 0.3s ease-in-out;
   }
+  .select-all-button {
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2;
+    min-height: 2.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 `;
 const editorStyles = `
   .form {
@@ -771,7 +780,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             clearButton.style.flexDirection = 'column';
             clearButton.style.padding = '4px 8px';
             const selectAllButton = document.createElement('button');
-            selectAllButton.className = 'control-button';
+            selectAllButton.className = 'select-all-button';
             selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
             selectAllButton.addEventListener('click', this._selectAllPowerEntities);
             selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
@@ -780,6 +789,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             selectAllButton.style.lineHeight = '1.2';
             selectAllButton.style.flexDirection = 'column';
             selectAllButton.style.padding = '4px 8px';
+            selectAllButton.style.height = 'auto';
+            resetButton.style.height = 'auto';
+            clearButton.style.height = 'auto';
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
@@ -918,7 +930,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             clearButton.style.flexDirection = 'column';
             clearButton.style.padding = '4px 8px';
             const selectAllButton = document.createElement('button');
-            selectAllButton.className = 'control-button';
+            selectAllButton.className = 'select-all-button';
             selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>Select<br>All</span>';
             selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
             selectAllButton.style.backgroundColor = 'var(--card-background-color, white)';
@@ -927,6 +939,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             selectAllButton.style.lineHeight = '1.2';
             selectAllButton.style.flexDirection = 'column';
             selectAllButton.style.padding = '4px 8px';
+            selectAllButton.style.height = 'auto';
+            resetButton.style.height = 'auto';
+            clearButton.style.height = 'auto';
             controlButtons.appendChild(resetButton);
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
@@ -2831,4 +2846,3 @@ window.customCards.push({
     preview: false,
     documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
 });
-//# sourceMappingURL=energy-dashboard.js.map
