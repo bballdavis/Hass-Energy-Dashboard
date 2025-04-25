@@ -2195,7 +2195,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         controlsContainer.style.marginTop = '8px'; // Match entity card mode toggle container
         controlsContainer.style.marginBottom = '8px'; // Match entity card mode toggle container
         controlsContainer.style.gap = '8px';
-        controlsContainer.style.flexWrap = 'wrap';
+        controlsContainer.style.flexWrap = 'wrap'; // Allow wrapping
         // --- Refresh Rate Controls ---
         const refreshTitle = document.createElement('div');
         refreshTitle.className = 'refresh-title';
@@ -2350,41 +2350,42 @@ class EnergyDashboardChartCard extends HTMLElement {
             const btn = createButton(preset.label, preset.value === 'auto' ? 'Automatic Y-axis scaling' : `Set Y-axis maximum to ${preset.value}`, preset.value, 'yaxis', index, yAxisPresets.length);
             maxRangeContainer.appendChild(btn);
         });
-        // Single row with all controls
-        const controlsRow = document.createElement('div');
-        controlsRow.className = 'controls-row';
-        controlsRow.style.display = 'flex';
-        controlsRow.style.justifyContent = 'space-between';
-        controlsRow.style.alignItems = 'center';
-        controlsRow.style.width = '100%';
-        controlsRow.style.flexWrap = 'nowrap'; // Prevent wrapping on a single row
+        // Create control groups that can wrap properly
         const refreshGroup = document.createElement('div');
         refreshGroup.className = 'refresh-group';
         refreshGroup.style.display = 'flex';
         refreshGroup.style.alignItems = 'center';
-        refreshGroup.style.flexShrink = '0';
-        refreshGroup.style.marginRight = '8px';
+        refreshGroup.style.margin = '4px 0';
         refreshGroup.appendChild(refreshTitle);
         refreshGroup.appendChild(buttonsContainer);
         const timeRangeGroup = document.createElement('div');
         timeRangeGroup.className = 'time-range-group';
         timeRangeGroup.style.display = 'flex';
         timeRangeGroup.style.alignItems = 'center';
-        timeRangeGroup.style.flexShrink = '0';
-        timeRangeGroup.style.marginRight = '8px';
+        timeRangeGroup.style.margin = '4px 0';
         timeRangeGroup.appendChild(timeRangeTitle);
         timeRangeGroup.appendChild(timeRangeContainer);
         const maxRangeGroup = document.createElement('div');
         maxRangeGroup.className = 'y-axis-group';
         maxRangeGroup.style.display = 'flex';
         maxRangeGroup.style.alignItems = 'center';
-        maxRangeGroup.style.flexShrink = '0';
+        maxRangeGroup.style.margin = '4px 0';
         maxRangeGroup.appendChild(maxRangeTitle);
         maxRangeGroup.appendChild(maxRangeContainer);
-        controlsRow.appendChild(refreshGroup);
-        controlsRow.appendChild(timeRangeGroup);
-        controlsRow.appendChild(maxRangeGroup);
-        controlsContainer.appendChild(controlsRow);
+        // Add a flex container for the controls that can wrap
+        const controlsWrapper = document.createElement('div');
+        controlsWrapper.className = 'controls-wrapper';
+        controlsWrapper.style.display = 'flex';
+        controlsWrapper.style.flexWrap = 'wrap';
+        controlsWrapper.style.gap = '8px';
+        controlsWrapper.style.width = '100%';
+        controlsWrapper.style.justifyContent = 'flex-start';
+        // Add the control groups to the wrapper
+        controlsWrapper.appendChild(refreshGroup);
+        controlsWrapper.appendChild(timeRangeGroup);
+        controlsWrapper.appendChild(maxRangeGroup);
+        // Add the wrapper to the container
+        controlsContainer.appendChild(controlsWrapper);
         this._updateRefreshControlsUI(buttonsContainer);
         this._updateTimeRangeControlsUI(timeRangeContainer);
         this._updateYAxisControlsUI(maxRangeContainer);
