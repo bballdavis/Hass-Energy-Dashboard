@@ -220,7 +220,7 @@ const cardStyles = `
   .entity-item.on {
     background-color: var(--ha-card-background, var(--card-background-color, white));
     color: var(--primary-text-color);
-    border: 2px solid var(--primary-color);
+    border: 1px solid var(--primary-color); /* Match control button border thickness */
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   }
   .entity-left {
