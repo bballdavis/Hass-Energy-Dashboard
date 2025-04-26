@@ -433,26 +433,48 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     });
   }
 
+  // Directly toggle power entity without rebuilding DOM 
   _togglePowerEntity = (e: Event) => {
     const target = e.currentTarget as HTMLElement;
     const entityId = target.dataset.entity;
+    
     if (entityId) {
-      // Find the scrollable container and save its scroll position
-      const container = this._root.querySelector('.entities-container');
-      const scrollPosition = container ? container.scrollTop : 0;
-      
-      // Toggle the entity state
+      // Toggle the entity state in our tracking object
       this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
-      this._updatePowerEntities();
-      this._updateContent();
       
-      // Restore the scroll position after the content update
-      requestAnimationFrame(() => {
-        const updatedContainer = this._root.querySelector('.entities-container');
-        if (updatedContainer) {
-          updatedContainer.scrollTop = scrollPosition;
+      // Update our entities array
+      this.powerEntities = this.powerEntities.map(entity => {
+        if (entity.entityId === entityId) {
+          return { ...entity, isOn: this.entityToggleStates[entityId] };
         }
+        return entity;
       });
+      
+      // Save toggle states
+      this._savePowerToggleStates();
+      
+      // Direct DOM update instead of full refresh
+      const isOn = this.entityToggleStates[entityId];
+      if (isOn) {
+        target.classList.add('on');
+        target.classList.remove('off');
+      } else {
+        target.classList.add('off');
+        target.classList.remove('on');
+      }
+      
+      // Update status indicator in the clicked element
+      const statusIndicator = target.querySelector('.status-indicator');
+      if (statusIndicator) {
+        statusIndicator.textContent = isOn ? 'ON' : 'OFF';
+      }
+      
+      // Dispatch event to notify other components
+      this.dispatchEvent(new CustomEvent('entity-toggled', {
+        detail: { entityId, isOn },
+        bubbles: true,
+        composed: true
+      }));
     }
   }
 
@@ -542,26 +564,48 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     });
   }
 
+  // Directly toggle energy entity without rebuilding DOM
   _toggleEnergyEntity = (e: Event) => {
     const target = e.currentTarget as HTMLElement;
     const entityId = target.dataset.entity;
+    
     if (entityId) {
-      // Find the scrollable container and save its scroll position
-      const container = this._root.querySelector('.entities-container');
-      const scrollPosition = container ? container.scrollTop : 0;
-      
-      // Toggle the entity state
+      // Toggle the entity state in our tracking object
       this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
-      this._updateEnergyEntities();
-      this._updateContent();
       
-      // Restore the scroll position after the content update
-      requestAnimationFrame(() => {
-        const updatedContainer = this._root.querySelector('.entities-container');
-        if (updatedContainer) {
-          updatedContainer.scrollTop = scrollPosition;
+      // Update our entities array
+      this.energyEntities = this.energyEntities.map(entity => {
+        if (entity.entityId === entityId) {
+          return { ...entity, isOn: this.energyEntityToggleStates[entityId] };
         }
+        return entity;
       });
+      
+      // Save toggle states
+      this._saveEnergyToggleStates();
+      
+      // Direct DOM update instead of full refresh
+      const isOn = this.energyEntityToggleStates[entityId];
+      if (isOn) {
+        target.classList.add('on');
+        target.classList.remove('off');
+      } else {
+        target.classList.add('off');
+        target.classList.remove('on');
+      }
+      
+      // Update status indicator in the clicked element
+      const statusIndicator = target.querySelector('.status-indicator');
+      if (statusIndicator) {
+        statusIndicator.textContent = isOn ? 'ON' : 'OFF';
+      }
+      
+      // Dispatch event to notify other components
+      this.dispatchEvent(new CustomEvent('entity-toggled', {
+        detail: { entityId, isOn, type: 'energy' },
+        bubbles: true,
+        composed: true
+      }));
     }
   }
 
@@ -1172,30 +1216,48 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
   // Update entity values without recreating the entire DOM structure
   _updateEntityValues() {
+    // Skip updates if we're already in the middle of a DOM update
+    if (this._preventFlashingTimeout !== null) {
+      return;
+    }
+
     // Update power entity values if we're in power mode or have power entities visible
     if (this._viewMode === 'power' || this._root.querySelector('.power-section')) {
       this.powerEntities.forEach(entity => {
+        // Find the entity element by ID
         const entityElement = this._root.querySelector(`[data-entity="${entity.entityId}"]`);
         if (entityElement) {
-          // Update toggle state class
-          if (entity.isOn) {
-            entityElement.classList.add('on');
-            entityElement.classList.remove('off');
-          } else {
-            entityElement.classList.add('off');
-            entityElement.classList.remove('on');
+          // Don't reset classes unnecessarily - only change if needed
+          const hasOnClass = entityElement.classList.contains('on');
+          const shouldBeOn = entity.isOn;
+          
+          if (hasOnClass !== shouldBeOn) {
+            if (shouldBeOn) {
+              entityElement.classList.add('on');
+              entityElement.classList.remove('off');
+            } else {
+              entityElement.classList.add('off');
+              entityElement.classList.remove('on');
+            }
           }
           
           // Update status indicator
           const statusIndicator = entityElement.querySelector('.status-indicator');
           if (statusIndicator && entity.isToggleable) {
-            statusIndicator.textContent = entity.isOn ? 'ON' : 'OFF';
+            const currentText = statusIndicator.textContent;
+            const newText = entity.isOn ? 'ON' : 'OFF';
+            if (currentText !== newText) {
+              statusIndicator.textContent = newText;
+            }
           }
           
           // Update power value
           const powerValue = entityElement.querySelector('.power-value');
           if (powerValue && this.config?.show_state) {
-            powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+            const newValue = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+            if (powerValue.textContent !== newValue) {
+              powerValue.textContent = newValue;
+            }
           }
         }
       });
@@ -1206,25 +1268,37 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       this.energyEntities.forEach(entity => {
         const entityElement = this._root.querySelector(`[data-entity="${entity.entityId}"]`);
         if (entityElement) {
-          // Update toggle state class
-          if (entity.isOn) {
-            entityElement.classList.add('on');
-            entityElement.classList.remove('off');
-          } else {
-            entityElement.classList.add('off');
-            entityElement.classList.remove('on');
+          // Don't reset classes unnecessarily - only change if needed
+          const hasOnClass = entityElement.classList.contains('on');
+          const shouldBeOn = entity.isOn;
+          
+          if (hasOnClass !== shouldBeOn) {
+            if (shouldBeOn) {
+              entityElement.classList.add('on');
+              entityElement.classList.remove('off');
+            } else {
+              entityElement.classList.add('off');
+              entityElement.classList.remove('on');
+            }
           }
           
           // Update status indicator
           const statusIndicator = entityElement.querySelector('.status-indicator');
           if (statusIndicator && entity.isToggleable) {
-            statusIndicator.textContent = entity.isOn ? 'ON' : 'OFF';
+            const currentText = statusIndicator.textContent;
+            const newText = entity.isOn ? 'ON' : 'OFF';
+            if (currentText !== newText) {
+              statusIndicator.textContent = newText;
+            }
           }
           
           // Update energy value
           const powerValue = entityElement.querySelector('.power-value');
           if (powerValue && this.config?.show_state) {
-            powerValue.textContent = `${entity.state} ${entity.unit}`;
+            const newValue = `${entity.state} ${entity.unit}`;
+            if (powerValue.textContent !== newValue) {
+              powerValue.textContent = newValue;
+            }
           }
         }
       });
