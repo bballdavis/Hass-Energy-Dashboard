@@ -62,7 +62,6 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _stopUpdateInterval;
     private _generateApexchartsConfig;
     private _createChart;
-    private _removeBordersFromApexchartsCard;
     private _createEmptyCard;
     private _createLoadingIndicator;
     private _createErrorMessage;

@@ -2,209 +2,6 @@ import { EntityInfo, EnergyDashboardConfig } from './types';
 import { getPowerEntities, getEnergyEntities, loadToggleStates, saveToggleStates } from './entity-utils';
 import { createStyles, cardStyles } from './styles';
 
-/**
- * VirtualEntityContainer manages entity items without rebuilding the DOM structure
- * This prevents the scrolling container from "flashing" or resetting position
- */
-class VirtualEntityContainer {
-  private _root: ShadowRoot;
-  private _entitiesMap: Map<string, HTMLElement> = new Map();
-  private _container: HTMLElement;
-  private _entityClickHandler: (e: Event) => void;
-  private _type: 'power' | 'energy';
-  private _showState: boolean;
-  
-  constructor(root: ShadowRoot, type: 'power' | 'energy', clickHandler: (e: Event) => void, showState: boolean = true) {
-    this._root = root;
-    this._type = type;
-    this._entityClickHandler = clickHandler;
-    this._showState = showState;
-    
-    // Create or get container
-    let container = this._root.querySelector(`.entities-container[data-container="${type}-entities"]`) as HTMLElement;
-    
-    if (!container) {
-      // Create the container structure if it doesn't exist
-      const persistentContainer = document.createElement('div');
-      persistentContainer.className = 'persistent-container';
-      persistentContainer.dataset.type = type;
-      
-      const containerWrapper = document.createElement('div');
-      containerWrapper.style.width = '100%';
-      containerWrapper.style.boxSizing = 'border-box';
-      
-      container = document.createElement('div');
-      container.className = 'entities-container';
-      container.dataset.container = `${type}-entities`;
-      
-      containerWrapper.appendChild(container);
-      persistentContainer.appendChild(containerWrapper);
-      this._root.appendChild(persistentContainer);
-    }
-    
-    this._container = container;
-  }
-  
-  /**
-   * Update entities efficiently without rebuilding the DOM
-   */
-  updateEntities(entities: Array<EntityInfo>): void {
-    // Track which entity IDs are present in the latest update
-    const currentEntityIds = new Set<string>();
-    entities.forEach(entity => {
-      currentEntityIds.add(entity.entityId);
-      this._updateEntityItem(entity);
-    });
-    
-    // Remove any entity elements that are no longer in the entity list
-    this._entitiesMap.forEach((element, entityId) => {
-      if (!currentEntityIds.has(entityId)) {
-        element.remove();
-        this._entitiesMap.delete(entityId);
-      }
-    });
-  }
-  
-  /**
-   * Set the max height for the container
-   */
-  setMaxHeight(height: number): void {
-    if (height > 0) {
-      this._container.style.maxHeight = `${Math.min(height, 400)}px`;
-      this._container.style.overflowY = 'auto';
-    } else {
-      this._container.style.maxHeight = '';
-      this._container.style.overflowY = '';
-    }
-  }
-  
-  /**
-   * Get the current scroll position
-   */
-  getScrollPosition(): number {
-    return this._container.scrollTop;
-  }
-  
-  /**
-   * Set the scroll position
-   */
-  setScrollPosition(position: number): void {
-    this._container.scrollTop = position;
-  }
-  
-  /**
-   * Handle updating or creating an entity item
-   */
-  private _updateEntityItem(entity: EntityInfo): void {
-    let entityItem = this._entitiesMap.get(entity.entityId);
-    
-    // Create the entity item if it doesn't exist
-    if (!entityItem) {
-      entityItem = this._createEntityItem(entity);
-      this._container.appendChild(entityItem);
-      this._entitiesMap.set(entity.entityId, entityItem);
-    } 
-    // Otherwise just update its state
-    else {
-      // Update the on/off class
-      if (entity.isOn) {
-        entityItem.classList.add('on');
-        entityItem.classList.remove('off');
-      } else {
-        entityItem.classList.add('off');
-        entityItem.classList.remove('on');
-      }
-      
-      // Update status indicator
-      const statusIndicator = entityItem.querySelector('.status-indicator');
-      if (statusIndicator && entity.isToggleable) {
-        statusIndicator.textContent = entity.isOn ? 'ON' : 'OFF';
-      }
-      
-      // Update power/energy value text
-      const powerValue = entityItem.querySelector('.power-value');
-      if (powerValue && this._showState) {
-        if (this._type === 'power') {
-          powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
-        } else {
-          powerValue.textContent = `${entity.state} ${entity.unit}`;
-        }
-      }
-    }
-  }
-  
-  /**
-   * Create a new entity item element
-   */
-  private _createEntityItem(entity: EntityInfo): HTMLElement {
-    const entityItem = document.createElement('div');
-    entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-    entityItem.dataset.entity = entity.entityId;
-    entityItem.dataset.type = this._type;
-    entityItem.style.gap = '4px';
-    
-    // Use the click handler passed to the constructor
-    entityItem.addEventListener('click', this._entityClickHandler);
-    
-    const entityLeft = document.createElement('div');
-    entityLeft.className = 'entity-left';
-    
-    const entityName = document.createElement('div');
-    entityName.className = 'entity-name';
-    entityName.title = entity.name;
-    entityName.textContent = entity.name;
-    
-    entityLeft.appendChild(entityName);
-    entityItem.appendChild(entityLeft);
-    
-    const entityState = document.createElement('div');
-    entityState.className = 'entity-state';
-    
-    const statusIndicator = document.createElement('div');
-    statusIndicator.className = 'status-indicator';
-    statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
-    
-    const powerValue = document.createElement('div');
-    powerValue.className = 'power-value';
-    
-    if (this._showState) {
-      if (this._type === 'power') {
-        powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
-      } else {
-        powerValue.textContent = `${entity.state} ${entity.unit}`;
-      }
-    }
-    
-    entityState.appendChild(statusIndicator);
-    entityState.appendChild(powerValue);
-    entityItem.appendChild(entityState);
-    
-    return entityItem;
-  }
-  
-  /**
-   * Check if the container is empty
-   */
-  isEmpty(): boolean {
-    return this._entitiesMap.size === 0;
-  }
-  
-  /**
-   * Get the container element
-   */
-  getContainer(): HTMLElement {
-    return this._container;
-  }
-  
-  /**
-   * Clear all entities from the container
-   */
-  clear(): void {
-    this._container.innerHTML = '';
-    this._entitiesMap.clear();
-  }
-}
-
 export class EnergyDashboardEntityCard extends HTMLElement {
   // Properties
   private _hass: any;
@@ -217,11 +14,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _energyInitialized: boolean = false;
   private _root: ShadowRoot;
   private _viewMode: 'power' | 'energy' = 'power'; // Default view mode
-  private _preventFlashingTimeout: number | null = null; // To track content update timing
-  private _pendingUpdate: boolean = false; // Flag to track pending updates
-  private _powerContainer: VirtualEntityContainer | null = null;
-  private _energyContainer: VirtualEntityContainer | null = null;
-
+  
   // Helper method to equalize button heights with ResizeObserver
   private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
     if (!buttonContainer) return;
@@ -276,6 +69,13 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     }
   }
   
+  // Force browser to recalculate layout to ensure all heights are properly calculated
+  private _forceRecalculation(element: HTMLElement): number {
+    // Reading offsetHeight forces a layout recalculation
+    const height = element.offsetHeight;
+    return height;
+  }
+
   // Define card name and icon for card picker
   static get cardType() {
     return 'energy-dashboard-entity-card';
@@ -296,20 +96,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   constructor() {
     super();
     this._root = this.attachShadow({ mode: 'open' });
-    
-    // Add base styles plus additional transition styles to reduce flashing
-    const baseStyles = cardStyles + `
-      .entities-container {
-        transition: opacity 0.15s ease-in-out;
-      }
-      .entities-container.updating {
-        opacity: 0.8;
-      }
-      .ha-card {
-        transition: all 0.2s ease-in-out;
-      }
-    `;
-    this._root.appendChild(createStyles(baseStyles));
+    this._root.appendChild(createStyles(cardStyles));
     
     // Initialize properties
     this._hass = undefined;
@@ -320,8 +107,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._initialized = false;
     this._energyInitialized = false;
     this._viewMode = 'power';
-    this._preventFlashingTimeout = null;
-    this._pendingUpdate = false;
     
     // Create the card element
     const card = document.createElement('ha-card');
@@ -417,17 +202,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       this.config.persist_selection = this._loadPersistenceState();
     }
     
-    // Update entities data
     this._updateEntities();
-    
-    // Only do full content rebuild on first load
-    if (isFirstUpdate) {
-      // Complete rebuild on first update
-      this._updateContent();
-    } else {
-      // For subsequent updates, just update the values without rebuilding the DOM
-      this._updateEntityValues();
-    }
+    this._updateContent();
   }
 
   get hass() {
@@ -545,7 +321,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
   }
 
-  _resetToPowerDefaultEntities = () => {    
+  _resetToPowerDefaultEntities = () => {
     // Get current entities
     const entities = getPowerEntities(this._hass);
     
@@ -562,13 +338,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this.entityToggleStates = toggleStates;
     this._savePowerToggleStates();
     this._updatePowerEntities();
-    
-    // Use virtual container if available, otherwise fall back to full update
-    if (this._powerContainer && this._viewMode === 'power') {
-      this._powerContainer.updateEntities(this.powerEntities);
-    } else {
-      this._updateContent();
-    }
+    this._updateContent();
   }
 
   _clearAllPowerEntities = () => {
@@ -583,13 +353,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this.entityToggleStates = newToggleStates;
     this._savePowerToggleStates();
     this._updatePowerEntities();
-    
-    // Use virtual container if available, otherwise fall back to full update
-    if (this._powerContainer && this._viewMode === 'power') {
-      this._powerContainer.updateEntities(this.powerEntities);
-    } else {
-      this._updateContent();
-    }
+    this._updateContent();
   }
 
   _selectAllPowerEntities = () => {
@@ -604,11 +368,15 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this.entityToggleStates = newToggleStates;
     this._savePowerToggleStates();
     this._updatePowerEntities();
-    
-    // Use virtual container if available, otherwise fall back to full update
-    if (this._powerContainer && this._viewMode === 'power') {
-      this._powerContainer.updateEntities(this.powerEntities);
-    } else {
+    this._updateContent();
+  }
+
+  _togglePowerEntity = (e: Event) => {
+    const target = e.currentTarget as HTMLElement;
+    const entityId = target.dataset.entity;
+    if (entityId) {
+      this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
+      this._updatePowerEntities();
       this._updateContent();
     }
   }
@@ -630,13 +398,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this.energyEntityToggleStates = toggleStates;
     this._saveEnergyToggleStates();
     this._updateEnergyEntities();
-    
-    // Use virtual container if available, otherwise fall back to full update
-    if (this._energyContainer && this._viewMode === 'energy') {
-      this._energyContainer.updateEntities(this.energyEntities);
-    } else {
-      this._updateContent();
-    }
+    this._updateContent();
   }
 
   _clearAllEnergyEntities = () => {
@@ -651,13 +413,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this.energyEntityToggleStates = newToggleStates;
     this._saveEnergyToggleStates();
     this._updateEnergyEntities();
-    
-    // Use virtual container if available, otherwise fall back to full update
-    if (this._energyContainer && this._viewMode === 'energy') {
-      this._energyContainer.updateEntities(this.energyEntities);
-    } else {
-      this._updateContent();
-    }
+    this._updateContent();
   }
 
   _selectAllEnergyEntities = () => {
@@ -672,102 +428,16 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this.energyEntityToggleStates = newToggleStates;
     this._saveEnergyToggleStates();
     this._updateEnergyEntities();
-    
-    // Use virtual container if available, otherwise fall back to full update
-    if (this._energyContainer && this._viewMode === 'energy') {
-      this._energyContainer.updateEntities(this.energyEntities);
-    } else {
-      this._updateContent();
-    }
+    this._updateContent();
   }
 
-  // Directly toggle power entity without rebuilding DOM 
-  _togglePowerEntity = (e: Event) => {
-    const target = e.currentTarget as HTMLElement;
-    const entityId = target.dataset.entity;
-    
-    if (entityId) {
-      // Toggle the entity state in our tracking object
-      this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
-      
-      // Update our entities array
-      this.powerEntities = this.powerEntities.map(entity => {
-        if (entity.entityId === entityId) {
-          return { ...entity, isOn: this.entityToggleStates[entityId] };
-        }
-        return entity;
-      });
-      
-      // Save toggle states
-      this._savePowerToggleStates();
-      
-      // Direct DOM update instead of full refresh
-      const isOn = this.entityToggleStates[entityId];
-      if (isOn) {
-        target.classList.add('on');
-        target.classList.remove('off');
-      } else {
-        target.classList.add('off');
-        target.classList.remove('on');
-      }
-      
-      // Update status indicator in the clicked element
-      const statusIndicator = target.querySelector('.status-indicator');
-      if (statusIndicator) {
-        statusIndicator.textContent = isOn ? 'ON' : 'OFF';
-      }
-      
-      // Dispatch event to notify other components
-      this.dispatchEvent(new CustomEvent('entity-toggled', {
-        detail: { entityId, isOn },
-        bubbles: true,
-        composed: true
-      }));
-    }
-  }
-
-  // Directly toggle energy entity without rebuilding DOM
   _toggleEnergyEntity = (e: Event) => {
     const target = e.currentTarget as HTMLElement;
     const entityId = target.dataset.entity;
-    
     if (entityId) {
-      // Toggle the entity state in our tracking object
       this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
-      
-      // Update our entities array
-      this.energyEntities = this.energyEntities.map(entity => {
-        if (entity.entityId === entityId) {
-          return { ...entity, isOn: this.energyEntityToggleStates[entity.entityId] };
-        }
-        return entity;
-      });
-      
-      // Save toggle states
-      this._saveEnergyToggleStates();
-      
-      // Direct DOM update instead of full refresh
-      const isOn = this.energyEntityToggleStates[entityId];
-      if (isOn) {
-        target.classList.add('on');
-        target.classList.remove('off');
-      } else {
-        target.classList.add('off');
-        target.classList.remove('on');
-      }
-      
-      // Update status indicator in the clicked element
-      const statusIndicator = target.querySelector('.status-indicator');
-      if (statusIndicator) {
-        statusIndicator.textContent = isOn ? 'ON' : 'OFF';
-      }
-      
-      // Dispatch event to notify other components
-      this.dispatchEvent(new CustomEvent('entity-toggled', {
-        detail: { entityId, isOn, type: 'energy' },
-        bubbles: true,
-        composed: true
-      }));
+      this._updateEnergyEntities();
+      this._updateContent();
     }
   }
 
@@ -858,39 +528,374 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     }));
   }
 
-  _updateContent() {
-    // Debounce updates to prevent flashing when multiple updates occur in quick succession
-    if (this._preventFlashingTimeout !== null) {
-      clearTimeout(this._preventFlashingTimeout);
-      this._pendingUpdate = true;
-      this._preventFlashingTimeout = setTimeout(() => this._performActualUpdate(), 50);
-      return;
+  _renderPowerSection(): HTMLElement {
+    const section = document.createElement('div');
+
+    if (this.powerEntities.length > 0) {
+      // Control buttons
+      const controlButtons = document.createElement('div');
+      controlButtons.className = 'control-buttons';
+      controlButtons.style.display = 'flex';
+      controlButtons.style.flexWrap = 'nowrap'; // Changed from 'wrap' to 'nowrap' to ensure single line
+      controlButtons.style.alignItems = 'center';
+      controlButtons.style.gap = '4px';
+      controlButtons.style.margin = '0 0 8px 0';
+      controlButtons.style.padding = '0';
+      
+      const resetButton = document.createElement('button');
+      resetButton.className = 'control-button';
+      resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+      resetButton.style.flex = '1 1 0';
+      resetButton.style.minWidth = '40px'; // Further reduced from 50px
+      resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
+      
+      const clearButton = document.createElement('button');
+      clearButton.className = 'control-button';
+      clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+      clearButton.style.flex = '1 1 0';
+      clearButton.style.minWidth = '40px'; // Further reduced from 50px
+      clearButton.addEventListener('click', this._clearAllPowerEntities);
+      
+      const selectAllButton = document.createElement('button');
+      selectAllButton.className = 'select-all-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+      selectAllButton.style.flex = '1 1 0';
+      selectAllButton.style.minWidth = '40px'; // Further reduced from 50px
+      selectAllButton.addEventListener('click', this._selectAllPowerEntities);
+      
+      controlButtons.appendChild(resetButton);
+      controlButtons.appendChild(clearButton);
+      controlButtons.appendChild(selectAllButton);
+      section.appendChild(controlButtons);
+      
+      // Equalize button heights
+      this._equalizeButtonHeights(controlButtons);
+
+      // Add persistence toggle
+      const persistenceToggle = document.createElement('div');
+      persistenceToggle.className = 'persistence-toggle';
+      persistenceToggle.style.display = 'flex';
+      persistenceToggle.style.alignItems = 'center';
+      persistenceToggle.style.justifyContent = 'center';
+      persistenceToggle.style.marginTop = '8px';
+      persistenceToggle.style.marginBottom = '8px';
+      persistenceToggle.style.cursor = 'pointer';
+      persistenceToggle.addEventListener('click', this._togglePersistence);
+      
+      const toggleLabel = document.createElement('span');
+      toggleLabel.style.marginRight = '8px';
+      toggleLabel.textContent = 'Remember Selection: ';
+      
+      const toggleSwitch = document.createElement('span');
+      toggleSwitch.className = 'toggle-switch';
+      toggleSwitch.style.position = 'relative';
+      toggleSwitch.style.display = 'inline-block';
+      toggleSwitch.style.width = '36px';
+      toggleSwitch.style.height = '20px';
+      
+      const toggleSlider = document.createElement('span');
+      toggleSlider.className = 'toggle-slider';
+      toggleSlider.style.position = 'absolute';
+      toggleSlider.style.cursor = 'pointer';
+      toggleSlider.style.top = '0';
+      toggleSlider.style.left = '0';
+      toggleSlider.style.right = '0';
+      toggleSlider.style.bottom = '0';
+      toggleSlider.style.backgroundColor = this.config?.persist_selection ? 'var(--primary-color, #03a9f4)' : '#ccc';
+      toggleSlider.style.borderRadius = '34px';
+      toggleSlider.style.transition = '.4s';
+      
+      const toggleButton = document.createElement('span');
+      toggleButton.style.position = 'absolute';
+      toggleButton.style.content = '""';
+      toggleButton.style.height = '16px';
+      toggleButton.style.width = '16px';
+      toggleButton.style.left = this.config?.persist_selection ? '16px' : '4px';
+      toggleButton.style.bottom = '2px';
+      toggleButton.style.backgroundColor = 'white';
+      toggleButton.style.borderRadius = '50%';
+      toggleButton.style.transition = '.4s';
+      
+      toggleSlider.appendChild(toggleButton);
+      toggleSwitch.appendChild(toggleSlider);
+      persistenceToggle.appendChild(toggleLabel);
+      persistenceToggle.appendChild(toggleSwitch);
+      
+      section.appendChild(persistenceToggle);
+      
+      // Section title
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Power Entities';
+      section.appendChild(sectionTitle);
+      
+      // Container
+      const containerWrapper = document.createElement('div');
+      containerWrapper.style.width = '100%';
+      containerWrapper.style.boxSizing = 'border-box';
+      
+      const entitiesContainer = document.createElement('div');
+      entitiesContainer.className = 'entities-container';
+      
+      if (this.config?.max_height && this.config.max_height > 0) {
+        entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
+        entitiesContainer.style.overflowY = 'auto';
+      }
+      
+      // Add entities
+      this.powerEntities.forEach(entity => {
+        const entityItem = document.createElement('div');
+        entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
+        entityItem.dataset.entity = entity.entityId;
+        entityItem.style.gap = '4px';
+        entityItem.addEventListener('click', this._togglePowerEntity);
+        
+        const entityLeft = document.createElement('div');
+        entityLeft.className = 'entity-left';
+        
+        const entityName = document.createElement('div');
+        entityName.className = 'entity-name';
+        entityName.title = entity.name;
+        entityName.textContent = entity.name;
+        
+        entityLeft.appendChild(entityName);
+        entityItem.appendChild(entityLeft);
+        
+        const entityState = document.createElement('div');
+        entityState.className = 'entity-state';
+        
+        const statusIndicator = document.createElement('div');
+        statusIndicator.className = 'status-indicator';
+        statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+        
+        const powerValue = document.createElement('div');
+        powerValue.className = 'power-value';
+        
+        if (this.config?.show_state) {
+          powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+        }
+        
+        entityState.appendChild(statusIndicator);
+        entityState.appendChild(powerValue);
+        entityItem.appendChild(entityState);
+        
+        entitiesContainer.appendChild(entityItem);
+      });
+      
+      containerWrapper.appendChild(entitiesContainer);
+      section.appendChild(containerWrapper);
+    } else {
+      // Empty message
+      const emptyMessage = document.createElement('div');
+      emptyMessage.className = 'empty-message';
+      emptyMessage.textContent = 'No power entities found. Make sure you have entities with unit set to W or kW.';
+      section.appendChild(emptyMessage);
     }
     
-    this._preventFlashingTimeout = setTimeout(() => {
-      this._preventFlashingTimeout = null;
-      if (this._pendingUpdate) {
-        this._pendingUpdate = false;
-        this._performActualUpdate();
-      }
-    }, 50);
-    
-    this._performActualUpdate();
+    return section;
   }
-  
-  _performActualUpdate() {
+
+  _renderEnergySection(): HTMLElement {
+    const section = document.createElement('div');
+    
+    const separator = document.createElement('div');
+    separator.className = 'section-separator';
+    section.appendChild(separator);
+
+    if (this.energyEntities.length > 0) {
+      // Control buttons for energy section
+      const controlButtons = document.createElement('div');
+      controlButtons.className = 'control-buttons';
+      controlButtons.style.display = 'flex';
+      controlButtons.style.flexWrap = 'nowrap'; // Changed from 'wrap' to 'nowrap' for single line
+      controlButtons.style.alignItems = 'center';
+      controlButtons.style.gap = '4px';
+      controlButtons.style.margin = '0 0 8px 0';
+      controlButtons.style.padding = '0';
+      
+      const resetButton = document.createElement('button');
+      resetButton.className = 'control-button';
+      resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+      resetButton.style.flex = '1 1 0';
+      resetButton.style.minWidth = '40px'; // Further reduced from 50px
+      resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
+      
+      const clearButton = document.createElement('button');
+      clearButton.className = 'control-button';
+      clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+      clearButton.style.flex = '1 1 0';
+      clearButton.style.minWidth = '40px'; // Further reduced from 50px
+      clearButton.addEventListener('click', this._clearAllEnergyEntities);
+      
+      const selectAllButton = document.createElement('button');
+      selectAllButton.className = 'select-all-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+      selectAllButton.style.flex = '1 1 0';
+      selectAllButton.style.minWidth = '40px'; // Further reduced from 50px
+      selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
+      
+      controlButtons.appendChild(resetButton);
+      controlButtons.appendChild(clearButton);
+      controlButtons.appendChild(selectAllButton);
+      section.appendChild(controlButtons);
+      
+      // Equalize button heights
+      this._equalizeButtonHeights(controlButtons);
+      
+      // Add persistence toggle
+      const persistenceToggle = document.createElement('div');
+      persistenceToggle.className = 'persistence-toggle';
+      persistenceToggle.style.display = 'flex';
+      persistenceToggle.style.alignItems = 'center';
+      persistenceToggle.style.justifyContent = 'center';
+      persistenceToggle.style.marginTop = '8px';
+      persistenceToggle.style.marginBottom = '8px';
+      persistenceToggle.style.cursor = 'pointer';
+      persistenceToggle.addEventListener('click', this._togglePersistence);
+      
+      const toggleLabel = document.createElement('span');
+      toggleLabel.style.marginRight = '8px';
+      toggleLabel.textContent = 'Remember Selection: ';
+      
+      const toggleSwitch = document.createElement('span');
+      toggleSwitch.className = 'toggle-switch';
+      toggleSwitch.style.position = 'relative';
+      toggleSwitch.style.display = 'inline-block';
+      toggleSwitch.style.width = '36px';
+      toggleSwitch.style.height = '20px';
+      
+      const toggleSlider = document.createElement('span');
+      toggleSlider.className = 'toggle-slider';
+      toggleSlider.style.position = 'absolute';
+      toggleSlider.style.cursor = 'pointer';
+      toggleSlider.style.top = '0';
+      toggleSlider.style.left = '0';
+      toggleSlider.style.right = '0';
+      toggleSlider.style.bottom = '0';
+      toggleSlider.style.backgroundColor = this.config?.persist_selection ? 'var(--primary-color, #03a9f4)' : '#ccc';
+      toggleSlider.style.borderRadius = '34px';
+      toggleSlider.style.transition = '.4s';
+      
+      const toggleButton = document.createElement('span');
+      toggleButton.style.position = 'absolute';
+      toggleButton.style.content = '""';
+      toggleButton.style.height = '16px';
+      toggleButton.style.width = '16px';
+      toggleButton.style.left = this.config?.persist_selection ? '16px' : '4px';
+      toggleButton.style.bottom = '2px';
+      toggleButton.style.backgroundColor = 'white';
+      toggleButton.style.borderRadius = '50%';
+      toggleButton.style.transition = '.4s';
+      
+      toggleSlider.appendChild(toggleButton);
+      toggleSwitch.appendChild(toggleSlider);
+      persistenceToggle.appendChild(toggleLabel);
+      persistenceToggle.appendChild(toggleSwitch);
+      
+      section.appendChild(persistenceToggle);
+      
+      // Section title
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Energy Entities';
+      section.appendChild(sectionTitle);
+      
+      // Container
+      const containerWrapper = document.createElement('div');
+      containerWrapper.style.width = '100%';
+      containerWrapper.style.boxSizing = 'border-box';
+      
+      const entitiesContainer = document.createElement('div');
+      entitiesContainer.className = 'entities-container';
+      
+      if (this.config?.max_height && this.config.max_height > 0) {
+        entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
+        entitiesContainer.style.overflowY = 'auto';
+      }
+      
+      // Add entities
+      this.energyEntities.forEach(entity => {
+        const entityItem = document.createElement('div');
+        entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
+        entityItem.dataset.entity = entity.entityId;
+        entityItem.style.gap = '4px';
+        entityItem.addEventListener('click', this._toggleEnergyEntity);
+        
+        const entityLeft = document.createElement('div');
+        entityLeft.className = 'entity-left';
+        
+        const entityName = document.createElement('div');
+        entityName.className = 'entity-name';
+        entityName.title = entity.name;
+        entityName.textContent = entity.name;
+        
+        entityLeft.appendChild(entityName);
+        entityItem.appendChild(entityLeft);
+        
+        const entityState = document.createElement('div');
+        entityState.className = 'entity-state';
+        
+        const statusIndicator = document.createElement('div');
+        statusIndicator.className = 'status-indicator';
+        statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+        
+        const powerValue = document.createElement('div');
+        powerValue.className = 'power-value';
+        
+        if (this.config?.show_state) {
+          powerValue.textContent = `${entity.state} ${entity.unit}`;
+        }
+        
+        entityState.appendChild(statusIndicator);
+        entityState.appendChild(powerValue);
+        entityItem.appendChild(entityState);
+        
+        entitiesContainer.appendChild(entityItem);
+      });
+      
+      containerWrapper.appendChild(entitiesContainer);
+      section.appendChild(containerWrapper);
+    } else {
+      // Section title
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Energy Entities';
+      section.appendChild(sectionTitle);
+      
+      // Empty message
+      const emptyMessage = document.createElement('div');
+      emptyMessage.className = 'empty-message';
+      emptyMessage.textContent = 'No energy entities found. Make sure you have entities with unit set to Wh or kWh.';
+      section.appendChild(emptyMessage);
+    }
+    
+    return section;
+  }
+
+  _updateContent() {
+    if (!this.config) {
+      const card = this._root.querySelector('ha-card');
+      if (card) {
+        card.innerHTML = '<div class="empty-message">Card not configured</div>';
+      }
+      return;
+    }
+
+    // Always ensure persistence setting is loaded from localStorage
+    this.config.persist_selection = this._loadPersistenceState();
+
     // Get the ha-card element
     const card = this._root.querySelector('ha-card');
     if (!card) return;
-    
+
     // Clear previous content
     card.innerHTML = '';
 
-    // Header - add null check for config properties
-    if (this.config && this.config.show_header) {
+    // Header
+    if (this.config.show_header) {
       const header = document.createElement('div');
       header.className = 'card-header';
-      header.textContent = this.config.title || 'Energy Dashboard';
+      header.textContent = this.config.title;
       card.appendChild(header);
     }
     
@@ -968,194 +973,63 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     modeToggleContainer.appendChild(toggleWrapper);
     card.appendChild(modeToggleContainer);
 
-    // Create container for the current view
-    const mainSection = document.createElement('div');
-    mainSection.className = this._viewMode === 'power' ? 'power-section' : 'energy-section';
-    mainSection.dataset.section = this._viewMode;
-    
-    // Add separator for energy section
-    if (this._viewMode === 'energy') {
-      const separator = document.createElement('div');
-      separator.className = 'section-separator';
-      mainSection.appendChild(separator);
-    }
-
-    // Render control buttons and persistence toggle
-    this._renderControlSection(mainSection, this._viewMode);
-    
-    // Section title
-    const sectionTitle = document.createElement('div');
-    sectionTitle.className = 'section-title';
-    sectionTitle.textContent = this._viewMode === 'power' ? 'Power Entities' : 'Energy Entities';
-    mainSection.appendChild(sectionTitle);
-
-    // Create or get the virtual container for the current mode
+    // Show either power section or energy section based on the current view mode
     if (this._viewMode === 'power') {
-      if (!this._powerContainer) {
-        this._powerContainer = new VirtualEntityContainer(
-          this._root, 
-          'power',
-          this._togglePowerEntity,
-          this.config?.show_state ?? true
-        );
-      }
+      // Power section
+      console.log("Rendering power section...");
+      console.log(`Power entities count: ${this.powerEntities.length}`);
+      const powerSection = this._renderPowerSection();
       
-      // Set max height
-      if (this.config?.max_height && this.config.max_height > 0) {
-        this._powerContainer.setMaxHeight(this.config.max_height);
-      }
+      // Debug the power section to ensure it has all expected children
+      const sectionChildren = Array.from(powerSection.children);
+      console.log(`Power section has ${sectionChildren.length} children`);
+      sectionChildren.forEach((child, index) => {
+        console.log(`Child ${index}: ${child.tagName} with class ${child.className}`);
+        if (child.className === 'entities-container') {
+          console.log(`Entity container has ${child.childElementCount} entities`);
+        }
+      });
       
-      // Update entities in the container
-      this._powerContainer.updateEntities(this.powerEntities);
-      
-      // If there are no entities, show empty message
-      if (this._powerContainer.isEmpty()) {
-        const emptyMessage = document.createElement('div');
-        emptyMessage.className = 'empty-message';
-        emptyMessage.textContent = 'No power entities found. Make sure you have entities with unit set to W or kW.';
-        mainSection.appendChild(emptyMessage);
-      }
+      card.appendChild(powerSection);
     } else {
-      if (!this._energyContainer) {
-        this._energyContainer = new VirtualEntityContainer(
-          this._root, 
-          'energy',
-          this._toggleEnergyEntity,
-          this.config?.show_state ?? true
-        );
+      // Energy section (without separator when it's the only section shown)
+      console.log("Rendering energy section...");
+      console.log(`Energy entities count: ${this.energyEntities.length}`);
+      const energySection = this._renderEnergySection();
+      
+      // If we're in energy view mode, remove the separator as it's not needed
+      const separator = energySection.querySelector('.section-separator');
+      if (separator) {
+        separator.remove();
       }
       
-      // Set max height
-      if (this.config?.max_height && this.config.max_height > 0) {
-        this._energyContainer.setMaxHeight(this.config.max_height);
-      }
+      card.appendChild(energySection);
+    }
+    
+    // Force layout recalculation to ensure all elements have proper dimensions
+    requestAnimationFrame(() => {
+      this._forceRecalculation(card as HTMLElement);
       
-      // Update entities in the container
-      this._energyContainer.updateEntities(this.energyEntities);
-      
-      // If there are no entities, show empty message
-      if (this._energyContainer.isEmpty()) {
-        const emptyMessage = document.createElement('div');
-        emptyMessage.className = 'empty-message';
-        emptyMessage.textContent = 'No energy entities found. Make sure you have entities with unit set to Wh or kWh.';
-        mainSection.appendChild(emptyMessage);
-      }
-    }
-    
-    card.appendChild(mainSection);
-    
-    // Reset flash prevention
-    this._preventFlashingTimeout = null;
-    this._pendingUpdate = false;
-  }
-
-  // Helper method to render control buttons and persistence toggle
-  private _renderControlSection(parent: HTMLElement, type: 'power' | 'energy'): void {
-    // Control buttons
-    const controlButtons = document.createElement('div');
-    controlButtons.className = 'control-buttons';
-    controlButtons.style.display = 'flex';
-    controlButtons.style.flexWrap = 'nowrap';
-    controlButtons.style.alignItems = 'center';
-    controlButtons.style.gap = '4px';
-    controlButtons.style.margin = '0 0 8px 0';
-    controlButtons.style.padding = '0';
-    
-    const resetButton = document.createElement('button');
-    resetButton.className = 'control-button';
-    resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
-    resetButton.style.flex = '1 1 0';
-    resetButton.style.minWidth = '40px';
-    resetButton.addEventListener('click', type === 'power' ? this._resetToPowerDefaultEntities : this._resetToEnergyDefaultEntities);
-    
-    const clearButton = document.createElement('button');
-    clearButton.className = 'control-button';
-    clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
-    clearButton.style.flex = '1 1 0';
-    clearButton.style.minWidth = '40px';
-    clearButton.addEventListener('click', type === 'power' ? this._clearAllPowerEntities : this._clearAllEnergyEntities);
-    
-    const selectAllButton = document.createElement('button');
-    selectAllButton.className = 'select-all-button';
-    selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
-    selectAllButton.style.flex = '1 1 0';
-    selectAllButton.style.minWidth = '40px';
-    selectAllButton.addEventListener('click', type === 'power' ? this._selectAllPowerEntities : this._selectAllEnergyEntities);
-    
-    controlButtons.appendChild(resetButton);
-    controlButtons.appendChild(clearButton);
-    controlButtons.appendChild(selectAllButton);
-    parent.appendChild(controlButtons);
-    
-    // Equalize button heights
-    this._equalizeButtonHeights(controlButtons);
-    
-    // Add persistence toggle
-    const persistenceToggle = document.createElement('div');
-    persistenceToggle.className = 'persistence-toggle';
-    persistenceToggle.style.display = 'flex';
-    persistenceToggle.style.alignItems = 'center';
-    persistenceToggle.style.justifyContent = 'center';
-    persistenceToggle.style.marginTop = '8px';
-    persistenceToggle.style.marginBottom = '8px';
-    persistenceToggle.style.cursor = 'pointer';
-    persistenceToggle.addEventListener('click', this._togglePersistence);
-    
-    const toggleLabel = document.createElement('span');
-    toggleLabel.style.marginRight = '8px';
-    toggleLabel.textContent = 'Remember Selection: ';
-    
-    const toggleSwitch = document.createElement('span');
-    toggleSwitch.className = 'toggle-switch';
-    toggleSwitch.style.position = 'relative';
-    toggleSwitch.style.display = 'inline-block';
-    toggleSwitch.style.width = '36px';
-    toggleSwitch.style.height = '20px';
-    
-    const toggleSlider = document.createElement('span');
-    toggleSlider.className = 'toggle-slider';
-    toggleSlider.style.position = 'absolute';
-    toggleSlider.style.cursor = 'pointer';
-    toggleSlider.style.top = '0';
-    toggleSlider.style.left = '0';
-    toggleSlider.style.right = '0';
-    toggleSlider.style.bottom = '0';
-    toggleSlider.style.backgroundColor = this.config?.persist_selection ? 'var(--primary-color, #03a9f4)' : '#ccc';
-    toggleSlider.style.borderRadius = '34px';
-    toggleSlider.style.transition = '.4s';
-    
-    const toggleButton = document.createElement('span');
-    toggleButton.style.position = 'absolute';
-    toggleButton.style.content = '""';
-    toggleButton.style.height = '16px';
-    toggleButton.style.width = '16px';
-    toggleButton.style.left = this.config?.persist_selection ? '16px' : '4px';
-    toggleButton.style.bottom = '2px';
-    toggleButton.style.backgroundColor = 'white';
-    toggleButton.style.borderRadius = '50%';
-    toggleButton.style.transition = '.4s';
-    
-    toggleSlider.appendChild(toggleButton);
-    toggleSwitch.appendChild(toggleSlider);
-    persistenceToggle.appendChild(toggleLabel);
-    persistenceToggle.appendChild(toggleSwitch);
-    
-    parent.appendChild(persistenceToggle);
-  }
-
-  // Update entity values without recreating the entire DOM structure
-  _updateEntityValues() {
-    // Skip updates if we're already in the middle of a DOM update
-    if (this._preventFlashingTimeout !== null) {
-      return;
-    }
-
-    // Use virtual containers to update entities
-    if (this._viewMode === 'power' && this._powerContainer) {
-      this._powerContainer.updateEntities(this.powerEntities);
-    } else if (this._viewMode === 'energy' && this._energyContainer) {
-      this._energyContainer.updateEntities(this.energyEntities);
-    }
+      // Wait a bit for the DOM to be fully rendered before equalizing button heights
+      setTimeout(() => {
+        const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
+        console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
+        controlButtonsContainers.forEach((container, index) => {
+          console.log(`Equalizing heights for container ${index}`);
+          this._equalizeButtonHeights(container as HTMLElement);
+        });
+        
+        // Also check for entity lists and make sure they're visible
+        const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
+        console.log(`Found ${entityContainers.length} entity containers`);
+        entityContainers.forEach(container => {
+          console.log(`Entity container has ${container.childElementCount} children`);
+          if (container.childElementCount === 0) {
+            console.warn("Entity container is empty!");
+          }
+        });
+      }, 100);
+    });
   }
 }
 

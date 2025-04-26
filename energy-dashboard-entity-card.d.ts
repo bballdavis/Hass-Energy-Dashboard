@@ -10,11 +10,8 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _energyInitialized;
     private _root;
     private _viewMode;
-    private _preventFlashingTimeout;
-    private _pendingUpdate;
-    private _powerContainer;
-    private _energyContainer;
     private _equalizeButtonHeights;
+    private _forceRecalculation;
     static get cardType(): string;
     static get displayName(): string;
     static get description(): string;
@@ -46,10 +43,10 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _resetToPowerDefaultEntities: () => void;
     _clearAllPowerEntities: () => void;
     _selectAllPowerEntities: () => void;
+    _togglePowerEntity: (e: Event) => void;
     _resetToEnergyDefaultEntities: () => void;
     _clearAllEnergyEntities: () => void;
     _selectAllEnergyEntities: () => void;
-    _togglePowerEntity: (e: Event) => void;
     _toggleEnergyEntity: (e: Event) => void;
     _togglePersistence: () => void;
     _loadPersistenceState(): boolean;
@@ -57,8 +54,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _saveViewMode(mode: 'power' | 'energy'): void;
     _loadViewMode(): 'power' | 'energy';
     _toggleViewMode: () => void;
+    _renderPowerSection(): HTMLElement;
+    _renderEnergySection(): HTMLElement;
     _updateContent(): void;
-    _performActualUpdate(): void;
-    private _renderControlSection;
-    _updateEntityValues(): void;
 }

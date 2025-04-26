@@ -451,17 +451,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const chartElement = document.createElement('div');
     chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
     chartElement.style.width = '100%';
-    chartElement.style.marginBottom = '0'; // Reduced margin from 16px to 0
+    chartElement.style.marginBottom = '16px';
     chartElement.style.position = 'relative';
     chartElement.style.minHeight = `${this.config?.chart_height || 300}px`;
-    
-    // Completely remove any borders or styling that might create visual separation
-    chartElement.style.border = 'none';
-    chartElement.style.boxShadow = 'none';
-    chartElement.style.overflow = 'visible';
-    chartElement.style.padding = '0';
-    chartElement.style.backgroundColor = 'transparent';
-    chartElement.style.borderRadius = '0';
     
     try {
       if (this._apexChartCardRegistered === false) {
@@ -477,45 +469,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
       
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
       
-      // More comprehensive styling to eliminate any borders
-      apexCard.style.border = 'none';
-      apexCard.style.boxShadow = 'none';
-      apexCard.style.margin = '0';
-      apexCard.style.padding = '0';
-      apexCard.style.width = '100%';
-      apexCard.style.display = 'block';
-      apexCard.style.backgroundColor = 'transparent';
-      apexCard.style.borderRadius = '0';
-      
-      // Set CSS custom properties for apexcharts-card
-      apexCard.style.setProperty('--apex-card-padding', '0px');
-      apexCard.style.setProperty('--apex-card-margin', '0px');
-      apexCard.style.setProperty('--ha-card-border-radius', '0px');
-      apexCard.style.setProperty('--ha-card-box-shadow', 'none');
-      apexCard.style.setProperty('--ha-card-border-width', '0');
-      apexCard.style.setProperty('--ha-card-border-color', 'transparent');
-      apexCard.style.setProperty('--apex-card-background', 'transparent');
-      apexCard.style.setProperty('--card-background-color', 'transparent');
-      
-      // Custom attributes to help with styling
-      apexCard.setAttribute('borderless', 'true');
-      apexCard.setAttribute('noborder', 'true');
-      apexCard.setAttribute('no-border', 'true');
-      apexCard.classList.add('borderless-chart');
-      
       try {
         (apexCard as any).setConfig(chartConfig);
         (apexCard as any).hass = this._hass;
-
-        // Listen for the load event to access shadow DOM elements
-        apexCard.addEventListener('load', () => {
-          this._removeBordersFromApexchartsCard(apexCard);
-        });
-        
-        // Also try to periodically fix styling in case shadow DOM updates later
-        setTimeout(() => this._removeBordersFromApexchartsCard(apexCard), 500);
-        setTimeout(() => this._removeBordersFromApexchartsCard(apexCard), 1000);
-        setTimeout(() => this._removeBordersFromApexchartsCard(apexCard), 2000);
       } catch (configError) {
         console.error('Error configuring apexcharts-card:', configError);
         return this._createErrorMessage(
@@ -539,81 +495,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     }
     
     return chartElement;
-  }
-  
-  // New method to recursively remove borders from apexcharts-card shadow DOM
-  private _removeBordersFromApexchartsCard(element: HTMLElement) {
-    if (!element || !element.shadowRoot) return;
-    
-    console.log('Styling apexcharts-card to remove its internal borders');
-    
-    // Apply styles to all ha-card elements in shadow DOM
-    const haCards = element.shadowRoot.querySelectorAll('ha-card');
-    haCards.forEach(card => {
-      if (card instanceof HTMLElement) {
-        card.style.border = 'none !important';
-        card.style.boxShadow = 'none !important';
-        card.style.margin = '0 !important';
-        card.style.padding = '0 !important';
-        card.style.borderRadius = '0 !important';
-        card.style.backgroundColor = 'transparent !important';
-        
-        // Apply custom attributes that might be used for styling
-        card.setAttribute('borderless', 'true');
-        card.setAttribute('noborder', 'true');
-      }
-    });
-    
-    // Try to find card part and apply styles
-    const cardParts = element.shadowRoot.querySelectorAll('[part="card"]');
-    cardParts.forEach(part => {
-      if (part instanceof HTMLElement) {
-        part.style.border = 'none !important';
-        part.style.boxShadow = 'none !important';
-        part.style.margin = '0 !important';
-        part.style.padding = '0 !important';
-        part.style.borderRadius = '0 !important';
-        part.style.backgroundColor = 'transparent !important';
-      }
-    });
-    
-    // Try to inject a style element into the shadow root for more comprehensive styling
-    try {
-      const styleElement = document.createElement('style');
-      styleElement.textContent = `
-        :host {
-          --apex-card-padding: 0px !important;
-          --apex-card-margin: 0px !important;
-          --ha-card-border-radius: 0px !important;
-          --ha-card-box-shadow: none !important;
-          --ha-card-border-width: 0 !important;
-          --ha-card-border-color: transparent !important;
-          --apex-card-background: transparent !important;
-          --card-background-color: transparent !important;
-        }
-        ha-card, 
-        *::part(card),
-        div.card-content {
-          border: none !important;
-          box-shadow: none !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border-radius: 0 !important;
-          background: transparent !important;
-        }
-      `;
-      element.shadowRoot.appendChild(styleElement);
-    } catch (err) {
-      console.warn('Failed to inject style into shadow root', err);
-    }
-    
-    // Recursively process any other apexcharts-card elements in shadow DOM
-    const nestedApexCards = element.shadowRoot.querySelectorAll('apexcharts-card');
-    nestedApexCards.forEach(card => {
-      if (card instanceof HTMLElement) {
-        this._removeBordersFromApexchartsCard(card);
-      }
-    });
   }
 
   private _createEmptyCard(isEnergy: boolean) {
