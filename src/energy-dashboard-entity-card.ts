@@ -654,6 +654,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
   _renderPowerSection(): HTMLElement {
     const section = document.createElement('div');
+    section.classList.add('power-section');
+    section.dataset.section = 'power';
 
     if (this.powerEntities.length > 0) {
       // Control buttons
@@ -753,6 +755,11 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       sectionTitle.textContent = 'Power Entities';
       section.appendChild(sectionTitle);
       
+      // Create a persistent container wrapper for better state management
+      const persistentContainer = document.createElement('div');
+      persistentContainer.className = 'persistent-container';
+      persistentContainer.dataset.type = 'power';
+      
       // Container
       const containerWrapper = document.createElement('div');
       containerWrapper.style.width = '100%';
@@ -760,6 +767,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       const entitiesContainer = document.createElement('div');
       entitiesContainer.className = 'entities-container';
+      entitiesContainer.dataset.container = 'power-entities';
       
       if (this.config?.max_height && this.config.max_height > 0) {
         entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
@@ -768,46 +776,13 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       // Add entities
       this.powerEntities.forEach(entity => {
-        const entityItem = document.createElement('div');
-        entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-        entityItem.dataset.entity = entity.entityId;
-        entityItem.style.gap = '4px';
-        entityItem.addEventListener('click', this._togglePowerEntity);
-        
-        const entityLeft = document.createElement('div');
-        entityLeft.className = 'entity-left';
-        
-        const entityName = document.createElement('div');
-        entityName.className = 'entity-name';
-        entityName.title = entity.name;
-        entityName.textContent = entity.name;
-        
-        entityLeft.appendChild(entityName);
-        entityItem.appendChild(entityLeft);
-        
-        const entityState = document.createElement('div');
-        entityState.className = 'entity-state';
-        
-        const statusIndicator = document.createElement('div');
-        statusIndicator.className = 'status-indicator';
-        statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
-        
-        const powerValue = document.createElement('div');
-        powerValue.className = 'power-value';
-        
-        if (this.config?.show_state) {
-          powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
-        }
-        
-        entityState.appendChild(statusIndicator);
-        entityState.appendChild(powerValue);
-        entityItem.appendChild(entityState);
-        
+        const entityItem = this._createEntityItem(entity, 'power');
         entitiesContainer.appendChild(entityItem);
       });
       
       containerWrapper.appendChild(entitiesContainer);
-      section.appendChild(containerWrapper);
+      persistentContainer.appendChild(containerWrapper);
+      section.appendChild(persistentContainer);
     } else {
       // Empty message
       const emptyMessage = document.createElement('div');
@@ -819,8 +794,57 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     return section;
   }
 
+  // Helper method to create an entity item
+  _createEntityItem(entity: EntityInfo, type: 'power' | 'energy'): HTMLElement {
+    const entityItem = document.createElement('div');
+    entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
+    entityItem.dataset.entity = entity.entityId;
+    entityItem.dataset.type = type;
+    entityItem.style.gap = '4px';
+    
+    // Use different toggle handlers based on entity type
+    entityItem.addEventListener('click', type === 'power' ? this._togglePowerEntity : this._toggleEnergyEntity);
+    
+    const entityLeft = document.createElement('div');
+    entityLeft.className = 'entity-left';
+    
+    const entityName = document.createElement('div');
+    entityName.className = 'entity-name';
+    entityName.title = entity.name;
+    entityName.textContent = entity.name;
+    
+    entityLeft.appendChild(entityName);
+    entityItem.appendChild(entityLeft);
+    
+    const entityState = document.createElement('div');
+    entityState.className = 'entity-state';
+    
+    const statusIndicator = document.createElement('div');
+    statusIndicator.className = 'status-indicator';
+    statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+    
+    const powerValue = document.createElement('div');
+    powerValue.className = 'power-value';
+    
+    if (this.config?.show_state) {
+      if (type === 'power') {
+        powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+      } else {
+        powerValue.textContent = `${entity.state} ${entity.unit}`;
+      }
+    }
+    
+    entityState.appendChild(statusIndicator);
+    entityState.appendChild(powerValue);
+    entityItem.appendChild(entityState);
+    
+    return entityItem;
+  }
+
   _renderEnergySection(): HTMLElement {
     const section = document.createElement('div');
+    section.classList.add('energy-section');
+    section.dataset.section = 'energy';
     
     const separator = document.createElement('div');
     separator.className = 'section-separator';
@@ -924,6 +948,11 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       sectionTitle.textContent = 'Energy Entities';
       section.appendChild(sectionTitle);
       
+      // Create a persistent container wrapper for better state management
+      const persistentContainer = document.createElement('div');
+      persistentContainer.className = 'persistent-container';
+      persistentContainer.dataset.type = 'energy';
+      
       // Container
       const containerWrapper = document.createElement('div');
       containerWrapper.style.width = '100%';
@@ -931,6 +960,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       const entitiesContainer = document.createElement('div');
       entitiesContainer.className = 'entities-container';
+      entitiesContainer.dataset.container = 'energy-entities';
       
       if (this.config?.max_height && this.config.max_height > 0) {
         entitiesContainer.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
@@ -939,46 +969,13 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       // Add entities
       this.energyEntities.forEach(entity => {
-        const entityItem = document.createElement('div');
-        entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-        entityItem.dataset.entity = entity.entityId;
-        entityItem.style.gap = '4px';
-        entityItem.addEventListener('click', this._toggleEnergyEntity);
-        
-        const entityLeft = document.createElement('div');
-        entityLeft.className = 'entity-left';
-        
-        const entityName = document.createElement('div');
-        entityName.className = 'entity-name';
-        entityName.title = entity.name;
-        entityName.textContent = entity.name;
-        
-        entityLeft.appendChild(entityName);
-        entityItem.appendChild(entityLeft);
-        
-        const entityState = document.createElement('div');
-        entityState.className = 'entity-state';
-        
-        const statusIndicator = document.createElement('div');
-        statusIndicator.className = 'status-indicator';
-        statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
-        
-        const powerValue = document.createElement('div');
-        powerValue.className = 'power-value';
-        
-        if (this.config?.show_state) {
-          powerValue.textContent = `${entity.state} ${entity.unit}`;
-        }
-        
-        entityState.appendChild(statusIndicator);
-        entityState.appendChild(powerValue);
-        entityItem.appendChild(entityState);
-        
+        const entityItem = this._createEntityItem(entity, 'energy');
         entitiesContainer.appendChild(entityItem);
       });
       
       containerWrapper.appendChild(entitiesContainer);
-      section.appendChild(containerWrapper);
+      persistentContainer.appendChild(containerWrapper);
+      section.appendChild(persistentContainer);
     } else {
       // Section title
       const sectionTitle = document.createElement('div');

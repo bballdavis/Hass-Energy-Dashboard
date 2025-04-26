@@ -57,6 +57,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _loadViewMode(): 'power' | 'energy';
     _toggleViewMode: () => void;
     _renderPowerSection(): HTMLElement;
+    _createEntityItem(entity: EntityInfo, type: 'power' | 'energy'): HTMLElement;
     _renderEnergySection(): HTMLElement;
     _updateContent(): void;
     _performActualUpdate(): void;

@@ -90,6 +90,9 @@ export const cardStyles = `
     width: calc(100% - (var(--card-padding) * 2));
     box-sizing: border-box;
     min-width: 100%;
+    /* Improved transitions to prevent flashing */
+    transition: opacity 0.2s ease-in-out;
+    will-change: transform; /* Hint to browser for optimization */
   }
   .entities-container::-webkit-scrollbar {
     width: 6px;
@@ -107,7 +110,7 @@ export const cardStyles = `
     padding: 8px 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease-out, transform 0.2s ease-out;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -122,6 +125,7 @@ export const cardStyles = `
     max-width: 100%;
     margin-bottom: 2px;
     border: 1px solid var(--divider-color, #e0e0e0); /* Light grey border for unselected */
+    will-change: transform, opacity, border-color; /* Performance hint */
   }
   .entity-item:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -160,8 +164,12 @@ export const cardStyles = `
     flex: 0 0 auto;
     font-size: 0.95em;
   }
+  .status-indicator {
+    transition: color 0.2s ease;
+  }
   .power-value {
     font-weight: 500;
+    transition: opacity 0.15s ease-out, color 0.15s ease-out;
   }
   .empty-message {
     padding: var(--card-padding);
@@ -185,6 +193,21 @@ export const cardStyles = `
     height: var(--loading-height, 300px);
     border-radius: 8px;
     animation: fadeIn 0.3s ease-in-out;
+  }
+
+  /* Define persistent container for better stability */
+  .persistent-container {
+    position: relative;
+    width: 100%;
+    transition: opacity 0.15s ease;
+  }
+  
+  .persistent-container .entities-container {
+    opacity: 1;
+  }
+  
+  .persistent-container.updating .entities-container {
+    opacity: 0.8;
   }
   
   @keyframes fadeIn {
