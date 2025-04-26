@@ -933,6 +933,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         });
     }
     _updateContent() {
+        var _a, _b, _c, _d;
         if (!this.config) {
             const card = this._root.querySelector('ha-card');
             if (card) {
@@ -1015,17 +1016,187 @@ class EnergyDashboardEntityCard extends HTMLElement {
         toggleWrapper.appendChild(energyOption);
         modeToggleContainer.appendChild(toggleWrapper);
         card.appendChild(modeToggleContainer);
-        // Efficient entity list rendering
+        // Section rendering
         if (this._viewMode === 'power') {
-            // Power section
-            console.log("Rendering power section...");
-            console.log(`Power entities count: ${this.powerEntities.length}`);
+            // Control buttons
+            const controlButtons = document.createElement('div');
+            controlButtons.className = 'control-buttons';
+            controlButtons.style.display = 'flex';
+            controlButtons.style.flexWrap = 'nowrap';
+            controlButtons.style.alignItems = 'center';
+            controlButtons.style.gap = '4px';
+            controlButtons.style.margin = '0 0 8px 0';
+            controlButtons.style.padding = '0';
+            const resetButton = document.createElement('button');
+            resetButton.className = 'control-button';
+            resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+            resetButton.style.flex = '1 1 0';
+            resetButton.style.minWidth = '40px';
+            resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
+            const clearButton = document.createElement('button');
+            clearButton.className = 'control-button';
+            clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+            clearButton.style.flex = '1 1 0';
+            clearButton.style.minWidth = '40px';
+            clearButton.addEventListener('click', this._clearAllPowerEntities);
+            const selectAllButton = document.createElement('button');
+            selectAllButton.className = 'select-all-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+            selectAllButton.style.flex = '1 1 0';
+            selectAllButton.style.minWidth = '40px';
+            selectAllButton.addEventListener('click', this._selectAllPowerEntities);
+            controlButtons.appendChild(resetButton);
+            controlButtons.appendChild(clearButton);
+            controlButtons.appendChild(selectAllButton);
+            card.appendChild(controlButtons);
+            this._equalizeButtonHeights(controlButtons);
+            // Remember Selection toggle
+            const persistenceToggle = document.createElement('div');
+            persistenceToggle.className = 'persistence-toggle';
+            persistenceToggle.style.display = 'flex';
+            persistenceToggle.style.alignItems = 'center';
+            persistenceToggle.style.justifyContent = 'center';
+            persistenceToggle.style.marginTop = '8px';
+            persistenceToggle.style.marginBottom = '8px';
+            persistenceToggle.style.cursor = 'pointer';
+            persistenceToggle.addEventListener('click', this._togglePersistence);
+            const toggleLabel = document.createElement('span');
+            toggleLabel.style.marginRight = '8px';
+            toggleLabel.textContent = 'Remember Selection: ';
+            const toggleSwitch = document.createElement('span');
+            toggleSwitch.className = 'toggle-switch';
+            toggleSwitch.style.position = 'relative';
+            toggleSwitch.style.display = 'inline-block';
+            toggleSwitch.style.width = '36px';
+            toggleSwitch.style.height = '20px';
+            const toggleSlider = document.createElement('span');
+            toggleSlider.className = 'toggle-slider';
+            toggleSlider.style.position = 'absolute';
+            toggleSlider.style.cursor = 'pointer';
+            toggleSlider.style.top = '0';
+            toggleSlider.style.left = '0';
+            toggleSlider.style.right = '0';
+            toggleSlider.style.bottom = '0';
+            toggleSlider.style.backgroundColor = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
+            toggleSlider.style.borderRadius = '34px';
+            toggleSlider.style.transition = '.4s';
+            const toggleButton = document.createElement('span');
+            toggleButton.style.position = 'absolute';
+            toggleButton.style.content = '""';
+            toggleButton.style.height = '16px';
+            toggleButton.style.width = '16px';
+            toggleButton.style.left = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? '16px' : '4px';
+            toggleButton.style.bottom = '2px';
+            toggleButton.style.backgroundColor = 'white';
+            toggleButton.style.borderRadius = '50%';
+            toggleButton.style.transition = '.4s';
+            toggleSlider.appendChild(toggleButton);
+            toggleSwitch.appendChild(toggleSlider);
+            persistenceToggle.appendChild(toggleLabel);
+            persistenceToggle.appendChild(toggleSwitch);
+            card.appendChild(persistenceToggle);
+            // Section title
+            const sectionTitle = document.createElement('div');
+            sectionTitle.className = 'section-title';
+            sectionTitle.textContent = 'Power Entities';
+            card.appendChild(sectionTitle);
+            // Insert persistent container
+            if (!this._powerEntitiesContainer) {
+                this._powerEntitiesContainer = document.createElement('div');
+                this._powerEntitiesContainer.className = 'entities-container';
+            }
+            card.appendChild(this._powerEntitiesContainer);
             this._updatePowerEntitiesContainer();
         }
         else {
-            // Energy section (without separator when it's the only section shown)
-            console.log("Rendering energy section...");
-            console.log(`Energy entities count: ${this.energyEntities.length}`);
+            // Control buttons for energy section
+            const controlButtons = document.createElement('div');
+            controlButtons.className = 'control-buttons';
+            controlButtons.style.display = 'flex';
+            controlButtons.style.flexWrap = 'nowrap';
+            controlButtons.style.alignItems = 'center';
+            controlButtons.style.gap = '4px';
+            controlButtons.style.margin = '0 0 8px 0';
+            controlButtons.style.padding = '0';
+            const resetButton = document.createElement('button');
+            resetButton.className = 'control-button';
+            resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+            resetButton.style.flex = '1 1 0';
+            resetButton.style.minWidth = '40px';
+            resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
+            const clearButton = document.createElement('button');
+            clearButton.className = 'control-button';
+            clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+            clearButton.style.flex = '1 1 0';
+            clearButton.style.minWidth = '40px';
+            clearButton.addEventListener('click', this._clearAllEnergyEntities);
+            const selectAllButton = document.createElement('button');
+            selectAllButton.className = 'select-all-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+            selectAllButton.style.flex = '1 1 0';
+            selectAllButton.style.minWidth = '40px';
+            selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
+            controlButtons.appendChild(resetButton);
+            controlButtons.appendChild(clearButton);
+            controlButtons.appendChild(selectAllButton);
+            card.appendChild(controlButtons);
+            this._equalizeButtonHeights(controlButtons);
+            // Remember Selection toggle
+            const persistenceToggle = document.createElement('div');
+            persistenceToggle.className = 'persistence-toggle';
+            persistenceToggle.style.display = 'flex';
+            persistenceToggle.style.alignItems = 'center';
+            persistenceToggle.style.justifyContent = 'center';
+            persistenceToggle.style.marginTop = '8px';
+            persistenceToggle.style.marginBottom = '8px';
+            persistenceToggle.style.cursor = 'pointer';
+            persistenceToggle.addEventListener('click', this._togglePersistence);
+            const toggleLabel = document.createElement('span');
+            toggleLabel.style.marginRight = '8px';
+            toggleLabel.textContent = 'Remember Selection: ';
+            const toggleSwitch = document.createElement('span');
+            toggleSwitch.className = 'toggle-switch';
+            toggleSwitch.style.position = 'relative';
+            toggleSwitch.style.display = 'inline-block';
+            toggleSwitch.style.width = '36px';
+            toggleSwitch.style.height = '20px';
+            const toggleSlider = document.createElement('span');
+            toggleSlider.className = 'toggle-slider';
+            toggleSlider.style.position = 'absolute';
+            toggleSlider.style.cursor = 'pointer';
+            toggleSlider.style.top = '0';
+            toggleSlider.style.left = '0';
+            toggleSlider.style.right = '0';
+            toggleSlider.style.bottom = '0';
+            toggleSlider.style.backgroundColor = ((_c = this.config) === null || _c === void 0 ? void 0 : _c.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
+            toggleSlider.style.borderRadius = '34px';
+            toggleSlider.style.transition = '.4s';
+            const toggleButton = document.createElement('span');
+            toggleButton.style.position = 'absolute';
+            toggleButton.style.content = '""';
+            toggleButton.style.height = '16px';
+            toggleButton.style.width = '16px';
+            toggleButton.style.left = ((_d = this.config) === null || _d === void 0 ? void 0 : _d.persist_selection) ? '16px' : '4px';
+            toggleButton.style.bottom = '2px';
+            toggleButton.style.backgroundColor = 'white';
+            toggleButton.style.borderRadius = '50%';
+            toggleButton.style.transition = '.4s';
+            toggleSlider.appendChild(toggleButton);
+            toggleSwitch.appendChild(toggleSlider);
+            persistenceToggle.appendChild(toggleLabel);
+            persistenceToggle.appendChild(toggleSwitch);
+            card.appendChild(persistenceToggle);
+            // Section title
+            const sectionTitle = document.createElement('div');
+            sectionTitle.className = 'section-title';
+            sectionTitle.textContent = 'Energy Entities';
+            card.appendChild(sectionTitle);
+            // Insert persistent container
+            if (!this._energyEntitiesContainer) {
+                this._energyEntitiesContainer = document.createElement('div');
+                this._energyEntitiesContainer.className = 'entities-container';
+            }
+            card.appendChild(this._energyEntitiesContainer);
             this._updateEnergyEntitiesContainer();
         }
         // Force layout recalculation to ensure all elements have proper dimensions
