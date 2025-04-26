@@ -880,13 +880,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
             persistenceToggle.style.display = 'flex';
             persistenceToggle.style.alignItems = 'center';
             persistenceToggle.style.justifyContent = 'center';
-            persistenceToggle.style.marginTop = '8px';
-            persistenceToggle.style.marginBottom = '8px';
+            persistenceToggle.style.marginTop = '12px'; // Increased margin
+            persistenceToggle.style.marginBottom = '12px'; // Increased margin
+            persistenceToggle.style.padding = '4px 16px'; // Added horizontal padding
             persistenceToggle.style.cursor = 'pointer';
+            persistenceToggle.style.backgroundColor = 'var(--card-background-color, white)'; // Add background
+            persistenceToggle.style.border = '1px solid var(--divider-color, #e0e0e0)'; // Add border
+            persistenceToggle.style.borderRadius = '8px'; // Rounded corners
             persistenceToggle.addEventListener('click', this._togglePersistence);
             persistenceToggle.setAttribute('id', 'persistence-toggle');
             const toggleLabel = document.createElement('span');
             toggleLabel.style.marginRight = '8px';
+            toggleLabel.style.fontSize = '14px'; // Set explicit font size
+            toggleLabel.style.color = 'var(--primary-text-color)'; // Set explicit color
             toggleLabel.textContent = 'Remember Selection: ';
             const toggleSwitch = document.createElement('span');
             toggleSwitch.className = 'toggle-switch';
@@ -894,6 +900,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             toggleSwitch.style.display = 'inline-block';
             toggleSwitch.style.width = '36px';
             toggleSwitch.style.height = '20px';
+            toggleSwitch.style.verticalAlign = 'middle'; // Ensure vertical alignment
             const toggleSlider = document.createElement('span');
             toggleSlider.className = 'toggle-slider';
             toggleSlider.style.position = 'absolute';
@@ -915,6 +922,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             toggleButton.style.backgroundColor = 'white';
             toggleButton.style.borderRadius = '50%';
             toggleButton.style.transition = '.4s';
+            toggleButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)'; // Add shadow for better visibility
             toggleSlider.appendChild(toggleButton);
             toggleSwitch.appendChild(toggleSlider);
             persistenceToggle.appendChild(toggleLabel);
