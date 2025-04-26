@@ -483,6 +483,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._initialized = false;
         this._energyInitialized = false;
         this._viewMode = 'power'; // Default view mode
+        this._preventFlashingTimeout = null; // To track content update timing
+        this._pendingUpdate = false; // Flag to track pending updates
         this._resetToPowerDefaultEntities = () => {
             var _a, _b;
             // Find the scrollable container and save its scroll position
@@ -704,7 +706,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }));
         };
         this._root = this.attachShadow({ mode: 'open' });
-        this._root.appendChild(createStyles(cardStyles));
+        // Add base styles plus additional transition styles to reduce flashing
+        const baseStyles = cardStyles + `
+      .entities-container {
+        transition: opacity 0.15s ease-in-out;
+      }
+      .entities-container.updating {
+        opacity: 0.8;
+      }
+      .ha-card {
+        transition: all 0.2s ease-in-out;
+      }
+    `;
+        this._root.appendChild(createStyles(baseStyles));
         // Initialize properties
         this._hass = undefined;
         this.powerEntities = [];
@@ -714,6 +728,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._initialized = false;
         this._energyInitialized = false;
         this._viewMode = 'power';
+        this._preventFlashingTimeout = null;
+        this._pendingUpdate = false;
         // Create the card element
         const card = document.createElement('ha-card');
         this._root.appendChild(card);
@@ -1231,6 +1247,23 @@ class EnergyDashboardEntityCard extends HTMLElement {
         return section;
     }
     _updateContent() {
+        // Debounce updates to prevent flashing when multiple updates occur in quick succession
+        if (this._preventFlashingTimeout !== null) {
+            clearTimeout(this._preventFlashingTimeout);
+            this._pendingUpdate = true;
+            this._preventFlashingTimeout = setTimeout(() => this._performActualUpdate(), 50);
+            return;
+        }
+        this._preventFlashingTimeout = setTimeout(() => {
+            this._preventFlashingTimeout = null;
+            if (this._pendingUpdate) {
+                this._pendingUpdate = false;
+                this._performActualUpdate();
+            }
+        }, 50);
+        this._performActualUpdate();
+    }
+    _performActualUpdate() {
         // Save scroll position before updating content
         const existingContainer = this._root.querySelector('.entities-container');
         const savedScrollPosition = existingContainer ? existingContainer.scrollTop : 0;
@@ -1247,139 +1280,127 @@ class EnergyDashboardEntityCard extends HTMLElement {
         const card = this._root.querySelector('ha-card');
         if (!card)
             return;
-        // Clear previous content
-        card.innerHTML = '';
-        // Header
-        if (this.config.show_header) {
-            const header = document.createElement('div');
-            header.className = 'card-header';
-            header.textContent = this.config.title;
-            card.appendChild(header);
-        }
-        // Add mode toggle at the top
-        const modeToggleContainer = document.createElement('div');
-        modeToggleContainer.className = 'mode-toggle-container';
-        modeToggleContainer.style.display = 'flex';
-        modeToggleContainer.style.justifyContent = 'center';
-        modeToggleContainer.style.alignItems = 'center';
-        modeToggleContainer.style.marginTop = '8px';
-        modeToggleContainer.style.marginBottom = '8px';
-        modeToggleContainer.style.padding = '4px';
-        const toggleWrapper = document.createElement('div');
-        toggleWrapper.className = 'toggle-wrapper';
-        toggleWrapper.style.display = 'flex';
-        toggleWrapper.style.position = 'relative';
-        toggleWrapper.style.border = '1px solid var(--divider-color)';
-        toggleWrapper.style.borderRadius = '25px';
-        toggleWrapper.style.height = '30px';
-        toggleWrapper.style.width = '200px';
-        toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
-        toggleWrapper.style.overflow = 'hidden';
-        // Active background that slides based on selected option
-        const activeBackground = document.createElement('div');
-        activeBackground.className = 'active-background';
-        activeBackground.style.position = 'absolute';
-        activeBackground.style.top = '0';
-        activeBackground.style.bottom = '0';
-        activeBackground.style.left = this._viewMode === 'power' ? '0' : '50%';
-        activeBackground.style.width = '50%';
-        activeBackground.style.backgroundColor = 'var(--primary-color)';
-        activeBackground.style.borderRadius = '25px';
-        activeBackground.style.transition = 'left 0.3s ease-in-out';
-        activeBackground.style.opacity = '0.2';
-        // Power option
-        const powerOption = document.createElement('div');
-        powerOption.className = 'toggle-option';
-        powerOption.textContent = 'Power';
-        powerOption.style.flex = '1';
-        powerOption.style.textAlign = 'center';
-        powerOption.style.lineHeight = '30px';
-        powerOption.style.cursor = 'pointer';
-        powerOption.style.zIndex = '1';
-        powerOption.style.fontWeight = this._viewMode === 'power' ? 'bold' : 'normal';
-        powerOption.style.color = this._viewMode === 'power' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
-        powerOption.addEventListener('click', () => {
-            if (this._viewMode !== 'power') {
-                this._toggleViewMode();
-            }
+        // First mark existing containers as updating for transition effect
+        const entityContainers = this._root.querySelectorAll('.entities-container');
+        entityContainers.forEach(container => {
+            container.classList.add('updating');
         });
-        // Energy option
-        const energyOption = document.createElement('div');
-        energyOption.className = 'toggle-option';
-        energyOption.textContent = 'Energy';
-        energyOption.style.flex = '1';
-        energyOption.style.textAlign = 'center';
-        energyOption.style.lineHeight = '30px';
-        energyOption.style.cursor = 'pointer';
-        energyOption.style.zIndex = '1';
-        energyOption.style.fontWeight = this._viewMode === 'energy' ? 'bold' : 'normal';
-        energyOption.style.color = this._viewMode === 'energy' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
-        energyOption.addEventListener('click', () => {
-            if (this._viewMode !== 'energy') {
-                this._toggleViewMode();
+        // Short delay to allow opacity transition to occur before rebuilding content
+        setTimeout(() => {
+            // Clear previous content
+            card.innerHTML = '';
+            // Header - add null check for config properties
+            if (this.config && this.config.show_header) {
+                const header = document.createElement('div');
+                header.className = 'card-header';
+                header.textContent = this.config.title || 'Energy Dashboard';
+                card.appendChild(header);
             }
-        });
-        toggleWrapper.appendChild(activeBackground);
-        toggleWrapper.appendChild(powerOption);
-        toggleWrapper.appendChild(energyOption);
-        modeToggleContainer.appendChild(toggleWrapper);
-        card.appendChild(modeToggleContainer);
-        // Show either power section or energy section based on the current view mode
-        if (this._viewMode === 'power') {
-            // Power section
-            console.log("Rendering power section...");
-            console.log(`Power entities count: ${this.powerEntities.length}`);
-            const powerSection = this._renderPowerSection();
-            // Debug the power section to ensure it has all expected children
-            const sectionChildren = Array.from(powerSection.children);
-            console.log(`Power section has ${sectionChildren.length} children`);
-            sectionChildren.forEach((child, index) => {
-                console.log(`Child ${index}: ${child.tagName} with class ${child.className}`);
-                if (child.className === 'entities-container') {
-                    console.log(`Entity container has ${child.childElementCount} entities`);
+            // Add mode toggle at the top
+            const modeToggleContainer = document.createElement('div');
+            modeToggleContainer.className = 'mode-toggle-container';
+            modeToggleContainer.style.display = 'flex';
+            modeToggleContainer.style.justifyContent = 'center';
+            modeToggleContainer.style.alignItems = 'center';
+            modeToggleContainer.style.marginTop = '8px';
+            modeToggleContainer.style.marginBottom = '8px';
+            modeToggleContainer.style.padding = '4px';
+            const toggleWrapper = document.createElement('div');
+            toggleWrapper.className = 'toggle-wrapper';
+            toggleWrapper.style.display = 'flex';
+            toggleWrapper.style.position = 'relative';
+            toggleWrapper.style.border = '1px solid var(--divider-color)';
+            toggleWrapper.style.borderRadius = '25px';
+            toggleWrapper.style.height = '30px';
+            toggleWrapper.style.width = '200px';
+            toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
+            toggleWrapper.style.overflow = 'hidden';
+            // Active background that slides based on selected option
+            const activeBackground = document.createElement('div');
+            activeBackground.className = 'active-background';
+            activeBackground.style.position = 'absolute';
+            activeBackground.style.top = '0';
+            activeBackground.style.bottom = '0';
+            activeBackground.style.left = this._viewMode === 'power' ? '0' : '50%';
+            activeBackground.style.width = '50%';
+            activeBackground.style.backgroundColor = 'var(--primary-color)';
+            activeBackground.style.borderRadius = '25px';
+            activeBackground.style.transition = 'left 0.3s ease-in-out';
+            activeBackground.style.opacity = '0.2';
+            // Power option
+            const powerOption = document.createElement('div');
+            powerOption.className = 'toggle-option';
+            powerOption.textContent = 'Power';
+            powerOption.style.flex = '1';
+            powerOption.style.textAlign = 'center';
+            powerOption.style.lineHeight = '30px';
+            powerOption.style.cursor = 'pointer';
+            powerOption.style.zIndex = '1';
+            powerOption.style.fontWeight = this._viewMode === 'power' ? 'bold' : 'normal';
+            powerOption.style.color = this._viewMode === 'power' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+            powerOption.addEventListener('click', () => {
+                if (this._viewMode !== 'power') {
+                    this._toggleViewMode();
                 }
             });
-            card.appendChild(powerSection);
-        }
-        else {
-            // Energy section (without separator when it's the only section shown)
-            console.log("Rendering energy section...");
-            console.log(`Energy entities count: ${this.energyEntities.length}`);
-            const energySection = this._renderEnergySection();
-            // If we're in energy view mode, remove the separator as it's not needed
-            const separator = energySection.querySelector('.section-separator');
-            if (separator) {
-                separator.remove();
-            }
-            card.appendChild(energySection);
-        }
-        // Force layout recalculation to ensure all elements have proper dimensions
-        requestAnimationFrame(() => {
-            this._forceRecalculation(card);
-            // Wait a bit for the DOM to be fully rendered before equalizing button heights
-            setTimeout(() => {
-                const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
-                console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
-                controlButtonsContainers.forEach((container, index) => {
-                    console.log(`Equalizing heights for container ${index}`);
-                    this._equalizeButtonHeights(container);
-                });
-                // Also check for entity lists and make sure they're visible
-                const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
-                console.log(`Found ${entityContainers.length} entity containers`);
-                entityContainers.forEach(container => {
-                    console.log(`Entity container has ${container.childElementCount} children`);
-                    if (container.childElementCount === 0) {
-                        console.warn("Entity container is empty!");
-                    }
-                });
-                // Restore scroll position after content update
-                const updatedContainer = this._root.querySelector('.entities-container');
-                if (updatedContainer && savedScrollPosition > 0) {
-                    updatedContainer.scrollTop = savedScrollPosition;
+            // Energy option
+            const energyOption = document.createElement('div');
+            energyOption.className = 'toggle-option';
+            energyOption.textContent = 'Energy';
+            energyOption.style.flex = '1';
+            energyOption.style.textAlign = 'center';
+            energyOption.style.lineHeight = '30px';
+            energyOption.style.cursor = 'pointer';
+            energyOption.style.zIndex = '1';
+            energyOption.style.fontWeight = this._viewMode === 'energy' ? 'bold' : 'normal';
+            energyOption.style.color = this._viewMode === 'energy' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+            energyOption.addEventListener('click', () => {
+                if (this._viewMode !== 'energy') {
+                    this._toggleViewMode();
                 }
-            }, 100);
-        });
+            });
+            toggleWrapper.appendChild(activeBackground);
+            toggleWrapper.appendChild(powerOption);
+            toggleWrapper.appendChild(energyOption);
+            modeToggleContainer.appendChild(toggleWrapper);
+            card.appendChild(modeToggleContainer);
+            // Show either power section or energy section based on the current view mode
+            if (this._viewMode === 'power') {
+                // Power section
+                const powerSection = this._renderPowerSection();
+                card.appendChild(powerSection);
+            }
+            else {
+                // Energy section (without separator when it's the only section shown)
+                const energySection = this._renderEnergySection();
+                // If we're in energy view mode, remove the separator as it's not needed
+                const separator = energySection.querySelector('.section-separator');
+                if (separator) {
+                    separator.remove();
+                }
+                card.appendChild(energySection);
+            }
+            // Force layout recalculation to ensure all elements have proper dimensions
+            requestAnimationFrame(() => {
+                this._forceRecalculation(card);
+                // Wait a bit for the DOM to be fully rendered before equalizing button heights
+                setTimeout(() => {
+                    const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
+                    controlButtonsContainers.forEach((container) => {
+                        this._equalizeButtonHeights(container);
+                    });
+                    // Restore scroll position after content update
+                    const updatedContainer = this._root.querySelector('.entities-container');
+                    if (updatedContainer && savedScrollPosition > 0) {
+                        updatedContainer.scrollTop = savedScrollPosition;
+                        // Remove the updating class to complete the transition
+                        setTimeout(() => {
+                            updatedContainer.classList.remove('updating');
+                        }, 50);
+                    }
+                }, 50);
+            });
+        }, 10); // Very short delay for the opacity transition
     }
 }
 // Register the card with the custom elements registry
