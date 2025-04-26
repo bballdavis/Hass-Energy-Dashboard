@@ -602,6 +602,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
     // Section rendering
     const renderPersistenceToggle = () => {
+      console.log("Rendering persistence toggle, config:", this.config);
       const persistenceToggle = document.createElement('div');
       persistenceToggle.className = 'persistence-toggle';
       persistenceToggle.style.display = 'flex';
@@ -611,6 +612,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       persistenceToggle.style.marginBottom = '8px';
       persistenceToggle.style.cursor = 'pointer';
       persistenceToggle.addEventListener('click', this._togglePersistence);
+      persistenceToggle.setAttribute('id', 'persistence-toggle');
       const toggleLabel = document.createElement('span');
       toggleLabel.style.marginRight = '8px';
       toggleLabel.textContent = 'Remember Selection: ';
@@ -647,19 +649,124 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       persistenceToggle.appendChild(toggleSwitch);
       return persistenceToggle;
     };
+
+    // First always add the mode buttons (Power/Energy) section
     if (this._viewMode === 'power') {
-      card.appendChild(renderPersistenceToggle());
+      // Add control buttons section
+      const controlButtons = document.createElement('div');
+      controlButtons.className = 'control-buttons';
+      controlButtons.style.display = 'flex';
+      controlButtons.style.flexWrap = 'nowrap';
+      controlButtons.style.alignItems = 'center';
+      controlButtons.style.gap = '4px';
+      controlButtons.style.margin = '0 0 8px 0';
+      controlButtons.style.padding = '0';
+      
+      const resetButton = document.createElement('button');
+      resetButton.className = 'control-button';
+      resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+      resetButton.style.flex = '1 1 0';
+      resetButton.style.minWidth = '40px';
+      resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
+      
+      const clearButton = document.createElement('button');
+      clearButton.className = 'control-button';
+      clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+      clearButton.style.flex = '1 1 0';
+      clearButton.style.minWidth = '40px';
+      clearButton.addEventListener('click', this._clearAllPowerEntities);
+      
+      const selectAllButton = document.createElement('button');
+      selectAllButton.className = 'select-all-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+      selectAllButton.style.flex = '1 1 0';
+      selectAllButton.style.minWidth = '40px';
+      selectAllButton.addEventListener('click', this._selectAllPowerEntities);
+      
+      controlButtons.appendChild(resetButton);
+      controlButtons.appendChild(clearButton);
+      controlButtons.appendChild(selectAllButton);
+      card.appendChild(controlButtons);
+
+      // Add the persistence toggle right after control buttons
+      const persistenceToggleEl = renderPersistenceToggle();
+      card.appendChild(persistenceToggleEl);
+      console.log("Appended persistence toggle to card:", persistenceToggleEl);
+      
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Power Entities';
+      card.appendChild(sectionTitle);
+
+      // Then add the entities container
       this._powerEntitiesContainer!.style.display = '';
       this._energyEntitiesContainer!.style.display = 'none';
       card.appendChild(this._powerEntitiesContainer!);
       this._updateEntityButtons(this._powerEntitiesContainer!, this.powerEntities, this._togglePowerEntity, true);
     } else {
-      card.appendChild(renderPersistenceToggle());
+      // Similar structure for energy view
+      // Add control buttons section  
+      const controlButtons = document.createElement('div');
+      controlButtons.className = 'control-buttons';
+      controlButtons.style.display = 'flex';
+      controlButtons.style.flexWrap = 'nowrap';
+      controlButtons.style.alignItems = 'center';
+      controlButtons.style.gap = '4px';
+      controlButtons.style.margin = '0 0 8px 0';
+      controlButtons.style.padding = '0';
+      
+      const resetButton = document.createElement('button');
+      resetButton.className = 'control-button';
+      resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+      resetButton.style.flex = '1 1 0';
+      resetButton.style.minWidth = '40px';
+      resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
+      
+      const clearButton = document.createElement('button');
+      clearButton.className = 'control-button';
+      clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+      clearButton.style.flex = '1 1 0';
+      clearButton.style.minWidth = '40px';
+      clearButton.addEventListener('click', this._clearAllEnergyEntities);
+      
+      const selectAllButton = document.createElement('button');
+      selectAllButton.className = 'select-all-button';
+      selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+      selectAllButton.style.flex = '1 1 0';
+      selectAllButton.style.minWidth = '40px';
+      selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
+      
+      controlButtons.appendChild(resetButton);
+      controlButtons.appendChild(clearButton);
+      controlButtons.appendChild(selectAllButton);
+      card.appendChild(controlButtons);
+
+      // Add the persistence toggle right after control buttons
+      const persistenceToggleEl = renderPersistenceToggle();
+      card.appendChild(persistenceToggleEl);
+      console.log("Appended persistence toggle to card:", persistenceToggleEl);
+      
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'section-title';
+      sectionTitle.textContent = 'Energy Entities';
+      card.appendChild(sectionTitle);
+
+      // Then add the entities container
       this._powerEntitiesContainer!.style.display = 'none';
       this._energyEntitiesContainer!.style.display = '';
       card.appendChild(this._energyEntitiesContainer!);
       this._updateEntityButtons(this._energyEntitiesContainer!, this.energyEntities, this._toggleEnergyEntity, false);
     }
+
+    // Check after a short delay if the toggle actually appears in the DOM
+    setTimeout(() => {
+      const toggle = this._root.querySelector('#persistence-toggle');
+      console.log("Persistence toggle in DOM after rendering:", toggle);
+      if (toggle) {
+        console.log("Toggle styles:", window.getComputedStyle(toggle));
+      }
+    }, 100);
+
     // Force layout recalculation to ensure all elements have proper dimensions
     requestAnimationFrame(() => {
       this._forceRecalculation(card as HTMLElement);
