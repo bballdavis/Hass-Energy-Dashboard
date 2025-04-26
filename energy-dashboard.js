@@ -356,8 +356,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._initialized = false;
         this._energyInitialized = false;
         this._viewMode = 'power'; // Default view mode
-        this._powerEntitiesContainer = null;
-        this._energyEntitiesContainer = null;
         this._resetToPowerDefaultEntities = () => {
             var _a, _b;
             // Get current entities
@@ -401,7 +399,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         };
         this._togglePowerEntity = (e) => {
             const target = e.currentTarget;
-            const entityId = target.dataset.entity;
+            const entityId = target.dataset.entityId;
             if (entityId) {
                 this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
                 this._updatePowerEntities();
@@ -451,7 +449,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         };
         this._toggleEnergyEntity = (e) => {
             const target = e.currentTarget;
-            const entityId = target.dataset.entity;
+            const entityId = target.dataset.entityId;
             if (entityId) {
                 this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
                 this._updateEnergyEntities();
@@ -766,18 +764,14 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 this._powerEntitiesContainer.style.overflowY = 'auto';
             }
             // Show power container, hide energy container
-            this._powerEntitiesContainer.style.display = '';
             this._energyEntitiesContainer.style.display = 'none';
+            this._powerEntitiesContainer.style.display = '';
             // Add containers to the DOM if not already there
             if (!this._powerEntitiesContainer.parentNode) {
                 card.appendChild(this._powerEntitiesContainer);
             }
-            else if (this._powerEntitiesContainer.parentNode !== card) {
-                // Move to correct position if already in DOM elsewhere
-                card.appendChild(this._powerEntitiesContainer);
-            }
-            // Update entity buttons within the persistent container
-            this._updateEntityButtons(this._powerEntitiesContainer, this.powerEntities, this._togglePowerEntity, true);
+            // Update entities efficiently without replacing the entire container
+            this._updateEntityItems(this._powerEntitiesContainer, this.powerEntities, true);
         }
         else {
             // Show energy section
@@ -800,13 +794,92 @@ class EnergyDashboardEntityCard extends HTMLElement {
             if (!this._energyEntitiesContainer.parentNode) {
                 card.appendChild(this._energyEntitiesContainer);
             }
-            else if (this._energyEntitiesContainer.parentNode !== card) {
-                // Move to correct position if already in DOM elsewhere
-                card.appendChild(this._energyEntitiesContainer);
-            }
-            // Update entity buttons within the persistent container
-            this._updateEntityButtons(this._energyEntitiesContainer, this.energyEntities, this._toggleEnergyEntity, false);
+            // Update entities efficiently without replacing the entire container
+            this._updateEntityItems(this._energyEntitiesContainer, this.energyEntities, false);
         }
+    }
+    // This is the key method that handles efficient updates
+    _updateEntityItems(container, entities, isPower) {
+        // Store current scroll position
+        const scrollTop = container.scrollTop;
+        // Find all existing entity elements and create a map for quick lookup
+        const existingEntityElements = new Map();
+        Array.from(container.querySelectorAll('.entity-item')).forEach((el) => {
+            const entityEl = el;
+            const entityId = entityEl.dataset.entityId;
+            if (entityId) {
+                existingEntityElements.set(entityId, entityEl);
+            }
+        });
+        // Empty message if no entities
+        if (!entities || entities.length === 0) {
+            container.innerHTML = '<div class="empty-message">No entities found</div>';
+            return;
+        }
+        // Create a document fragment for batch DOM updates
+        const fragment = document.createDocumentFragment();
+        // Process each entity
+        entities.forEach(entity => {
+            let entityElement = existingEntityElements.get(entity.entityId);
+            // If the element doesn't exist, create it
+            if (!entityElement) {
+                entityElement = document.createElement('div');
+                entityElement.className = 'entity-item';
+                entityElement.dataset.entityId = entity.entityId;
+                // Add click handler
+                entityElement.addEventListener('click', isPower ? this._togglePowerEntity : this._toggleEnergyEntity);
+                // Create the left part (entity name)
+                const entityLeft = document.createElement('div');
+                entityLeft.className = 'entity-left';
+                const entityName = document.createElement('div');
+                entityName.className = 'entity-name';
+                entityLeft.appendChild(entityName);
+                // Create the right part (entity state)
+                const entityState = document.createElement('div');
+                entityState.className = 'entity-state';
+                // Assemble the entity item
+                entityElement.appendChild(entityLeft);
+                entityElement.appendChild(entityState);
+            }
+            // Now efficiently update only what's changed
+            const nameEl = entityElement.querySelector('.entity-name');
+            nameEl.textContent = entity.name;
+            const stateEl = entityElement.querySelector('.entity-state');
+            // Update state display based on entity type
+            if (isPower) {
+                // Format power value
+                const value = entity.powerValue !== undefined ? entity.powerValue : 0;
+                const valueText = value >= 1000
+                    ? `${(value / 1000).toFixed(1)} kW`
+                    : `${Math.round(value)} W`;
+                stateEl.innerHTML = `<span class="power-value">${valueText}</span>`;
+            }
+            else {
+                // Format energy value
+                const value = entity.energyValue !== undefined ? entity.energyValue : 0;
+                stateEl.innerHTML = `<span class="power-value">${value.toFixed(2)} kWh</span>`;
+            }
+            // Update on/selected state
+            if (entity.isOn) {
+                entityElement.classList.add('on');
+            }
+            else {
+                entityElement.classList.remove('on');
+            }
+            // Remove from the map so we know what's left to remove
+            existingEntityElements.delete(entity.entityId);
+            // Add to fragment
+            fragment.appendChild(entityElement);
+        });
+        // Remove any entities that no longer exist
+        existingEntityElements.forEach(el => {
+            el.remove();
+        });
+        // Clear the container and add all elements in one batch operation
+        container.innerHTML = '';
+        container.appendChild(fragment);
+        // Restore scroll position
+        container.scrollTop = scrollTop;
     }
     // Render the mode toggle (Power/Energy selector)
     _renderModeToggle() {
@@ -966,74 +1039,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         persistenceToggle.appendChild(toggleLabel);
         persistenceToggle.appendChild(toggleSwitch);
         return persistenceToggle;
-    }
-    // Update entity buttons within a persistent container
-    _updateEntityButtons(container, entities, onClick, isPower) {
-        // Create a map of existing entity buttons by entityId
-        const existingButtons = new Map();
-        Array.from(container.children).forEach(child => {
-            const element = child;
-            const entityId = element.dataset.entity;
-            if (entityId) {
-                existingButtons.set(entityId, element);
-            }
-        });
-        // Track which entities we still need to keep
-        const seenEntityIds = new Set();
-        // Update or create entity buttons
-        entities.forEach(entity => {
-            var _a;
-            seenEntityIds.add(entity.entityId);
-            // Get existing button or create a new one
-            let entityButton = existingButtons.get(entity.entityId);
-            // Create new button if it doesn't exist
-            if (!entityButton) {
-                entityButton = document.createElement('div');
-                entityButton.className = 'entity-item';
-                entityButton.dataset.entity = entity.entityId;
-                entityButton.addEventListener('click', onClick);
-                container.appendChild(entityButton);
-            }
-            // Now entityButton is guaranteed to be defined
-            // Update the button's class to reflect its state
-            entityButton.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-            // Update the button's content
-            entityButton.innerHTML = '';
-            // Left side with entity name
-            const entityLeft = document.createElement('div');
-            entityLeft.className = 'entity-left';
-            const entityName = document.createElement('div');
-            entityName.className = 'entity-name';
-            entityName.title = entity.name;
-            entityName.textContent = entity.name;
-            entityLeft.appendChild(entityName);
-            entityButton.appendChild(entityLeft);
-            // Right side with state and value
-            const entityState = document.createElement('div');
-            entityState.className = 'entity-state';
-            const statusIndicator = document.createElement('div');
-            statusIndicator.className = 'status-indicator';
-            statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
-            const valueDiv = document.createElement('div');
-            valueDiv.className = 'power-value';
-            if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_state) {
-                if (isPower) {
-                    valueDiv.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
-                }
-                else {
-                    valueDiv.textContent = `${entity.state} ${entity.unit}`;
-                }
-            }
-            entityState.appendChild(statusIndicator);
-            entityState.appendChild(valueDiv);
-            entityButton.appendChild(entityState);
-        });
-        // Remove any buttons for entities that no longer exist
-        existingButtons.forEach((button, entityId) => {
-            if (!seenEntityIds.has(entityId)) {
-                container.removeChild(button);
-            }
-        });
     }
 }
 // Register the card with the custom elements registry
