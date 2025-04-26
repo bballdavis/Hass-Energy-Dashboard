@@ -884,7 +884,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             sectionTitle.textContent = 'Power Entities';
             section.appendChild(sectionTitle);
             // Container
-            const containerWrapper = document.createElement('div');
+            let containerWrapper = document.createElement('div');
             containerWrapper.style.width = '100%';
             containerWrapper.style.boxSizing = 'border-box';
             const entitiesContainer = document.createElement('div');
@@ -1027,7 +1027,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             sectionTitle.textContent = 'Energy Entities';
             section.appendChild(sectionTitle);
             // Container
-            const containerWrapper = document.createElement('div');
+            let containerWrapper = document.createElement('div');
             containerWrapper.style.width = '100%';
             containerWrapper.style.boxSizing = 'border-box';
             const entitiesContainer = document.createElement('div');
@@ -1092,22 +1092,17 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }
             return;
         }
-        // Always ensure persistence setting is loaded from localStorage
         this.config.persist_selection = this._loadPersistenceState();
-        // Get the ha-card element
         const card = this._root.querySelector('ha-card');
         if (!card)
             return;
-        // Clear previous content
         card.innerHTML = '';
-        // Header
         if (this.config.show_header) {
             const header = document.createElement('div');
             header.className = 'card-header';
             header.textContent = this.config.title;
             card.appendChild(header);
         }
-        // Add mode toggle at the top
         const modeToggleContainer = document.createElement('div');
         modeToggleContainer.className = 'mode-toggle-container';
         modeToggleContainer.style.display = 'flex';
@@ -1126,7 +1121,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         toggleWrapper.style.width = '200px';
         toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
         toggleWrapper.style.overflow = 'hidden';
-        // Active background that slides based on selected option
         const activeBackground = document.createElement('div');
         activeBackground.className = 'active-background';
         activeBackground.style.position = 'absolute';
@@ -1138,7 +1132,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         activeBackground.style.borderRadius = '25px';
         activeBackground.style.transition = 'left 0.3s ease-in-out';
         activeBackground.style.opacity = '0.2';
-        // Power option
         const powerOption = document.createElement('div');
         powerOption.className = 'toggle-option';
         powerOption.textContent = 'Power';
@@ -1154,7 +1147,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 this._toggleViewMode();
             }
         });
-        // Energy option
         const energyOption = document.createElement('div');
         energyOption.className = 'toggle-option';
         energyOption.textContent = 'Energy';
@@ -1175,7 +1167,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         toggleWrapper.appendChild(energyOption);
         modeToggleContainer.appendChild(toggleWrapper);
         card.appendChild(modeToggleContainer);
-        // Show either power section or energy section based on the current view mode
+        // Efficient entity list rendering
         if (this._viewMode === 'power') {
             // Power section
             console.log("Rendering power section...");
