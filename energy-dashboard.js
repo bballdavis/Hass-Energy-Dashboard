@@ -341,6 +341,127 @@ const editorStyles = `
   }
 `;
 
+/**
+ * ScrollManager handles scroll position management for containers
+ * It preserves scroll position across arbitrary DOM updates
+ */
+class ScrollManager {
+    constructor() {
+        this.scrollPositions = new Map();
+        this.mutationObservers = new Map();
+        this.resizeObservers = new Map();
+        this.updateScheduled = new Map();
+        this.containers = new Map();
+    }
+    /**
+     * Register a container to manage its scroll state
+     * @param id Unique identifier for this scroll container
+     * @param container The HTML element that holds scrollable content
+     */
+    registerContainer(id, container) {
+        // Save initial scroll position if any
+        this.scrollPositions.set(id, container.scrollTop);
+        this.containers.set(id, container);
+        // Set up scroll event listener to capture position changes
+        container.addEventListener('scroll', () => {
+            this.scrollPositions.set(id, container.scrollTop);
+        }, { passive: true });
+        // Set up mutation observer to restore scroll after content changes
+        const observer = new MutationObserver(() => this.scheduleScrollRestore(id));
+        observer.observe(container, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true
+        });
+        this.mutationObservers.set(id, observer);
+        // Set up resize observer to handle container size changes
+        if (window.ResizeObserver) {
+            const resizeObserver = new ResizeObserver(() => this.scheduleScrollRestore(id));
+            resizeObserver.observe(container);
+            this.resizeObservers.set(id, resizeObserver);
+        }
+        console.log(`ScrollManager: Registered container ${id}`);
+        return this;
+    }
+    /**
+     * Unregister a container and clean up all observers
+     */
+    unregisterContainer(id) {
+        // Clean up observers
+        const mutationObserver = this.mutationObservers.get(id);
+        if (mutationObserver) {
+            mutationObserver.disconnect();
+            this.mutationObservers.delete(id);
+        }
+        const resizeObserver = this.resizeObservers.get(id);
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+            this.resizeObservers.delete(id);
+        }
+        // Clean up timers
+        const timerId = this.updateScheduled.get(id);
+        if (timerId) {
+            window.clearTimeout(timerId);
+            this.updateScheduled.delete(id);
+        }
+        // Remove saved data
+        this.scrollPositions.delete(id);
+        this.containers.delete(id);
+        console.log(`ScrollManager: Unregistered container ${id}`);
+    }
+    /**
+     * Schedule a scroll position restore (debounced)
+     */
+    scheduleScrollRestore(id) {
+        // Clear any pending restore for this container
+        const existingTimer = this.updateScheduled.get(id);
+        if (existingTimer) {
+            window.clearTimeout(existingTimer);
+        }
+        // Schedule a new restore
+        const timerId = window.setTimeout(() => {
+            this.restoreScrollPosition(id);
+            this.updateScheduled.delete(id);
+        }, 10);
+        this.updateScheduled.set(id, timerId);
+    }
+    /**
+     * Force an immediate scroll position restore
+     */
+    restoreScrollPosition(id) {
+        const savedPosition = this.scrollPositions.get(id);
+        const container = this.containers.get(id);
+        if (savedPosition !== undefined && container) {
+            // Use requestAnimationFrame for smoother scrolling
+            requestAnimationFrame(() => {
+                // Double RAF for more reliable scroll restoration after DOM changes
+                requestAnimationFrame(() => {
+                    container.scrollTop = savedPosition;
+                    // console.log(`ScrollManager: Restored scroll position for ${id} to ${savedPosition}px`);
+                });
+            });
+        }
+    }
+    /**
+     * Manually save the current scroll position
+     */
+    saveScrollPosition(id) {
+        const container = this.containers.get(id);
+        if (container) {
+            this.scrollPositions.set(id, container.scrollTop);
+            // console.log(`ScrollManager: Manually saved scroll position for ${id}: ${container.scrollTop}px`);
+        }
+    }
+    /**
+     * Get the current saved scroll position
+     */
+    getScrollPosition(id) {
+        return this.scrollPositions.get(id) || 0;
+    }
+}
+// Create a singleton instance
+const scrollManager = new ScrollManager();
 class EnergyDashboardEntityCard extends HTMLElement {
     // Static properties for card registration
     static get cardType() { return 'energy-dashboard-entity-card'; }
@@ -502,10 +623,15 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Create persistent containers that won't be recreated
         this._powerEntitiesContainer = document.createElement('div');
         this._powerEntitiesContainer.className = 'entities-container';
+        this._powerEntitiesContainer.id = 'power-entities-container';
         this._powerEntitiesContainer.style.display = 'none'; // Hidden initially
         this._energyEntitiesContainer = document.createElement('div');
         this._energyEntitiesContainer.className = 'entities-container';
+        this._energyEntitiesContainer.id = 'energy-entities-container';
         this._energyEntitiesContainer.style.display = 'none'; // Hidden initially
+        // Add containers to card immediately so they can be registered with ScrollManager
+        card.appendChild(this._powerEntitiesContainer);
+        card.appendChild(this._energyEntitiesContainer);
     }
     // Called when the element is added to the DOM
     connectedCallback() {
@@ -518,7 +644,20 @@ class EnergyDashboardEntityCard extends HTMLElement {
         if (this.config) {
             this.config.view_mode = this._viewMode;
         }
+        // Register containers with ScrollManager once they're in the DOM
+        setTimeout(() => {
+            scrollManager.registerContainer('power-container', this._powerEntitiesContainer);
+            scrollManager.registerContainer('energy-container', this._energyEntitiesContainer);
+            console.log('ScrollManager: Registered containers');
+        }, 50);
         this._updateContent();
+    }
+    // Called when the element is removed from the DOM
+    disconnectedCallback() {
+        // Unregister containers when element is removed
+        scrollManager.unregisterContainer('power-container');
+        scrollManager.unregisterContainer('energy-container');
+        console.log('ScrollManager: Unregistered containers');
     }
     // Home Assistant specific method to set config
     setConfig(config) {
@@ -766,10 +905,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
             // Show power container, hide energy container
             this._energyEntitiesContainer.style.display = 'none';
             this._powerEntitiesContainer.style.display = '';
-            // Add containers to the DOM if not already there
-            if (!this._powerEntitiesContainer.parentNode) {
-                card.appendChild(this._powerEntitiesContainer);
-            }
             // Update entities efficiently without replacing the entire container
             this._updateEntityItems(this._powerEntitiesContainer, this.powerEntities, true);
         }
@@ -790,10 +925,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
             // Show energy container, hide power container
             this._powerEntitiesContainer.style.display = 'none';
             this._energyEntitiesContainer.style.display = '';
-            // Add containers to the DOM if not already there
-            if (!this._energyEntitiesContainer.parentNode) {
-                card.appendChild(this._energyEntitiesContainer);
-            }
             // Update entities efficiently without replacing the entire container
             this._updateEntityItems(this._energyEntitiesContainer, this.energyEntities, false);
         }

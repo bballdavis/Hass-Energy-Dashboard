@@ -18,6 +18,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     static get icon(): string;
     constructor();
     connectedCallback(): void;
+    disconnectedCallback(): void;
     setConfig(config: EnergyDashboardConfig): void;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): {
