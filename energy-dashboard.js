@@ -564,13 +564,11 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Create the card element
         const card = document.createElement('ha-card');
         this._root.appendChild(card);
-        // Create persistent containers
+        // Only create containers here, do not append
         this._powerEntitiesContainer = document.createElement('div');
         this._powerEntitiesContainer.className = 'entities-container';
-        card.appendChild(this._powerEntitiesContainer);
         this._energyEntitiesContainer = document.createElement('div');
         this._energyEntitiesContainer.className = 'entities-container';
-        card.appendChild(this._energyEntitiesContainer);
     }
     // Called when the element is added to the DOM
     connectedCallback() {
