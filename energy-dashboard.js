@@ -1231,6 +1231,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
         return section;
     }
     _updateContent() {
+        // Save scroll position before updating content
+        const existingContainer = this._root.querySelector('.entities-container');
+        const savedScrollPosition = existingContainer ? existingContainer.scrollTop : 0;
         if (!this.config) {
             const card = this._root.querySelector('ha-card');
             if (card) {
@@ -1370,6 +1373,11 @@ class EnergyDashboardEntityCard extends HTMLElement {
                         console.warn("Entity container is empty!");
                     }
                 });
+                // Restore scroll position after content update
+                const updatedContainer = this._root.querySelector('.entities-container');
+                if (updatedContainer && savedScrollPosition > 0) {
+                    updatedContainer.scrollTop = savedScrollPosition;
+                }
             }, 100);
         });
     }
