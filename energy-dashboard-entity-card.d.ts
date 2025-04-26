@@ -10,6 +10,8 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _energyInitialized;
     private _root;
     private _viewMode;
+    private _powerEntitiesContainer;
+    private _energyEntitiesContainer;
     private _equalizeButtonHeights;
     private _forceRecalculation;
     static get cardType(): string;
@@ -54,7 +56,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _saveViewMode(mode: 'power' | 'energy'): void;
     _loadViewMode(): 'power' | 'energy';
     _toggleViewMode: () => void;
-    _renderPowerSection(): HTMLElement;
-    _renderEnergySection(): HTMLElement;
+    _updatePowerEntitiesContainer(): void;
+    _updateEnergyEntitiesContainer(): void;
     _updateContent(): void;
 }
