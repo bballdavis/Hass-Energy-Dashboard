@@ -60,4 +60,5 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _renderEnergySection(): HTMLElement;
     _updateContent(): void;
     _performActualUpdate(): void;
+    _updateEntityValues(): void;
 }

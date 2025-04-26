@@ -11,6 +11,8 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _energyInitialized: boolean;
     private _root: ShadowRoot;
     private _viewMode: 'power' | 'energy';
+    private _preventFlashingTimeout: number | null;
+    private _pendingUpdate: boolean;
 
     // Card picker properties
     static get cardType(): string;
@@ -60,6 +62,8 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _renderPowerSection(): HTMLElement;
     private _renderEnergySection(): HTMLElement;
     private _updateContent(): void;
+    private _performActualUpdate(): void;
+    private _updateEntityValues(): void;
     private _equalizeButtonHeights(buttonContainer: HTMLElement): void;
     private _debugSection(section: HTMLElement, label: string): HTMLElement;
     private _forceRecalculation(element: HTMLElement): number;

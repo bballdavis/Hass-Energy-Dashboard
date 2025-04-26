@@ -810,8 +810,17 @@ class EnergyDashboardEntityCard extends HTMLElement {
         if (this.config && isFirstUpdate) {
             this.config.persist_selection = this._loadPersistenceState();
         }
+        // Update entities data
         this._updateEntities();
-        this._updateContent();
+        // Only do full content rebuild on first load
+        if (isFirstUpdate) {
+            // Complete rebuild on first update
+            this._updateContent();
+        }
+        else {
+            // For subsequent updates, just update the values without rebuilding the DOM
+            this._updateEntityValues();
+        }
     }
     get hass() {
         return this._hass;
@@ -1401,6 +1410,65 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 }, 50);
             });
         }, 10); // Very short delay for the opacity transition
+    }
+    // Update entity values without recreating the entire DOM structure
+    _updateEntityValues() {
+        // Update power entity values if we're in power mode or have power entities visible
+        if (this._viewMode === 'power' || this._root.querySelector('.power-section')) {
+            this.powerEntities.forEach(entity => {
+                var _a;
+                const entityElement = this._root.querySelector(`[data-entity="${entity.entityId}"]`);
+                if (entityElement) {
+                    // Update toggle state class
+                    if (entity.isOn) {
+                        entityElement.classList.add('on');
+                        entityElement.classList.remove('off');
+                    }
+                    else {
+                        entityElement.classList.add('off');
+                        entityElement.classList.remove('on');
+                    }
+                    // Update status indicator
+                    const statusIndicator = entityElement.querySelector('.status-indicator');
+                    if (statusIndicator && entity.isToggleable) {
+                        statusIndicator.textContent = entity.isOn ? 'ON' : 'OFF';
+                    }
+                    // Update power value
+                    const powerValue = entityElement.querySelector('.power-value');
+                    if (powerValue && ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_state)) {
+                        powerValue.textContent = `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`;
+                    }
+                }
+            });
+        }
+        // Update energy entity values if we're in energy mode or have energy entities visible
+        if (this._viewMode === 'energy' || this._root.querySelector('.energy-section')) {
+            this.energyEntities.forEach(entity => {
+                var _a;
+                const entityElement = this._root.querySelector(`[data-entity="${entity.entityId}"]`);
+                if (entityElement) {
+                    // Update toggle state class
+                    if (entity.isOn) {
+                        entityElement.classList.add('on');
+                        entityElement.classList.remove('off');
+                    }
+                    else {
+                        entityElement.classList.add('off');
+                        entityElement.classList.remove('on');
+                    }
+                    // Update status indicator
+                    const statusIndicator = entityElement.querySelector('.status-indicator');
+                    if (statusIndicator && entity.isToggleable) {
+                        statusIndicator.textContent = entity.isOn ? 'ON' : 'OFF';
+                    }
+                    // Update energy value
+                    const powerValue = entityElement.querySelector('.power-value');
+                    if (powerValue && ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_state)) {
+                        powerValue.textContent = `${entity.state} ${entity.unit}`;
+                    }
+                }
+            });
+        }
     }
 }
 // Register the card with the custom elements registry
