@@ -124,6 +124,19 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
     titleRow.appendChild(titleField);
     form.appendChild(titleRow);
 
+    // Entity Filter field - new
+    const entityFilterRow = this._createRow();
+    const entityFilterField = document.createElement('ha-textfield') as HaFormElement;
+    entityFilterField.className = 'value';
+    entityFilterField.label = 'Entity Filter';
+    entityFilterField.value = this.config.entity_filter || '';
+    entityFilterField.configValue = 'entity_filter';
+    entityFilterField.addEventListener('change', this.valueChanged);
+    entityFilterField.helperText = 'Filter by name (format: "string,string|exact", options: contains (default), exact, start)';
+    entityFilterField.helperPersistent = true;
+    entityFilterRow.appendChild(entityFilterField);
+    form.appendChild(entityFilterRow);
+
     // Show Header toggle
     const headerRow = this._createRow();
     const headerSwitch = document.createElement('ha-switch') as HaFormElement;

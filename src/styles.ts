@@ -81,22 +81,9 @@ export const cardStyles = `
     flex-direction: column;
     gap: 8px;
     justify-content: flex-start;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb-color) transparent;
     width: calc(100% - (var(--card-padding) * 2));
     box-sizing: border-box;
     min-width: 100%;
-  }
-  .entities-container::-webkit-scrollbar {
-    width: 6px;
-  }
-  .entities-container::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .entities-container::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb-color, var(--divider-color, #e0e0e0));
-    border-radius: 3px;
   }
   .entity-item {
     background-color: var(--ha-card-background, var(--card-background-color, white));

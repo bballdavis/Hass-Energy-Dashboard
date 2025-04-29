@@ -16,6 +16,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _viewMode: 'power' | 'energy' = 'power'; // Default view mode
   private _powerEntitiesContainer: HTMLElement | null = null;
   private _energyEntitiesContainer: HTMLElement | null = null;
+  private _dynamicFilterValue: string = ''; // Track dynamic filter value
+  private _filteredPowerEntities: EntityInfo[] = []; // Track filtered power entities
+  private _filteredEnergyEntities: EntityInfo[] = []; // Track filtered energy entities
 
   // Helper method to equalize button heights with ResizeObserver
   private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
@@ -143,8 +146,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       show_state: config.show_state ?? true,
       show_toggle: config.show_toggle ?? true,
       auto_select_count: config.auto_select_count ?? 6,
-      max_height: config.max_height ?? 400,
+      max_height: config.max_height ?? 0, // No longer using max_height, set to 0 by default
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
+      entity_filter: config.entity_filter ?? '', // Default to empty string for no filter
       // Use the stored value as priority for persistence setting
       persist_selection: persistenceFromStorage,
       // Always enable energy section
@@ -166,9 +170,10 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       show_state: true,
       show_toggle: true,
       auto_select_count: 6,
-      max_height: 400,
+      max_height: 0,
       energy_auto_select_count: 6,
-      persist_selection: true
+      persist_selection: true,
+      entity_filter: ''
     };
   }
 
@@ -229,6 +234,13 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       ...entity,
       isOn: this.entityToggleStates[entity.entityId] || false
     }));
+    
+    // Apply the permanent filter from config
+    const filteredEntities = this._applyPermanentFilter(this.powerEntities);
+    
+    // Apply dynamic filter if exists
+    this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
+    
     this._savePowerToggleStates();
   }
 
@@ -242,7 +254,74 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       ...entity,
       isOn: this.energyEntityToggleStates[entity.entityId] || false
     }));
+    
+    // Apply the permanent filter from config
+    const filteredEntities = this._applyPermanentFilter(this.energyEntities);
+    
+    // Apply dynamic filter if exists
+    this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
+    
     this._saveEnergyToggleStates();
+  }
+
+  // Apply permanent filter from configuration
+  _applyPermanentFilter(entities: EntityInfo[]): EntityInfo[] {
+    if (!this.config?.entity_filter) {
+      return entities;
+    }
+
+    // Parse filter string: format is "string1,string2|option"
+    const filterParts = this.config.entity_filter.split('|');
+    const filterStrings = filterParts[0].split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+    const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'contains';
+
+    if (filterStrings.length === 0) {
+      return entities;
+    }
+
+    return entities.filter(entity => {
+      const name = entity.name.toLowerCase();
+      
+      return filterStrings.some(filter => {
+        if (filterOption === 'exact') {
+          return name === filter;
+        } else if (filterOption === 'start') {
+          return name.startsWith(filter);
+        } else { // default is 'contains'
+          return name.includes(filter);
+        }
+      });
+    });
+  }
+
+  // Apply dynamic filter (from search box)
+  _applyDynamicFilter(entities: EntityInfo[], filterValue: string): EntityInfo[] {
+    if (!filterValue) {
+      return entities;
+    }
+
+    const filter = filterValue.toLowerCase();
+    return entities.filter(entity => 
+      entity.name.toLowerCase().includes(filter) || 
+      entity.entityId.toLowerCase().includes(filter)
+    );
+  }
+
+  // Handle dynamic filter input change
+  _handleFilterInput = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    this._dynamicFilterValue = target.value;
+    
+    // Re-apply filters and update UI
+    if (this._viewMode === 'power') {
+      const filteredEntities = this._applyPermanentFilter(this.powerEntities);
+      this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
+    } else {
+      const filteredEntities = this._applyPermanentFilter(this.energyEntities);
+      this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
+    }
+    
+    this._updateContent();
   }
 
   _initializePowerToggleStates(entities: EntityInfo[]) {
@@ -698,11 +777,33 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       sectionTitle.textContent = 'Power Entities';
       card.appendChild(sectionTitle);
 
+      // Add dynamic filter input
+      const searchContainer = document.createElement('div');
+      searchContainer.className = 'search-container';
+      const searchInput = document.createElement('input');
+      searchInput.className = 'search-input';
+      searchInput.type = 'text';
+      searchInput.placeholder = 'Filter entities...';
+      searchInput.value = this._dynamicFilterValue;
+      searchInput.addEventListener('input', this._handleFilterInput);
+      searchContainer.appendChild(searchInput);
+      card.appendChild(searchContainer);
+      
       // Then add the entities container
       this._powerEntitiesContainer!.style.display = '';
       this._energyEntitiesContainer!.style.display = 'none';
       card.appendChild(this._powerEntitiesContainer!);
-      this._updateEntityButtons(this._powerEntitiesContainer!, this.powerEntities, this._togglePowerEntity, true);
+      
+      // Show filtered entities or "no results" message
+      if (this._filteredPowerEntities.length > 0) {
+        this._updateEntityButtons(this._powerEntitiesContainer!, this._filteredPowerEntities, this._togglePowerEntity, true);
+      } else {
+        this._powerEntitiesContainer!.innerHTML = '';
+        const noResults = document.createElement('div');
+        noResults.className = 'no-results';
+        noResults.textContent = 'No matching entities found';
+        this._powerEntitiesContainer!.appendChild(noResults);
+      }
     } else {
       // Similar structure for energy view
       // Add control buttons section  
@@ -751,11 +852,33 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       sectionTitle.textContent = 'Energy Entities';
       card.appendChild(sectionTitle);
 
+      // Add dynamic filter input
+      const searchContainer = document.createElement('div');
+      searchContainer.className = 'search-container';
+      const searchInput = document.createElement('input');
+      searchInput.className = 'search-input';
+      searchInput.type = 'text';
+      searchInput.placeholder = 'Filter entities...';
+      searchInput.value = this._dynamicFilterValue;
+      searchInput.addEventListener('input', this._handleFilterInput);
+      searchContainer.appendChild(searchInput);
+      card.appendChild(searchContainer);
+
       // Then add the entities container
       this._powerEntitiesContainer!.style.display = 'none';
       this._energyEntitiesContainer!.style.display = '';
       card.appendChild(this._energyEntitiesContainer!);
-      this._updateEntityButtons(this._energyEntitiesContainer!, this.energyEntities, this._toggleEnergyEntity, false);
+      
+      // Show filtered entities or "no results" message
+      if (this._filteredEnergyEntities.length > 0) {
+        this._updateEntityButtons(this._energyEntitiesContainer!, this._filteredEnergyEntities, this._toggleEnergyEntity, false);
+      } else {
+        this._energyEntitiesContainer!.innerHTML = '';
+        const noResults = document.createElement('div');
+        noResults.className = 'no-results';
+        noResults.textContent = 'No matching entities found';
+        this._energyEntitiesContainer!.appendChild(noResults);
+      }
     }
 
     // Check after a short delay if the toggle actually appears in the DOM

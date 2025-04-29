@@ -12,6 +12,9 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _viewMode;
     private _powerEntitiesContainer;
     private _energyEntitiesContainer;
+    private _dynamicFilterValue;
+    private _filteredPowerEntities;
+    private _filteredEnergyEntities;
     private _equalizeButtonHeights;
     private _forceRecalculation;
     static get cardType(): string;
@@ -31,6 +34,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
         max_height: number;
         energy_auto_select_count: number;
         persist_selection: boolean;
+        entity_filter: string;
     };
     getCardSize(): number;
     set hass(hass: any);
@@ -38,6 +42,9 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _updateEntities(): void;
     _updatePowerEntities(): void;
     _updateEnergyEntities(): void;
+    _applyPermanentFilter(entities: EntityInfo[]): EntityInfo[];
+    _applyDynamicFilter(entities: EntityInfo[], filterValue: string): EntityInfo[];
+    _handleFilterInput: (e: Event) => void;
     _initializePowerToggleStates(entities: EntityInfo[]): void;
     _initializeEnergyToggleStates(entities: EntityInfo[]): void;
     _savePowerToggleStates(): void;
