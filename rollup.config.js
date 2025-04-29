@@ -10,6 +10,8 @@ export default {
     format: "es",
     sourcemap: false
   },
+  // Add external dependencies - this tells Rollup not to bundle these
+  external: ['lit', 'lit/decorators.js', 'lit/directives/class-map.js', 'lit/directives/style-map.js'],
   plugins: [
     typescript({
       tsconfig: "tsconfig.json",
