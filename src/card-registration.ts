@@ -1,7 +1,7 @@
-// This file is specifically for registering the card with Home Assistant's card picker UI
+import { EnergyDashboardEntityCard } from './energy-dashboard-entity-card';
+import { EnergyDashboardChartCard } from './energy-dashboard-chart-card';
 
-// Make this a proper module with exports
-export {}; // Empty export to make this a module
+// This file is specifically for registering the card with Home Assistant's card picker UI
 
 // Define the customCards property for window
 declare global {
@@ -20,8 +20,8 @@ declare global {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'energy-dashboard-entity-card',
-  name: 'Energy Dashboard Entity Card',
-  description: 'Card to select and display power and energy entities',
+  name: EnergyDashboardEntityCard.displayName,
+  description: EnergyDashboardEntityCard.description,
   preview: false,
   documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
 });
@@ -29,8 +29,8 @@ window.customCards.push({
 // Add the chart card to the Home Assistant card catalog
 window.customCards.push({
   type: 'energy-dashboard-chart-card',
-  name: 'Energy Dashboard Chart',
-  description: 'Chart companion for the Energy Dashboard Entity Card',
+  name: EnergyDashboardChartCard.displayName,
+  description: EnergyDashboardChartCard.description,
   preview: false,
   documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
 });

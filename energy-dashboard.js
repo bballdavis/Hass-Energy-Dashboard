@@ -316,87 +316,6 @@ const cardStyles = `
   .chart-container {
     transition: opacity 0.3s ease-in-out;
   }
-
-  /* Mode toggle styles */
-  .mode-toggle-container {
-    padding: 0 var(--card-padding) 8px;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 8px;
-  }
-  
-  .toggle-wrapper {
-    position: relative;
-    display: flex;
-    background-color: var(--secondary-background-color, #f3f3f5);
-    border-radius: 24px;
-    height: 32px;
-    width: 240px;
-    overflow: hidden;
-  }
-  
-  .active-background {
-    position: absolute;
-    top: 2px;
-    bottom: 2px;
-    width: 50%;
-    background-color: var(--primary-color);
-    border-radius: 22px;
-    transition: left 0.3s ease;
-  }
-  
-  .toggle-option {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-    cursor: pointer;
-    font-weight: 500;
-    transition: color 0.3s ease;
-    user-select: none;
-  }
-  
-  /* Persistence toggle styles */
-  .persistence-toggle {
-    padding: 0 var(--card-padding) 16px;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    font-size: 0.85em;
-    color: var(--secondary-text-color);
-    cursor: pointer;
-  }
-  
-  .toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 36px;
-    height: 18px;
-  }
-  
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 18px;
-  }
-  
-  .toggle-button {
-    position: absolute;
-    height: 14px;
-    width: 14px;
-    left: 2px;
-    bottom: 2px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-  }
 `;
 const editorStyles = `
   .form {
@@ -422,141 +341,63 @@ const editorStyles = `
   }
 `;
 
-// Helper file to load Lit libraries from Home Assistant frontend
-// This avoids bare specifier imports which can cause issues in browsers
-// Function to load Lit libraries from Home Assistant frontend
-async function loadHaLit() {
-    var _a, _b, _c, _d;
-    // Check if we're in Home Assistant
-    if (!window.customElements || !window.customElements.get('home-assistant')) {
-        throw new Error('Not running in Home Assistant');
-    }
-    // Access the frontend modules directly if available in window
-    if (window.frontendVersion !== undefined && window.frontend) {
-        return await loadLitFromFrontend(window.frontend);
-    }
-    // Try multiple approaches to find the frontend
-    // Approach 1: Direct window access
-    const windowAny = window;
-    if (windowAny.hassConnection && windowAny.hassConnection.conn &&
-        windowAny.hassConnection.conn.__hass &&
-        windowAny.hassConnection.conn.__hass.hassCore &&
-        windowAny.hassConnection.conn.__hass.hassCore.frontend) {
-        return await loadLitFromFrontend(windowAny.hassConnection.conn.__hass.hassCore.frontend);
-    }
-    // Approach 2: Find through DOM
-    // Try to get the Home Assistant frontend via DOM traversal
-    const hassMain = (_b = (_a = document.querySelector('home-assistant')) === null || _a === void 0 ? void 0 : _a.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector('home-assistant-main');
-    if (!hassMain) {
-        throw new Error('Could not find Home Assistant main element');
-    }
-    // Try different paths to find the frontend
-    const haApp = (_c = hassMain.shadowRoot) === null || _c === void 0 ? void 0 : _c.querySelector('ha-panel-lovelace');
-    if (haApp) {
-        // Check for ___frontend property
-        const frontend = haApp === null || haApp === void 0 ? void 0 : haApp.___frontend;
-        if (frontend) {
-            return await loadLitFromFrontend(frontend);
-        }
-        // Check for _lovelace property
-        const lovelace = haApp === null || haApp === void 0 ? void 0 : haApp._lovelace;
-        if (lovelace && lovelace.frontend) {
-            return await loadLitFromFrontend(lovelace.frontend);
-        }
-    }
-    // Approach 3: Look for ha-panel-frontend element
-    const haFrontendPanel = (_d = hassMain.shadowRoot) === null || _d === void 0 ? void 0 : _d.querySelector('ha-panel-frontend');
-    if (haFrontendPanel && haFrontendPanel.frontend) {
-        return await loadLitFromFrontend(haFrontendPanel.frontend);
-    }
-    // Approach 4: Try to find any element with frontend property
-    for (const selector of ['ha-app-layout', 'home-assistant-main', 'ha-panel-lovelace']) {
-        const el = document.querySelector(selector);
-        if (el && el.frontend) {
-            return await loadLitFromFrontend(el.frontend);
-        }
-    }
-    // Last resort: try to find _frontend in window in case it's exposed there
-    const possibleFrontendKeys = Object.keys(window).filter(key => key.includes('frontend') || key.includes('hass') || key.includes('lovelace'));
-    for (const key of possibleFrontendKeys) {
-        const obj = window[key];
-        if (obj && typeof obj.import === 'function') {
-            try {
-                return await loadLitFromFrontend(obj);
-            }
-            catch (e) {
-                console.debug(`Tried loading from ${key} but failed:`, e);
-                // Continue trying other options
-            }
-        }
-    }
-    throw new Error('Could not access Home Assistant frontend');
-}
-// Helper function to load Lit modules from a frontend object
-async function loadLitFromFrontend(frontend) {
-    try {
-        // Get the Lit modules from the frontend
-        const lit = await frontend.import('./lit');
-        const litDirectives = await frontend.import('./lit/directives');
-        const litDecorators = await frontend.import('./lit/decorators');
-        const litControllers = await frontend.import('./lit/controllers');
-        return {
-            lit: {
-                html: lit.html,
-                css: lit.css,
-                nothing: lit.nothing,
-                render: lit.render
-            },
-            litDirectives: {
-                styleMap: litDirectives.styleMap,
-                repeat: litDirectives.repeat,
-                classMap: litDirectives.classMap
-            },
-            litDecorators: {
-                customElement: litDecorators.customElement,
-                property: litDecorators.property,
-                state: litDecorators.state
-            },
-            litControllers: {
-                ReactiveController: litControllers.ReactiveController,
-                ReactiveControllerHost: litControllers.ReactiveControllerHost
-            }
-        };
-    }
-    catch (e) {
-        console.error("Error loading Lit from frontend:", e);
-        throw e;
-    }
-}
-// Function to set up a Lit renderer with the loaded modules
-function setupLitRenderer(litModules) {
-    const { lit, litDirectives } = litModules;
-    // Return an object with rendering functions
-    return {
-        html: lit.html,
-        render: lit.render,
-        nothing: lit.nothing,
-        styleMap: litDirectives.styleMap,
-        repeat: litDirectives.repeat,
-        classMap: litDirectives.classMap,
-        // Function to provide hass to the component
-        provideHass: (element) => {
-            // This would be implemented based on how your card needs to access hass
-            return element;
-        },
-        // Helper for creating a Lit render function
-        createRenderFunction: (element) => {
-            return (template) => {
-                lit.render(template, element.renderRoot, {
-                    eventContext: element
-                });
-            };
-        }
-    };
-}
-
-// Create a class that extends HTMLElement and uses Home Assistant's lit
 class EnergyDashboardEntityCard extends HTMLElement {
+    // Helper method to equalize button heights with ResizeObserver
+    _equalizeButtonHeights(buttonContainer) {
+        if (!buttonContainer)
+            return;
+        const buttons = Array.from(buttonContainer.querySelectorAll('button'));
+        if (buttons.length === 0)
+            return;
+        // First, reset heights to auto to get natural height
+        buttons.forEach(btn => btn.style.height = 'auto');
+        // Use ResizeObserver for more reliable height adjustments
+        try {
+            const resizeObserver = new ResizeObserver(() => {
+                // Find tallest button
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                // Set all buttons to the tallest height
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            });
+            // Observe all buttons
+            buttons.forEach(button => resizeObserver.observe(button));
+            // Immediate equalization attempt
+            requestAnimationFrame(() => {
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            });
+            // Cleanup after 2 seconds (by then equalization should be stable)
+            setTimeout(() => {
+                resizeObserver.disconnect();
+            }, 2000);
+        }
+        catch (e) {
+            // Fallback if ResizeObserver is not supported
+            setTimeout(() => {
+                const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
+                if (maxHeight > 0) {
+                    buttons.forEach(btn => {
+                        btn.style.height = `${maxHeight}px`;
+                    });
+                }
+            }, 100);
+        }
+    }
+    // Force browser to recalculate layout to ensure all heights are properly calculated
+    _forceRecalculation(element) {
+        // Reading offsetHeight forces a layout recalculation
+        const height = element.offsetHeight;
+        return height;
+    }
+    // Define card name and icon for card picker
     static get cardType() {
         return 'energy-dashboard-entity-card';
     }
@@ -564,25 +405,10 @@ class EnergyDashboardEntityCard extends HTMLElement {
         return 'Energy Dashboard Entity Card';
     }
     static get description() {
-        return 'Card to select and display power and energy entities';
+        return 'Card that displays power and energy consumption entities';
     }
     static get icon() {
         return 'mdi:lightning-bolt';
-    }
-    static getConfigElement() {
-        return document.createElement('energy-dashboard-entity-card-editor');
-    }
-    static getStubConfig() {
-        return {
-            title: 'Energy Dashboard',
-            show_header: true,
-            show_state: true,
-            show_toggle: true,
-            auto_select_count: 6,
-            max_height: 400,
-            energy_auto_select_count: 6,
-            persist_selection: true
-        };
     }
     constructor() {
         super();
@@ -592,305 +418,172 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this.energyEntityToggleStates = {};
         this._initialized = false;
         this._energyInitialized = false;
-        this.powerScrollPosition = 0;
-        this.energyScrollPosition = 0;
-        this.viewMode = 'power';
-        this.litLoaded = false;
-        this._root = this.attachShadow({ mode: 'open' });
-        this._root.appendChild(createStyles(cardStyles));
-        this.loadLitLibraries();
-    }
-    // Define the hass property with a setter
-    set hass(hass) {
-        this._hass = hass;
-        this._updateEntities();
-        this.requestUpdate();
-    }
-    get hass() {
-        return this._hass;
-    }
-    // Load Lit libraries dynamically at runtime
-    async loadLitLibraries() {
-        try {
-            // Check if we're in Home Assistant
-            const isHomeAssistant = window.customElements &&
-                window.customElements.get('home-assistant') !== undefined;
-            if (isHomeAssistant) {
-                // Use our helper to load Home Assistant's Lit modules
-                const litModules = await loadHaLit().catch((e) => {
-                    console.warn('Could not load HA Lit modules, falling back to manual rendering:', e);
-                    return null;
-                });
-                if (litModules) {
-                    // Set up our renderer with the loaded modules
-                    setupLitRenderer(litModules);
-                    this.litLoaded = true;
-                    this.requestUpdate();
+        this._viewMode = 'power'; // Default view mode
+        this._powerEntitiesContainer = null;
+        this._energyEntitiesContainer = null;
+        this._resetToPowerDefaultEntities = () => {
+            var _a, _b;
+            // Get current entities
+            const entities = getPowerEntities(this._hass);
+            // Create a new toggle state object
+            const toggleStates = {};
+            const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.auto_select_count) !== null && _b !== void 0 ? _b : 6;
+            // Set first 'count' entities to true, all others to false
+            entities.forEach((entity, index) => {
+                toggleStates[entity.entityId] = index < count;
+            });
+            // Update the toggle states
+            this.entityToggleStates = toggleStates;
+            this._savePowerToggleStates();
+            this._updatePowerEntities();
+            this._updateContent();
+        };
+        this._clearAllPowerEntities = () => {
+            const entities = getPowerEntities(this._hass);
+            const newToggleStates = {};
+            // Set all entity toggle states to false
+            entities.forEach(entity => {
+                newToggleStates[entity.entityId] = false;
+            });
+            this.entityToggleStates = newToggleStates;
+            this._savePowerToggleStates();
+            this._updatePowerEntities();
+            this._updateContent();
+        };
+        this._selectAllPowerEntities = () => {
+            const entities = getPowerEntities(this._hass);
+            const newToggleStates = {};
+            // Set all entity toggle states to true
+            entities.forEach(entity => {
+                newToggleStates[entity.entityId] = true;
+            });
+            this.entityToggleStates = newToggleStates;
+            this._savePowerToggleStates();
+            this._updatePowerEntities();
+            this._updateContent();
+        };
+        this._togglePowerEntity = (e) => {
+            const target = e.currentTarget;
+            const entityId = target.dataset.entity;
+            if (entityId) {
+                this.entityToggleStates[entityId] = !this.entityToggleStates[entityId];
+                this._updatePowerEntities();
+                this._updateContent();
+            }
+        };
+        this._resetToEnergyDefaultEntities = () => {
+            var _a, _b;
+            // Get current energy entities
+            const entities = getEnergyEntities(this._hass);
+            // Create a new toggle state object
+            const toggleStates = {};
+            const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.energy_auto_select_count) !== null && _b !== void 0 ? _b : 6;
+            // Set first 'count' entities to true, all others to false
+            entities.forEach((entity, index) => {
+                toggleStates[entity.entityId] = index < count;
+            });
+            // Update the toggle states
+            this.energyEntityToggleStates = toggleStates;
+            this._saveEnergyToggleStates();
+            this._updateEnergyEntities();
+            this._updateContent();
+        };
+        this._clearAllEnergyEntities = () => {
+            const entities = getEnergyEntities(this._hass);
+            const newToggleStates = {};
+            // Set all entity toggle states to false
+            entities.forEach(entity => {
+                newToggleStates[entity.entityId] = false;
+            });
+            this.energyEntityToggleStates = newToggleStates;
+            this._saveEnergyToggleStates();
+            this._updateEnergyEntities();
+            this._updateContent();
+        };
+        this._selectAllEnergyEntities = () => {
+            const entities = getEnergyEntities(this._hass);
+            const newToggleStates = {};
+            // Set all entity toggle states to true
+            entities.forEach(entity => {
+                newToggleStates[entity.entityId] = true;
+            });
+            this.energyEntityToggleStates = newToggleStates;
+            this._saveEnergyToggleStates();
+            this._updateEnergyEntities();
+            this._updateContent();
+        };
+        this._toggleEnergyEntity = (e) => {
+            const target = e.currentTarget;
+            const entityId = target.dataset.entity;
+            if (entityId) {
+                this.energyEntityToggleStates[entityId] = !this.energyEntityToggleStates[entityId];
+                this._updateEnergyEntities();
+                this._updateContent();
+            }
+        };
+        this._togglePersistence = () => {
+            if (this.config) {
+                // Toggle the persistence setting
+                this.config.persist_selection = !this.config.persist_selection;
+                // Always save the persistence toggle state, regardless of its value
+                this._savePersistenceState(this.config.persist_selection);
+                // If persistence is turned off, clear localStorage and reset to defaults immediately
+                if (!this.config.persist_selection) {
+                    localStorage.removeItem('energy-dashboard-power-toggle-states');
+                    localStorage.removeItem('energy-dashboard-energy-toggle-states');
+                    // Reset initialized state to force reload of default entities
+                    this._initialized = false;
+                    this._energyInitialized = false;
                 }
                 else {
-                    console.warn('Failed to load Lit modules, falling back to manual rendering');
+                    // If persistence is turned on, save the current toggle states
+                    this._savePowerToggleStates();
+                    this._saveEnergyToggleStates();
                 }
+                // Re-initialize and update the content with new settings
+                this._updateEntities();
+                this._updateContent();
             }
-            else {
-                // Fallback for development
-                console.warn('Not running in Home Assistant, using fallback rendering');
-            }
-        }
-        catch (e) {
-            console.error('Failed to load Lit libraries:', e);
-        }
-    }
-    // Method to request updates (will be overridden by Lit when available)
-    requestUpdate() {
-        if (this.litLoaded) {
-            // If we have Lit loaded, use its update mechanism
-            return;
-        }
-        // Otherwise, use a simple render approach
-        this._render();
-    }
-    // Simple render method when Lit isn't available
-    _render() {
-        if (!this.config || !this._root)
-            return;
-        // Create a ha-card element
-        let card = this._root.querySelector('ha-card');
-        if (!card) {
-            card = document.createElement('ha-card');
-            this._root.appendChild(card);
-        }
-        // Clear existing content
-        card.innerHTML = '';
-        // Add header if enabled
-        if (this.config.show_header) {
-            const header = document.createElement('div');
-            header.className = 'card-header';
-            header.textContent = this.config.title || 'Energy Dashboard';
-            card.appendChild(header);
-        }
-        // Add mode toggle
-        card.appendChild(this._createModeToggle());
-        // Render the correct section based on view mode
-        if (this.viewMode === 'power') {
-            // Create control buttons
-            card.appendChild(this._createControlButtons(true));
-            card.appendChild(this._createPersistenceToggle());
-            // Add section title
-            const sectionTitle = document.createElement('div');
-            sectionTitle.className = 'section-title';
-            sectionTitle.textContent = 'Power Entities';
-            card.appendChild(sectionTitle);
-            // Create container for entities
-            const container = document.createElement('div');
-            container.className = 'entities-container';
-            if (this.config.max_height && this.config.max_height > 0) {
-                container.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
-                container.style.overflowY = 'auto';
-            }
-            // Create entity items
-            if (this.powerEntities.length === 0) {
-                const emptyMsg = document.createElement('div');
-                emptyMsg.className = 'empty-message';
-                emptyMsg.textContent = 'No power entities found';
-                container.appendChild(emptyMsg);
-            }
-            else {
-                this.powerEntities.forEach(entity => {
-                    container.appendChild(this._createEntityItem(entity, true));
-                });
-            }
-            card.appendChild(container);
-            this.powerContainerRef = container;
-            // Restore scroll position
-            if (this.powerScrollPosition > 0) {
-                requestAnimationFrame(() => {
-                    if (this.powerContainerRef) {
-                        this.powerContainerRef.scrollTop = this.powerScrollPosition;
-                    }
-                });
-            }
-        }
-        else {
-            // Create control buttons
-            card.appendChild(this._createControlButtons(false));
-            card.appendChild(this._createPersistenceToggle());
-            // Add section title
-            const sectionTitle = document.createElement('div');
-            sectionTitle.className = 'section-title';
-            sectionTitle.textContent = 'Energy Entities';
-            card.appendChild(sectionTitle);
-            // Create container for entities
-            const container = document.createElement('div');
-            container.className = 'entities-container';
-            if (this.config.max_height && this.config.max_height > 0) {
-                container.style.maxHeight = `${Math.min(this.config.max_height, 400)}px`;
-                container.style.overflowY = 'auto';
-            }
-            // Create entity items
-            if (this.energyEntities.length === 0) {
-                const emptyMsg = document.createElement('div');
-                emptyMsg.className = 'empty-message';
-                emptyMsg.textContent = 'No energy entities found';
-                container.appendChild(emptyMsg);
-            }
-            else {
-                this.energyEntities.forEach(entity => {
-                    container.appendChild(this._createEntityItem(entity, false));
-                });
-            }
-            card.appendChild(container);
-            this.energyContainerRef = container;
-            // Restore scroll position
-            if (this.energyScrollPosition > 0) {
-                requestAnimationFrame(() => {
-                    if (this.energyContainerRef) {
-                        this.energyContainerRef.scrollTop = this.energyScrollPosition;
-                    }
-                });
-            }
-        }
-    }
-    // Helper methods to create DOM elements
-    _createModeToggle() {
-        const container = document.createElement('div');
-        container.className = 'mode-toggle-container';
-        const wrapper = document.createElement('div');
-        wrapper.className = 'toggle-wrapper';
-        const activeBackground = document.createElement('div');
-        activeBackground.className = 'active-background';
-        activeBackground.style.left = this.viewMode === 'power' ? '0' : '50%';
-        wrapper.appendChild(activeBackground);
-        const powerOption = document.createElement('div');
-        powerOption.className = 'toggle-option';
-        powerOption.textContent = 'Power';
-        powerOption.style.fontWeight = this.viewMode === 'power' ? 'bold' : 'normal';
-        powerOption.style.color = this.viewMode === 'power'
-            ? 'var(--primary-text-color)'
-            : 'var(--secondary-text-color)';
-        if (this.viewMode !== 'power') {
-            powerOption.addEventListener('click', () => this._toggleViewMode());
-        }
-        wrapper.appendChild(powerOption);
-        const energyOption = document.createElement('div');
-        energyOption.className = 'toggle-option';
-        energyOption.textContent = 'Energy';
-        energyOption.style.fontWeight = this.viewMode === 'energy' ? 'bold' : 'normal';
-        energyOption.style.color = this.viewMode === 'energy'
-            ? 'var(--primary-text-color)'
-            : 'var(--secondary-text-color)';
-        if (this.viewMode !== 'energy') {
-            energyOption.addEventListener('click', () => this._toggleViewMode());
-        }
-        wrapper.appendChild(energyOption);
-        container.appendChild(wrapper);
-        return container;
-    }
-    _createControlButtons(isPower) {
-        const container = document.createElement('div');
-        container.className = 'control-buttons';
-        const resetButton = document.createElement('button');
-        resetButton.className = 'control-button';
-        resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
-        resetButton.addEventListener('click', isPower ?
-            () => this._resetToPowerDefaultEntities() :
-            () => this._resetToEnergyDefaultEntities());
-        container.appendChild(resetButton);
-        const clearButton = document.createElement('button');
-        clearButton.className = 'control-button';
-        clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
-        clearButton.addEventListener('click', isPower ?
-            () => this._clearAllPowerEntities() :
-            () => this._clearAllEnergyEntities());
-        container.appendChild(clearButton);
-        const selectAllButton = document.createElement('button');
-        selectAllButton.className = 'select-all-button';
-        selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
-        selectAllButton.addEventListener('click', isPower ?
-            () => this._selectAllPowerEntities() :
-            () => this._selectAllEnergyEntities());
-        container.appendChild(selectAllButton);
-        return container;
-    }
-    _createPersistenceToggle() {
-        var _a, _b;
-        const container = document.createElement('div');
-        container.className = 'persistence-toggle';
-        container.addEventListener('click', () => this._togglePersistence());
-        const label = document.createElement('span');
-        label.style.marginRight = '8px';
-        label.style.fontSize = '14px';
-        label.style.color = 'var(--primary-text-color)';
-        label.textContent = 'Remember Selection: ';
-        container.appendChild(label);
-        const toggle = document.createElement('span');
-        toggle.className = 'toggle-switch';
-        const slider = document.createElement('span');
-        slider.className = 'toggle-slider';
-        slider.style.backgroundColor = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) ?
-            'var(--primary-color, #03a9f4)' : '#ccc';
-        const button = document.createElement('span');
-        button.className = 'toggle-button';
-        button.style.left = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? '16px' : '4px';
-        slider.appendChild(button);
-        toggle.appendChild(slider);
-        container.appendChild(toggle);
-        return container;
-    }
-    _createEntityItem(entity, isPower) {
-        const item = document.createElement('div');
-        item.className = 'entity-item';
-        if (entity.isOn) {
-            item.classList.add('on');
-        }
-        item.addEventListener('click', () => {
-            if (isPower) {
-                this._togglePowerEntity(entity.entityId);
-            }
-            else {
-                this._toggleEnergyEntity(entity.entityId);
-            }
-        });
-        const leftPart = document.createElement('div');
-        leftPart.className = 'entity-left';
-        const name = document.createElement('div');
-        name.className = 'entity-name';
-        name.textContent = entity.name;
-        leftPart.appendChild(name);
-        const rightPart = document.createElement('div');
-        rightPart.className = 'entity-state';
-        const valueSpan = document.createElement('span');
-        valueSpan.className = 'power-value';
-        if (isPower) {
-            const value = entity.powerValue !== undefined ? entity.powerValue : 0;
-            valueSpan.textContent = value >= 1000
-                ? `${(value / 1000).toFixed(1)} kW`
-                : `${Math.round(value)} W`;
-        }
-        else {
-            valueSpan.textContent = `${(entity.energyValue || 0).toFixed(2)} kWh`;
-        }
-        rightPart.appendChild(valueSpan);
-        item.appendChild(leftPart);
-        item.appendChild(rightPart);
-        return item;
+        };
+        // Toggle between power and energy view
+        this._toggleViewMode = () => {
+            const newMode = this._viewMode === 'power' ? 'energy' : 'power';
+            this._viewMode = newMode;
+            this._saveViewMode(newMode);
+            // Save the current view mode to be used by chart card
+            this._updateContent();
+            // Dispatch a custom event that the chart card can listen for
+            this.dispatchEvent(new CustomEvent('view-mode-changed', {
+                detail: { mode: newMode },
+                bubbles: true,
+                composed: true
+            }));
+        };
+        this._root = this.attachShadow({ mode: 'open' });
+        this._root.appendChild(createStyles(cardStyles));
+        // Create the card element
+        const card = document.createElement('ha-card');
+        this._root.appendChild(card);
+        // Only create containers here, do not append
+        this._powerEntitiesContainer = document.createElement('div');
+        this._powerEntitiesContainer.className = 'entities-container';
+        this._energyEntitiesContainer = document.createElement('div');
+        this._energyEntitiesContainer.className = 'entities-container';
     }
     // Called when the element is added to the DOM
     connectedCallback() {
-        // Load view mode from localStorage
-        this.viewMode = this._loadViewMode();
         // Load persistence setting from localStorage when element is connected to DOM
         if (this.config) {
             this.config.persist_selection = this._loadPersistenceState();
         }
-        // Initial render
-        this.requestUpdate();
+        // Load view mode from localStorage
+        this._viewMode = this._loadViewMode();
+        if (this.config) {
+            this.config.view_mode = this._viewMode;
+        }
+        this._updateContent();
     }
-    // Called when element is removed from DOM
-    disconnectedCallback() {
-        // Save scroll positions
-        this._saveScrollPositions();
-    }
-    // HA Config
+    // Home Assistant specific method to set config
     setConfig(config) {
         var _a, _b, _c, _d, _e, _f, _g;
         if (!config) {
@@ -913,11 +606,25 @@ class EnergyDashboardEntityCard extends HTMLElement {
             persist_selection: persistenceFromStorage,
             // Always enable energy section
             show_energy_section: true,
-            view_mode: this.viewMode,
         };
-        this.requestUpdate();
+        this._updateContent();
     }
-    // Home Assistant cards API
+    // Home Assistant specific methods
+    static getConfigElement() {
+        return document.createElement('energy-dashboard-entity-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            title: 'Energy Dashboard',
+            show_header: true,
+            show_state: true,
+            show_toggle: true,
+            auto_select_count: 6,
+            max_height: 400,
+            energy_auto_select_count: 6,
+            persist_selection: true
+        };
+    }
     getCardSize() {
         var _a;
         let rows = 0;
@@ -931,19 +638,23 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
         return rows > 0 ? rows : 1;
     }
-    // Save scroll positions before updates
-    _saveScrollPositions() {
-        if (this.powerContainerRef) {
-            this.powerScrollPosition = this.powerContainerRef.scrollTop;
+    // Called when Home Assistant updates
+    set hass(hass) {
+        const isFirstUpdate = !this._hass;
+        this._hass = hass;
+        // Load the persistence setting from localStorage early to ensure it's always available
+        if (this.config && isFirstUpdate) {
+            this.config.persist_selection = this._loadPersistenceState();
         }
-        if (this.energyContainerRef) {
-            this.energyScrollPosition = this.energyContainerRef.scrollTop;
-        }
+        this._updateEntities();
+        this._updateContent();
     }
-    // Entity state management
+    get hass() {
+        return this._hass;
+    }
     _updateEntities() {
         var _a;
-        if (!this.hass)
+        if (!this._hass)
             return;
         try {
             this._updatePowerEntities();
@@ -956,7 +667,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
     }
     _updatePowerEntities() {
-        const newPowerEntities = getPowerEntities(this.hass);
+        const newPowerEntities = getPowerEntities(this._hass);
         if (!this._initialized || Object.keys(this.entityToggleStates).length === 0) {
             this._initializePowerToggleStates(newPowerEntities);
             this._initialized = true;
@@ -966,11 +677,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             isOn: this.entityToggleStates[entity.entityId] || false
         }));
         this._savePowerToggleStates();
-        // Request update to render changes
-        this.requestUpdate();
     }
     _updateEnergyEntities() {
-        const newEnergyEntities = getEnergyEntities(this.hass);
+        const newEnergyEntities = getEnergyEntities(this._hass);
         if (!this._energyInitialized || Object.keys(this.energyEntityToggleStates).length === 0) {
             this._initializeEnergyToggleStates(newEnergyEntities);
             this._energyInitialized = true;
@@ -980,8 +689,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
             isOn: this.energyEntityToggleStates[entity.entityId] || false
         }));
         this._saveEnergyToggleStates();
-        // Request update to render changes
-        this.requestUpdate();
     }
     _initializePowerToggleStates(entities) {
         var _a, _b, _c, _d;
@@ -1033,135 +740,17 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this.energyEntityToggleStates = toggleStates;
         }
     }
-    // Entity selection persistence
+    // Make entity selections accessible to other components even when persistence is off
     _savePowerToggleStates() {
         // Always save toggle states to localStorage for the chart card to access, 
         // but they will only be loaded on initialization if persistence is enabled
         saveToggleStates(this.entityToggleStates, 'energy-dashboard-power-toggle-states');
     }
+    // Make entity selections accessible to other components even when persistence is off
     _saveEnergyToggleStates() {
         // Always save toggle states to localStorage for the chart card to access,
         // but they will only be loaded on initialization if persistence is enabled
         saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
-    }
-    // Entity control button handlers
-    _resetToPowerDefaultEntities() {
-        var _a, _b;
-        // Get current entities
-        const entities = getPowerEntities(this.hass);
-        // Create a new toggle state object
-        const toggleStates = {};
-        const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.auto_select_count) !== null && _b !== void 0 ? _b : 6;
-        // Set first 'count' entities to true, all others to false
-        entities.forEach((entity, index) => {
-            toggleStates[entity.entityId] = index < count;
-        });
-        // Update the toggle states
-        this.entityToggleStates = { ...toggleStates };
-        this._savePowerToggleStates();
-        this._updatePowerEntities();
-    }
-    _clearAllPowerEntities() {
-        const entities = getPowerEntities(this.hass);
-        const newToggleStates = {};
-        // Set all entity toggle states to false
-        entities.forEach(entity => {
-            newToggleStates[entity.entityId] = false;
-        });
-        this.entityToggleStates = { ...newToggleStates };
-        this._savePowerToggleStates();
-        this._updatePowerEntities();
-    }
-    _selectAllPowerEntities() {
-        const entities = getPowerEntities(this.hass);
-        const newToggleStates = {};
-        // Set all entity toggle states to true
-        entities.forEach(entity => {
-            newToggleStates[entity.entityId] = true;
-        });
-        this.entityToggleStates = { ...newToggleStates };
-        this._savePowerToggleStates();
-        this._updatePowerEntities();
-    }
-    _togglePowerEntity(entityId) {
-        // Create a new object so lit detects the change
-        const newToggleStates = { ...this.entityToggleStates };
-        newToggleStates[entityId] = !newToggleStates[entityId];
-        this.entityToggleStates = newToggleStates;
-        this._updatePowerEntities();
-    }
-    _resetToEnergyDefaultEntities() {
-        var _a, _b;
-        // Get current energy entities
-        const entities = getEnergyEntities(this.hass);
-        // Create a new toggle state object
-        const toggleStates = {};
-        const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.energy_auto_select_count) !== null && _b !== void 0 ? _b : 6;
-        // Set first 'count' entities to true, all others to false
-        entities.forEach((entity, index) => {
-            toggleStates[entity.entityId] = index < count;
-        });
-        // Update the toggle states
-        this.energyEntityToggleStates = { ...toggleStates };
-        this._saveEnergyToggleStates();
-        this._updateEnergyEntities();
-    }
-    _clearAllEnergyEntities() {
-        const entities = getEnergyEntities(this.hass);
-        const newToggleStates = {};
-        // Set all entity toggle states to false
-        entities.forEach(entity => {
-            newToggleStates[entity.entityId] = false;
-        });
-        this.energyEntityToggleStates = { ...newToggleStates };
-        this._saveEnergyToggleStates();
-        this._updateEnergyEntities();
-    }
-    _selectAllEnergyEntities() {
-        const entities = getEnergyEntities(this.hass);
-        const newToggleStates = {};
-        // Set all entity toggle states to true
-        entities.forEach(entity => {
-            newToggleStates[entity.entityId] = true;
-        });
-        this.energyEntityToggleStates = { ...newToggleStates };
-        this._saveEnergyToggleStates();
-        this._updateEnergyEntities();
-    }
-    _toggleEnergyEntity(entityId) {
-        // Create a new object so lit detects the change
-        const newToggleStates = { ...this.energyEntityToggleStates };
-        newToggleStates[entityId] = !newToggleStates[entityId];
-        this.energyEntityToggleStates = newToggleStates;
-        this._updateEnergyEntities();
-    }
-    // Persistence toggle handling
-    _togglePersistence() {
-        if (this.config) {
-            // Toggle the persistence setting
-            const newPersistState = !this.config.persist_selection;
-            this.config = {
-                ...this.config,
-                persist_selection: newPersistState
-            };
-            // Always save the persistence toggle state, regardless of its value
-            this._savePersistenceState(newPersistState);
-            // If persistence is turned off, clear localStorage and reset to defaults immediately
-            if (!newPersistState) {
-                localStorage.removeItem('energy-dashboard-power-toggle-states');
-                localStorage.removeItem('energy-dashboard-energy-toggle-states');
-                // Reset initialized state to force reload of default entities
-                this._initialized = false;
-                this._energyInitialized = false;
-            }
-            else {
-                // If persistence is turned on, save the current toggle states
-                this._savePowerToggleStates();
-                this._saveEnergyToggleStates();
-            }
-            // Re-initialize and update the content with new settings
-            this._updateEntities();
-        }
     }
     // Manage the persistence toggle setting separately
     _loadPersistenceState() {
@@ -1181,7 +770,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             console.error("Failed to save persistence state:", e);
         }
     }
-    // View mode management
+    // Save view mode to localStorage
     _saveViewMode(mode) {
         try {
             localStorage.setItem('energy-dashboard-view-mode', mode);
@@ -1189,11 +778,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
             if (this.config) {
                 this.config.view_mode = mode;
             }
+            this._viewMode = mode;
         }
         catch (e) {
             console.error("Failed to save view mode:", e);
         }
     }
+    // Load view mode from localStorage
     _loadViewMode() {
         try {
             const stored = localStorage.getItem('energy-dashboard-view-mode');
@@ -1203,23 +794,318 @@ class EnergyDashboardEntityCard extends HTMLElement {
             return 'power'; // Default to power view if we can't load from localStorage
         }
     }
-    _toggleViewMode() {
-        // Save current scroll position before changing views
-        this._saveScrollPositions();
-        const newMode = this.viewMode === 'power' ? 'energy' : 'power';
-        this.viewMode = newMode;
-        this._saveViewMode(newMode);
-        // Dispatch a custom event that the chart card can listen for
-        this.dispatchEvent(new CustomEvent('view-mode-changed', {
-            detail: { mode: newMode },
-            bubbles: true,
-            composed: true
-        }));
-        // Request an update to ensure the new view renders
-        this.requestUpdate();
+    _updateContent() {
+        if (!this.config)
+            return;
+        const card = this._root.querySelector('ha-card');
+        if (!card)
+            return;
+        card.innerHTML = '';
+        if (this.config.show_header) {
+            const header = document.createElement('div');
+            header.className = 'card-header';
+            header.textContent = this.config.title;
+            card.appendChild(header);
+        }
+        const modeToggleContainer = document.createElement('div');
+        modeToggleContainer.className = 'mode-toggle-container';
+        modeToggleContainer.style.display = 'flex';
+        modeToggleContainer.style.justifyContent = 'center';
+        modeToggleContainer.style.alignItems = 'center';
+        modeToggleContainer.style.marginTop = '8px';
+        modeToggleContainer.style.marginBottom = '8px';
+        modeToggleContainer.style.padding = '4px';
+        const toggleWrapper = document.createElement('div');
+        toggleWrapper.className = 'toggle-wrapper';
+        toggleWrapper.style.display = 'flex';
+        toggleWrapper.style.position = 'relative';
+        toggleWrapper.style.border = '1px solid var(--divider-color)';
+        toggleWrapper.style.borderRadius = '25px';
+        toggleWrapper.style.height = '30px';
+        toggleWrapper.style.width = '200px';
+        toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
+        toggleWrapper.style.overflow = 'hidden';
+        const activeBackground = document.createElement('div');
+        activeBackground.className = 'active-background';
+        activeBackground.style.position = 'absolute';
+        activeBackground.style.top = '0';
+        activeBackground.style.bottom = '0';
+        activeBackground.style.left = this._viewMode === 'power' ? '0' : '50%';
+        activeBackground.style.width = '50%';
+        activeBackground.style.backgroundColor = 'var(--primary-color)';
+        activeBackground.style.borderRadius = '25px';
+        activeBackground.style.transition = 'left 0.3s ease-in-out';
+        activeBackground.style.opacity = '0.2';
+        const powerOption = document.createElement('div');
+        powerOption.className = 'toggle-option';
+        powerOption.textContent = 'Power';
+        powerOption.style.flex = '1';
+        powerOption.style.textAlign = 'center';
+        powerOption.style.lineHeight = '30px';
+        powerOption.style.cursor = 'pointer';
+        powerOption.style.zIndex = '1';
+        powerOption.style.fontWeight = this._viewMode === 'power' ? 'bold' : 'normal';
+        powerOption.style.color = this._viewMode === 'power' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+        powerOption.addEventListener('click', () => {
+            if (this._viewMode !== 'power') {
+                this._toggleViewMode();
+            }
+        });
+        const energyOption = document.createElement('div');
+        energyOption.className = 'toggle-option';
+        energyOption.textContent = 'Energy';
+        energyOption.style.flex = '1';
+        energyOption.style.textAlign = 'center';
+        energyOption.style.lineHeight = '30px';
+        energyOption.style.cursor = 'pointer';
+        energyOption.style.zIndex = '1';
+        energyOption.style.fontWeight = this._viewMode === 'energy' ? 'bold' : 'normal';
+        energyOption.style.color = this._viewMode === 'energy' ? 'var(--primary-text-color)' : 'var(--secondary-text-color)';
+        energyOption.addEventListener('click', () => {
+            if (this._viewMode !== 'energy') {
+                this._toggleViewMode();
+            }
+        });
+        toggleWrapper.appendChild(activeBackground);
+        toggleWrapper.appendChild(powerOption);
+        toggleWrapper.appendChild(energyOption);
+        modeToggleContainer.appendChild(toggleWrapper);
+        card.appendChild(modeToggleContainer);
+        // Section rendering
+        const renderPersistenceToggle = () => {
+            var _a, _b;
+            console.log("Rendering persistence toggle, config:", this.config);
+            const persistenceToggle = document.createElement('div');
+            persistenceToggle.className = 'persistence-toggle';
+            persistenceToggle.style.display = 'flex';
+            persistenceToggle.style.alignItems = 'center';
+            persistenceToggle.style.justifyContent = 'center';
+            persistenceToggle.style.marginTop = '8px';
+            persistenceToggle.style.marginBottom = '8px';
+            persistenceToggle.style.cursor = 'pointer';
+            persistenceToggle.addEventListener('click', this._togglePersistence);
+            persistenceToggle.setAttribute('id', 'persistence-toggle');
+            const toggleLabel = document.createElement('span');
+            toggleLabel.style.marginRight = '8px';
+            toggleLabel.textContent = 'Remember Selection: ';
+            const toggleSwitch = document.createElement('span');
+            toggleSwitch.className = 'toggle-switch';
+            toggleSwitch.style.position = 'relative';
+            toggleSwitch.style.display = 'inline-block';
+            toggleSwitch.style.width = '36px';
+            toggleSwitch.style.height = '20px';
+            const toggleSlider = document.createElement('span');
+            toggleSlider.className = 'toggle-slider';
+            toggleSlider.style.position = 'absolute';
+            toggleSlider.style.cursor = 'pointer';
+            toggleSlider.style.top = '0';
+            toggleSlider.style.left = '0';
+            toggleSlider.style.right = '0';
+            toggleSlider.style.bottom = '0';
+            toggleSlider.style.backgroundColor = ((_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) ? 'var(--primary-color, #03a9f4)' : '#ccc';
+            toggleSlider.style.borderRadius = '34px';
+            toggleSlider.style.transition = '.4s';
+            const toggleButton = document.createElement('span');
+            toggleButton.style.position = 'absolute';
+            toggleButton.style.content = '""';
+            toggleButton.style.height = '16px';
+            toggleButton.style.width = '16px';
+            toggleButton.style.left = ((_b = this.config) === null || _b === void 0 ? void 0 : _b.persist_selection) ? '16px' : '4px';
+            toggleButton.style.bottom = '2px';
+            toggleButton.style.backgroundColor = 'white';
+            toggleButton.style.borderRadius = '50%';
+            toggleButton.style.transition = '.4s';
+            toggleSlider.appendChild(toggleButton);
+            toggleSwitch.appendChild(toggleSlider);
+            persistenceToggle.appendChild(toggleLabel);
+            persistenceToggle.appendChild(toggleSwitch);
+            return persistenceToggle;
+        };
+        // First always add the mode buttons (Power/Energy) section
+        if (this._viewMode === 'power') {
+            // Add control buttons section
+            const controlButtons = document.createElement('div');
+            controlButtons.className = 'control-buttons';
+            controlButtons.style.display = 'flex';
+            controlButtons.style.flexWrap = 'nowrap';
+            controlButtons.style.alignItems = 'center';
+            controlButtons.style.gap = '4px';
+            controlButtons.style.margin = '0 0 8px 0';
+            controlButtons.style.padding = '0';
+            const resetButton = document.createElement('button');
+            resetButton.className = 'control-button';
+            resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+            resetButton.style.flex = '1 1 0';
+            resetButton.style.minWidth = '40px';
+            resetButton.addEventListener('click', this._resetToPowerDefaultEntities);
+            const clearButton = document.createElement('button');
+            clearButton.className = 'control-button';
+            clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+            clearButton.style.flex = '1 1 0';
+            clearButton.style.minWidth = '40px';
+            clearButton.addEventListener('click', this._clearAllPowerEntities);
+            const selectAllButton = document.createElement('button');
+            selectAllButton.className = 'select-all-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+            selectAllButton.style.flex = '1 1 0';
+            selectAllButton.style.minWidth = '40px';
+            selectAllButton.addEventListener('click', this._selectAllPowerEntities);
+            controlButtons.appendChild(resetButton);
+            controlButtons.appendChild(clearButton);
+            controlButtons.appendChild(selectAllButton);
+            card.appendChild(controlButtons);
+            // Add the persistence toggle right after control buttons
+            const persistenceToggleEl = renderPersistenceToggle();
+            card.appendChild(persistenceToggleEl);
+            console.log("Appended persistence toggle to card:", persistenceToggleEl);
+            const sectionTitle = document.createElement('div');
+            sectionTitle.className = 'section-title';
+            sectionTitle.textContent = 'Power Entities';
+            card.appendChild(sectionTitle);
+            // Then add the entities container
+            this._powerEntitiesContainer.style.display = '';
+            this._energyEntitiesContainer.style.display = 'none';
+            card.appendChild(this._powerEntitiesContainer);
+            this._updateEntityButtons(this._powerEntitiesContainer, this.powerEntities, this._togglePowerEntity, true);
+        }
+        else {
+            // Similar structure for energy view
+            // Add control buttons section  
+            const controlButtons = document.createElement('div');
+            controlButtons.className = 'control-buttons';
+            controlButtons.style.display = 'flex';
+            controlButtons.style.flexWrap = 'nowrap';
+            controlButtons.style.alignItems = 'center';
+            controlButtons.style.gap = '4px';
+            controlButtons.style.margin = '0 0 8px 0';
+            controlButtons.style.padding = '0';
+            const resetButton = document.createElement('button');
+            resetButton.className = 'control-button';
+            resetButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon><span>Reset</span>';
+            resetButton.style.flex = '1 1 0';
+            resetButton.style.minWidth = '40px';
+            resetButton.addEventListener('click', this._resetToEnergyDefaultEntities);
+            const clearButton = document.createElement('button');
+            clearButton.className = 'control-button';
+            clearButton.innerHTML = '<ha-icon icon="mdi:close-circle-outline"></ha-icon><span>Clear</span>';
+            clearButton.style.flex = '1 1 0';
+            clearButton.style.minWidth = '40px';
+            clearButton.addEventListener('click', this._clearAllEnergyEntities);
+            const selectAllButton = document.createElement('button');
+            selectAllButton.className = 'select-all-button';
+            selectAllButton.innerHTML = '<ha-icon icon="mdi:check-circle-outline"></ha-icon><span>All</span>';
+            selectAllButton.style.flex = '1 1 0';
+            selectAllButton.style.minWidth = '40px';
+            selectAllButton.addEventListener('click', this._selectAllEnergyEntities);
+            controlButtons.appendChild(resetButton);
+            controlButtons.appendChild(clearButton);
+            controlButtons.appendChild(selectAllButton);
+            card.appendChild(controlButtons);
+            // Add the persistence toggle right after control buttons
+            const persistenceToggleEl = renderPersistenceToggle();
+            card.appendChild(persistenceToggleEl);
+            console.log("Appended persistence toggle to card:", persistenceToggleEl);
+            const sectionTitle = document.createElement('div');
+            sectionTitle.className = 'section-title';
+            sectionTitle.textContent = 'Energy Entities';
+            card.appendChild(sectionTitle);
+            // Then add the entities container
+            this._powerEntitiesContainer.style.display = 'none';
+            this._energyEntitiesContainer.style.display = '';
+            card.appendChild(this._energyEntitiesContainer);
+            this._updateEntityButtons(this._energyEntitiesContainer, this.energyEntities, this._toggleEnergyEntity, false);
+        }
+        // Check after a short delay if the toggle actually appears in the DOM
+        setTimeout(() => {
+            const toggle = this._root.querySelector('#persistence-toggle');
+            console.log("Persistence toggle in DOM after rendering:", toggle);
+            if (toggle) {
+                console.log("Toggle styles:", window.getComputedStyle(toggle));
+            }
+        }, 100);
+        // Force layout recalculation to ensure all elements have proper dimensions
+        requestAnimationFrame(() => {
+            this._forceRecalculation(card);
+            // Wait a bit for the DOM to be fully rendered before equalizing button heights
+            setTimeout(() => {
+                const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
+                console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
+                controlButtonsContainers.forEach((container, index) => {
+                    console.log(`Equalizing heights for container ${index}`);
+                    this._equalizeButtonHeights(container);
+                });
+                // Also check for entity lists and make sure they're visible
+                const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
+                console.log(`Found ${entityContainers.length} entity containers`);
+                entityContainers.forEach(container => {
+                    console.log(`Entity container has ${container.childElementCount} children`);
+                    if (container.childElementCount === 0) {
+                        console.warn("Entity container is empty!");
+                    }
+                });
+            }, 100);
+        });
+    }
+    _updateEntityButtons(container, entities, onClick, isPower) {
+        // Map existing entity items by entityId
+        const existingItems = {};
+        Array.from(container.children).forEach(child => {
+            const el = child;
+            if (el.dataset && el.dataset.entity) {
+                existingItems[el.dataset.entity] = el;
+            }
+        });
+        // Track which nodes are still needed
+        const usedNodes = new Set();
+        // Add or update entity items
+        entities.forEach(entity => {
+            var _a;
+            let entityItem = existingItems[entity.entityId];
+            if (!entityItem) {
+                entityItem = document.createElement('div');
+                entityItem.dataset.entity = entity.entityId;
+                entityItem.addEventListener('click', onClick);
+                container.appendChild(entityItem);
+            }
+            // Update class and content
+            entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
+            entityItem.style.gap = '4px';
+            // Build content
+            entityItem.innerHTML = '';
+            const entityLeft = document.createElement('div');
+            entityLeft.className = 'entity-left';
+            const entityName = document.createElement('div');
+            entityName.className = 'entity-name';
+            entityName.title = entity.name;
+            entityName.textContent = entity.name;
+            entityLeft.appendChild(entityName);
+            entityItem.appendChild(entityLeft);
+            const entityState = document.createElement('div');
+            entityState.className = 'entity-state';
+            const statusIndicator = document.createElement('div');
+            statusIndicator.className = 'status-indicator';
+            statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+            const valueDiv = document.createElement('div');
+            valueDiv.className = 'power-value';
+            if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_state) {
+                valueDiv.textContent = isPower
+                    ? `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`
+                    : `${entity.state} ${entity.unit}`;
+            }
+            entityState.appendChild(statusIndicator);
+            entityState.appendChild(valueDiv);
+            entityItem.appendChild(entityState);
+            usedNodes.add(entity.entityId);
+        });
+        // Remove any nodes that are no longer needed
+        Object.keys(existingItems).forEach(entityId => {
+            if (!usedNodes.has(entityId)) {
+                container.removeChild(existingItems[entityId]);
+            }
+        });
     }
 }
-// Register the custom element
+// Register the card with the custom elements registry
 customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
 
 class EnergyDashboardEntityCardEditor extends HTMLElement {
@@ -2969,21 +2855,20 @@ class EnergyDashboardChartCardEditor extends HTMLElement {
 // Register the editor with the custom elements registry
 customElements.define('energy-dashboard-chart-card-editor', EnergyDashboardChartCardEditor);
 
-// This file is specifically for registering the card with Home Assistant's card picker UI
 // Provide card information to the Home Assistant card catalog
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'energy-dashboard-entity-card',
-    name: 'Energy Dashboard Entity Card',
-    description: 'Card to select and display power and energy entities',
+    name: EnergyDashboardEntityCard.displayName,
+    description: EnergyDashboardEntityCard.description,
     preview: false,
     documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
 });
 // Add the chart card to the Home Assistant card catalog
 window.customCards.push({
     type: 'energy-dashboard-chart-card',
-    name: 'Energy Dashboard Chart',
-    description: 'Chart companion for the Energy Dashboard Entity Card',
+    name: EnergyDashboardChartCard.displayName,
+    description: EnergyDashboardChartCard.description,
     preview: false,
     documentationURL: 'https://github.com/bballdavis/Hass-Energy-Dashboard'
 });

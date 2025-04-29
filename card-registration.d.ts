@@ -1,4 +1,3 @@
-export {};
 declare global {
     interface Window {
         customCards: Array<{
@@ -10,3 +9,4 @@ declare global {
         }>;
     }
 }
+export {};
