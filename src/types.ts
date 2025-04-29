@@ -18,7 +18,8 @@ export interface EnergyDashboardConfig {
   max_height: number;
   energy_auto_select_count: number;
   persist_selection: boolean;
-  view_mode?: 'power' | 'energy';  // New property to track active view mode
-  entity_removal_filter?: string; // Renamed from entity_filter - filter for removing entities
+  view_mode?: 'power' | 'energy';
+  entity_removal_filter?: string;
+  refresh_rate?: 'off' | '10s' | '30s';
   [key: string]: any;
 }

@@ -19,5 +19,6 @@ export interface EnergyDashboardConfig {
     persist_selection: boolean;
     view_mode?: 'power' | 'energy';
     entity_removal_filter?: string;
+    refresh_rate?: 'off' | '10s' | '30s';
     [key: string]: any;
 }

@@ -137,6 +137,37 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
     entityFilterRow.appendChild(entityFilterField);
     form.appendChild(entityFilterRow);
 
+    // Refresh Rate dropdown
+    const refreshRateRow = this._createRow();
+    const refreshRateLabel = document.createElement('div');
+    refreshRateLabel.textContent = 'Auto Refresh';
+    refreshRateLabel.style.width = '30%';
+    
+    const refreshRateSelect = document.createElement('select') as HaFormElement;
+    refreshRateSelect.className = 'value';
+    refreshRateSelect.style.width = '70%';
+    refreshRateSelect.configValue = 'refresh_rate';
+    
+    const options = [
+      { value: 'off', label: 'Off' },
+      { value: '10s', label: '10 seconds' },
+      { value: '30s', label: '30 seconds' },
+    ];
+    
+    options.forEach(option => {
+      const optionEl = document.createElement('option');
+      optionEl.value = option.value;
+      optionEl.textContent = option.label;
+      optionEl.selected = this.config.refresh_rate === option.value;
+      refreshRateSelect.appendChild(optionEl);
+    });
+    
+    refreshRateSelect.addEventListener('change', this.valueChanged);
+    
+    refreshRateRow.appendChild(refreshRateLabel);
+    refreshRateRow.appendChild(refreshRateSelect);
+    form.appendChild(refreshRateRow);
+
     // Show Header toggle
     const headerRow = this._createRow();
     const headerSwitch = document.createElement('ha-switch') as HaFormElement;

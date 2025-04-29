@@ -20,6 +20,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _filteredPowerEntities: EntityInfo[] = []; // Track filtered power entities
   private _filteredEnergyEntities: EntityInfo[] = []; // Track filtered energy entities
   private _searchInputHasFocus: boolean = false; // Track whether the search input has focus
+  private _refreshIntervalId: number | null = null; // Timer ID for auto-refresh
   
   // Helper method to equalize button heights with ResizeObserver
   private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
@@ -854,6 +855,47 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       searchContainer.appendChild(searchInput);
       card.appendChild(searchContainer);
+
+      // Add refresh control after search input
+      const refreshControlContainer = document.createElement('div');
+      refreshControlContainer.className = 'refresh-control-container';
+      
+      const refreshControl = document.createElement('div');
+      refreshControl.className = 'refresh-control';
+      
+      // Off option
+      const offOption = document.createElement('div');
+      offOption.className = `refresh-option${this.config.refresh_rate === 'off' || !this.config.refresh_rate ? ' active' : ''}`;
+      offOption.textContent = 'Off';
+      offOption.addEventListener('click', () => this._setRefreshRate('off'));
+      
+      // 10s option
+      const tenSecOption = document.createElement('div');
+      tenSecOption.className = `refresh-option${this.config.refresh_rate === '10s' ? ' active' : ''}`;
+      tenSecOption.textContent = '10s';
+      tenSecOption.addEventListener('click', () => this._setRefreshRate('10s'));
+      
+      // 30s option
+      const thirtySecOption = document.createElement('div');
+      thirtySecOption.className = `refresh-option${this.config.refresh_rate === '30s' ? ' active' : ''}`;
+      thirtySecOption.textContent = '30s';
+      thirtySecOption.addEventListener('click', () => this._setRefreshRate('30s'));
+      
+      // Refresh button
+      const refreshButton = document.createElement('div');
+      refreshButton.className = 'refresh-option refresh-button';
+      refreshButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
+      refreshButton.title = 'Refresh now';
+      refreshButton.addEventListener('click', () => this._refreshNow());
+      
+      // Add options to control
+      refreshControl.appendChild(offOption);
+      refreshControl.appendChild(tenSecOption);
+      refreshControl.appendChild(thirtySecOption);
+      refreshControl.appendChild(refreshButton);
+      
+      refreshControlContainer.appendChild(refreshControl);
+      card.appendChild(refreshControlContainer);
       
       // Then add the entities container
       this._powerEntitiesContainer!.style.display = '';
@@ -1067,6 +1109,66 @@ export class EnergyDashboardEntityCard extends HTMLElement {
         container.removeChild(existingItems[entityId]);
       }
     });
+  }
+
+  // Refresh functionality methods
+  
+  // Set the refresh rate and update the interval
+  _setRefreshRate(rate: 'off' | '10s' | '30s') {
+    if (!this.config) return;
+    
+    // Update the config
+    this.config.refresh_rate = rate;
+    
+    // Clear existing interval if there is one
+    this._clearRefreshInterval();
+    
+    // Set up new interval if needed
+    if (rate !== 'off') {
+      const intervalMs = rate === '10s' ? 10000 : 30000;
+      this._refreshIntervalId = window.setInterval(() => {
+        this._refreshNow();
+      }, intervalMs);
+    }
+    
+    // Update the UI
+    this._updateContent();
+  }
+  
+  // Manually refresh the card
+  _refreshNow() {
+    // Force an update of the entities
+    if (this._hass) {
+      this._updateEntities();
+      this._updateContent();
+    }
+  }
+  
+  // Clear any existing refresh interval
+  _clearRefreshInterval() {
+    if (this._refreshIntervalId !== null) {
+      window.clearInterval(this._refreshIntervalId);
+      this._refreshIntervalId = null;
+    }
+  }
+  
+  // Clean up when the card is removed from the DOM
+  disconnectedCallback() {
+    this._clearRefreshInterval();
+  }
+  
+  // Use this to set up the refresh interval when the card is initialized
+  _setupRefreshInterval() {
+    // Clear any existing interval first
+    this._clearRefreshInterval();
+    
+    // Set up new interval if a refresh rate is configured
+    if (this.config?.refresh_rate && this.config.refresh_rate !== 'off') {
+      const intervalMs = this.config.refresh_rate === '10s' ? 10000 : 30000;
+      this._refreshIntervalId = window.setInterval(() => {
+        this._refreshNow();
+      }, intervalMs);
+    }
   }
 }
 

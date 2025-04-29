@@ -16,6 +16,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _filteredPowerEntities;
     private _filteredEnergyEntities;
     private _searchInputHasFocus;
+    private _refreshIntervalId;
     private _equalizeButtonHeights;
     private _forceRecalculation;
     static get cardType(): string;
@@ -66,4 +67,9 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _toggleViewMode: () => void;
     _updateContent(): void;
     _updateEntityButtons(container: HTMLElement, entities: EntityInfo[], onClick: (e: Event) => void, isPower: boolean): void;
+    _setRefreshRate(rate: 'off' | '10s' | '30s'): void;
+    _refreshNow(): void;
+    _clearRefreshInterval(): void;
+    disconnectedCallback(): void;
+    _setupRefreshInterval(): void;
 }

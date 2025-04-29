@@ -327,6 +327,53 @@ const cardStyles = `
     border-color: var(--primary-color);
     box-shadow: 0 0 0 1px var(--primary-color);
   }
+  
+  .refresh-control-container {
+    padding: 0 var(--card-padding) 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .refresh-control {
+    display: flex;
+    background-color: var(--card-background-color);
+    border: 1px solid var(--divider-color);
+    border-radius: 16px;
+    overflow: hidden;
+    height: 26px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .refresh-option {
+    padding: 0 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--secondary-text-color);
+    position: relative;
+    min-width: 32px;
+  }
+  
+  .refresh-option.active {
+    background-color: var(--primary-color);
+    color: var(--text-primary-color);
+  }
+  
+  .refresh-option:hover:not(.active) {
+    background-color: var(--divider-color);
+  }
+  
+  .refresh-option.refresh-button {
+    border-left: 1px solid var(--divider-color);
+  }
+  
+  .refresh-option ha-icon {
+    --mdc-icon-size: 14px;
+  }
 `;
 const editorStyles = `
   .form {
@@ -436,6 +483,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._filteredPowerEntities = []; // Track filtered power entities
         this._filteredEnergyEntities = []; // Track filtered energy entities
         this._searchInputHasFocus = false; // Track whether the search input has focus
+        this._refreshIntervalId = null; // Timer ID for auto-refresh
         // Handle dynamic filter input change
         this._handleFilterInput = (e) => {
             const target = e.target;
@@ -1100,6 +1148,39 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }
             searchContainer.appendChild(searchInput);
             card.appendChild(searchContainer);
+            // Add refresh control after search input
+            const refreshControlContainer = document.createElement('div');
+            refreshControlContainer.className = 'refresh-control-container';
+            const refreshControl = document.createElement('div');
+            refreshControl.className = 'refresh-control';
+            // Off option
+            const offOption = document.createElement('div');
+            offOption.className = `refresh-option${this.config.refresh_rate === 'off' || !this.config.refresh_rate ? ' active' : ''}`;
+            offOption.textContent = 'Off';
+            offOption.addEventListener('click', () => this._setRefreshRate('off'));
+            // 10s option
+            const tenSecOption = document.createElement('div');
+            tenSecOption.className = `refresh-option${this.config.refresh_rate === '10s' ? ' active' : ''}`;
+            tenSecOption.textContent = '10s';
+            tenSecOption.addEventListener('click', () => this._setRefreshRate('10s'));
+            // 30s option
+            const thirtySecOption = document.createElement('div');
+            thirtySecOption.className = `refresh-option${this.config.refresh_rate === '30s' ? ' active' : ''}`;
+            thirtySecOption.textContent = '30s';
+            thirtySecOption.addEventListener('click', () => this._setRefreshRate('30s'));
+            // Refresh button
+            const refreshButton = document.createElement('div');
+            refreshButton.className = 'refresh-option refresh-button';
+            refreshButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
+            refreshButton.title = 'Refresh now';
+            refreshButton.addEventListener('click', () => this._refreshNow());
+            // Add options to control
+            refreshControl.appendChild(offOption);
+            refreshControl.appendChild(tenSecOption);
+            refreshControl.appendChild(thirtySecOption);
+            refreshControl.appendChild(refreshButton);
+            refreshControlContainer.appendChild(refreshControl);
+            card.appendChild(refreshControlContainer);
             // Then add the entities container
             this._powerEntitiesContainer.style.display = '';
             this._energyEntitiesContainer.style.display = 'none';
@@ -1294,6 +1375,57 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }
         });
     }
+    // Refresh functionality methods
+    // Set the refresh rate and update the interval
+    _setRefreshRate(rate) {
+        if (!this.config)
+            return;
+        // Update the config
+        this.config.refresh_rate = rate;
+        // Clear existing interval if there is one
+        this._clearRefreshInterval();
+        // Set up new interval if needed
+        if (rate !== 'off') {
+            const intervalMs = rate === '10s' ? 10000 : 30000;
+            this._refreshIntervalId = window.setInterval(() => {
+                this._refreshNow();
+            }, intervalMs);
+        }
+        // Update the UI
+        this._updateContent();
+    }
+    // Manually refresh the card
+    _refreshNow() {
+        // Force an update of the entities
+        if (this._hass) {
+            this._updateEntities();
+            this._updateContent();
+        }
+    }
+    // Clear any existing refresh interval
+    _clearRefreshInterval() {
+        if (this._refreshIntervalId !== null) {
+            window.clearInterval(this._refreshIntervalId);
+            this._refreshIntervalId = null;
+        }
+    }
+    // Clean up when the card is removed from the DOM
+    disconnectedCallback() {
+        this._clearRefreshInterval();
+    }
+    // Use this to set up the refresh interval when the card is initialized
+    _setupRefreshInterval() {
+        var _a;
+        // Clear any existing interval first
+        this._clearRefreshInterval();
+        // Set up new interval if a refresh rate is configured
+        if (((_a = this.config) === null || _a === void 0 ? void 0 : _a.refresh_rate) && this.config.refresh_rate !== 'off') {
+            const intervalMs = this.config.refresh_rate === '10s' ? 10000 : 30000;
+            this._refreshIntervalId = window.setInterval(() => {
+                this._refreshNow();
+            }, intervalMs);
+        }
+    }
 }
 // Register the card with the custom elements registry
 customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
@@ -1400,6 +1532,31 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         entityFilterField.helperPersistent = true;
         entityFilterRow.appendChild(entityFilterField);
         form.appendChild(entityFilterRow);
+        // Refresh Rate dropdown
+        const refreshRateRow = this._createRow();
+        const refreshRateLabel = document.createElement('div');
+        refreshRateLabel.textContent = 'Auto Refresh';
+        refreshRateLabel.style.width = '30%';
+        const refreshRateSelect = document.createElement('select');
+        refreshRateSelect.className = 'value';
+        refreshRateSelect.style.width = '70%';
+        refreshRateSelect.configValue = 'refresh_rate';
+        const options = [
+            { value: 'off', label: 'Off' },
+            { value: '10s', label: '10 seconds' },
+            { value: '30s', label: '30 seconds' },
+        ];
+        options.forEach(option => {
+            const optionEl = document.createElement('option');
+            optionEl.value = option.value;
+            optionEl.textContent = option.label;
+            optionEl.selected = this.config.refresh_rate === option.value;
+            refreshRateSelect.appendChild(optionEl);
+        });
+        refreshRateSelect.addEventListener('change', this.valueChanged);
+        refreshRateRow.appendChild(refreshRateLabel);
+        refreshRateRow.appendChild(refreshRateSelect);
+        form.appendChild(refreshRateRow);
         // Show Header toggle
         const headerRow = this._createRow();
         const headerSwitch = document.createElement('ha-switch');

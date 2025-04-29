@@ -232,6 +232,53 @@ export const cardStyles = `
     border-color: var(--primary-color);
     box-shadow: 0 0 0 1px var(--primary-color);
   }
+  
+  .refresh-control-container {
+    padding: 0 var(--card-padding) 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .refresh-control {
+    display: flex;
+    background-color: var(--card-background-color);
+    border: 1px solid var(--divider-color);
+    border-radius: 16px;
+    overflow: hidden;
+    height: 26px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .refresh-option {
+    padding: 0 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--secondary-text-color);
+    position: relative;
+    min-width: 32px;
+  }
+  
+  .refresh-option.active {
+    background-color: var(--primary-color);
+    color: var(--text-primary-color);
+  }
+  
+  .refresh-option:hover:not(.active) {
+    background-color: var(--divider-color);
+  }
+  
+  .refresh-option.refresh-button {
+    border-left: 1px solid var(--divider-color);
+  }
+  
+  .refresh-option ha-icon {
+    --mdc-icon-size: 14px;
+  }
 `;
 
 export const editorStyles = `
