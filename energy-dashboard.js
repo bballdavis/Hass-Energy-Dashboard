@@ -426,55 +426,107 @@ const editorStyles = `
 // This avoids bare specifier imports which can cause issues in browsers
 // Function to load Lit libraries from Home Assistant frontend
 async function loadHaLit() {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     // Check if we're in Home Assistant
     if (!window.customElements || !window.customElements.get('home-assistant')) {
         throw new Error('Not running in Home Assistant');
     }
-    // Try to get the Home Assistant frontend
+    // Access the frontend modules directly if available in window
+    if (window.frontendVersion !== undefined && window.frontend) {
+        return await loadLitFromFrontend(window.frontend);
+    }
+    // Try multiple approaches to find the frontend
+    // Approach 1: Direct window access
+    const windowAny = window;
+    if (windowAny.hassConnection && windowAny.hassConnection.conn &&
+        windowAny.hassConnection.conn.__hass &&
+        windowAny.hassConnection.conn.__hass.hassCore &&
+        windowAny.hassConnection.conn.__hass.hassCore.frontend) {
+        return await loadLitFromFrontend(windowAny.hassConnection.conn.__hass.hassCore.frontend);
+    }
+    // Approach 2: Find through DOM
+    // Try to get the Home Assistant frontend via DOM traversal
     const hassMain = (_b = (_a = document.querySelector('home-assistant')) === null || _a === void 0 ? void 0 : _a.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector('home-assistant-main');
     if (!hassMain) {
         throw new Error('Could not find Home Assistant main element');
     }
-    // Try to get the Home Assistant application from the main element
+    // Try different paths to find the frontend
     const haApp = (_c = hassMain.shadowRoot) === null || _c === void 0 ? void 0 : _c.querySelector('ha-panel-lovelace');
-    if (!haApp) {
-        throw new Error('Could not find Home Assistant Lovelace panel');
-    }
-    // Access the frontend modules if available
-    const frontend = window.frontendVersion !== undefined ?
-        window.frontend :
-        haApp === null || haApp === void 0 ? void 0 : haApp.___frontend;
-    if (!frontend) {
-        throw new Error('Could not access Home Assistant frontend');
-    }
-    // Get the Lit modules from the frontend
-    const lit = await frontend.import('./lit');
-    const litDirectives = await frontend.import('./lit/directives');
-    const litDecorators = await frontend.import('./lit/decorators');
-    const litControllers = await frontend.import('./lit/controllers');
-    return {
-        lit: {
-            html: lit.html,
-            css: lit.css,
-            nothing: lit.nothing,
-            render: lit.render
-        },
-        litDirectives: {
-            styleMap: litDirectives.styleMap,
-            repeat: litDirectives.repeat,
-            classMap: litDirectives.classMap
-        },
-        litDecorators: {
-            customElement: litDecorators.customElement,
-            property: litDecorators.property,
-            state: litDecorators.state
-        },
-        litControllers: {
-            ReactiveController: litControllers.ReactiveController,
-            ReactiveControllerHost: litControllers.ReactiveControllerHost
+    if (haApp) {
+        // Check for ___frontend property
+        const frontend = haApp === null || haApp === void 0 ? void 0 : haApp.___frontend;
+        if (frontend) {
+            return await loadLitFromFrontend(frontend);
         }
-    };
+        // Check for _lovelace property
+        const lovelace = haApp === null || haApp === void 0 ? void 0 : haApp._lovelace;
+        if (lovelace && lovelace.frontend) {
+            return await loadLitFromFrontend(lovelace.frontend);
+        }
+    }
+    // Approach 3: Look for ha-panel-frontend element
+    const haFrontendPanel = (_d = hassMain.shadowRoot) === null || _d === void 0 ? void 0 : _d.querySelector('ha-panel-frontend');
+    if (haFrontendPanel && haFrontendPanel.frontend) {
+        return await loadLitFromFrontend(haFrontendPanel.frontend);
+    }
+    // Approach 4: Try to find any element with frontend property
+    for (const selector of ['ha-app-layout', 'home-assistant-main', 'ha-panel-lovelace']) {
+        const el = document.querySelector(selector);
+        if (el && el.frontend) {
+            return await loadLitFromFrontend(el.frontend);
+        }
+    }
+    // Last resort: try to find _frontend in window in case it's exposed there
+    const possibleFrontendKeys = Object.keys(window).filter(key => key.includes('frontend') || key.includes('hass') || key.includes('lovelace'));
+    for (const key of possibleFrontendKeys) {
+        const obj = window[key];
+        if (obj && typeof obj.import === 'function') {
+            try {
+                return await loadLitFromFrontend(obj);
+            }
+            catch (e) {
+                console.debug(`Tried loading from ${key} but failed:`, e);
+                // Continue trying other options
+            }
+        }
+    }
+    throw new Error('Could not access Home Assistant frontend');
+}
+// Helper function to load Lit modules from a frontend object
+async function loadLitFromFrontend(frontend) {
+    try {
+        // Get the Lit modules from the frontend
+        const lit = await frontend.import('./lit');
+        const litDirectives = await frontend.import('./lit/directives');
+        const litDecorators = await frontend.import('./lit/decorators');
+        const litControllers = await frontend.import('./lit/controllers');
+        return {
+            lit: {
+                html: lit.html,
+                css: lit.css,
+                nothing: lit.nothing,
+                render: lit.render
+            },
+            litDirectives: {
+                styleMap: litDirectives.styleMap,
+                repeat: litDirectives.repeat,
+                classMap: litDirectives.classMap
+            },
+            litDecorators: {
+                customElement: litDecorators.customElement,
+                property: litDecorators.property,
+                state: litDecorators.state
+            },
+            litControllers: {
+                ReactiveController: litControllers.ReactiveController,
+                ReactiveControllerHost: litControllers.ReactiveControllerHost
+            }
+        };
+    }
+    catch (e) {
+        console.error("Error loading Lit from frontend:", e);
+        throw e;
+    }
 }
 // Function to set up a Lit renderer with the loaded modules
 function setupLitRenderer(litModules) {
