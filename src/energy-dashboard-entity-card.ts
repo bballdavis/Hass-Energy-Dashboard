@@ -174,7 +174,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       max_height: 0,
       energy_auto_select_count: 6,
       persist_selection: true,
-      entity_filter: ''
+      entity_removal_filter: '' // Fixed: renamed from entity_filter to entity_removal_filter
     };
   }
 
@@ -274,7 +274,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     // Parse filter string: format is "string1,string2|option"
     const filterParts = this.config.entity_removal_filter.split('|');
     const filterStrings = filterParts[0].split(',').map(s => s.trim().toLowerCase()).filter(s => s);
-    const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'exact';  // Changed default to 'exact'
+    const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'exact';  // Default is 'exact'
 
     if (filterStrings.length === 0) {
       return entities;
@@ -293,7 +293,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
           matches = name === filter;
         } else if (filterOption === 'start') {
           matches = name.startsWith(filter);
-        } else if (filterOption === 'contains') { // Changed to explicit condition
+        } else if (filterOption === 'contains') {
           matches = name.includes(filter);
         }
         
@@ -413,14 +413,22 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   _resetToPowerDefaultEntities = () => {
     // Get current entities
     const entities = getPowerEntities(this._hass);
+    
+    // Apply entity removal filter first to get only visible entities
+    const visibleEntities = this._applyRemovalFilter(entities);
 
     // Create a new toggle state object
     const toggleStates: Record<string, boolean> = {};
     const count = this.config?.auto_select_count ?? 6;
 
-    // Set first 'count' entities to true, all others to false
-    entities.forEach((entity, index) => {
-      toggleStates[entity.entityId] = index < count;
+    // First initialize all to false
+    entities.forEach(entity => {
+      toggleStates[entity.entityId] = false;
+    });
+
+    // Then set first 'count' VISIBLE entities to true
+    visibleEntities.slice(0, count).forEach(entity => {
+      toggleStates[entity.entityId] = true;
     });
 
     // Update the toggle states
@@ -473,14 +481,22 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   _resetToEnergyDefaultEntities = () => {
     // Get current energy entities
     const entities = getEnergyEntities(this._hass);
+    
+    // Apply entity removal filter first to get only visible entities
+    const visibleEntities = this._applyRemovalFilter(entities);
 
     // Create a new toggle state object
     const toggleStates: Record<string, boolean> = {};
     const count = this.config?.energy_auto_select_count ?? 6;
 
-    // Set first 'count' entities to true, all others to false
-    entities.forEach((entity, index) => {
-      toggleStates[entity.entityId] = index < count;
+    // First initialize all to false
+    entities.forEach(entity => {
+      toggleStates[entity.entityId] = false;
+    });
+
+    // Then set first 'count' VISIBLE entities to true
+    visibleEntities.slice(0, count).forEach(entity => {
+      toggleStates[entity.entityId] = true;
     });
 
     // Update the toggle states
@@ -844,15 +860,12 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       this._energyEntitiesContainer!.style.display = 'none';
       card.appendChild(this._powerEntitiesContainer!);
       
-      // Show filtered entities or "no results" message
+      // Update the entity buttons with filtered entities
       if (this._filteredPowerEntities.length > 0) {
         this._updateEntityButtons(this._powerEntitiesContainer!, this._filteredPowerEntities, this._togglePowerEntity, true);
       } else {
+        // Clear the container but don't show any message
         this._powerEntitiesContainer!.innerHTML = '';
-        const noResults = document.createElement('div');
-        noResults.className = 'no-results';
-        noResults.textContent = 'No matching entities found';
-        this._powerEntitiesContainer!.appendChild(noResults);
       }
     } else {
       // Similar structure for energy view
@@ -960,10 +973,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
         this._updateEntityButtons(this._energyEntitiesContainer!, this._filteredEnergyEntities, this._toggleEnergyEntity, false);
       } else {
         this._energyEntitiesContainer!.innerHTML = '';
-        const noResults = document.createElement('div');
-        noResults.className = 'no-results';
-        noResults.textContent = 'No matching entities found';
-        this._energyEntitiesContainer!.appendChild(noResults);
       }
     }
 

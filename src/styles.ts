@@ -208,6 +208,30 @@ export const cardStyles = `
   .chart-container {
     transition: opacity 0.3s ease-in-out;
   }
+  
+  .search-container {
+    padding: 0 var(--card-padding) 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 8px 16px;
+    border-radius: 24px;
+    border: 1px solid var(--divider-color, #e0e0e0);
+    background-color: var(--card-background-color, white);
+    color: var(--primary-text-color);
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
+  }
 `;
 
 export const editorStyles = `
