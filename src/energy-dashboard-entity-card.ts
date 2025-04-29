@@ -19,7 +19,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _dynamicFilterValue: string = ''; // Track dynamic filter value
   private _filteredPowerEntities: EntityInfo[] = []; // Track filtered power entities
   private _filteredEnergyEntities: EntityInfo[] = []; // Track filtered energy entities
-
+  private _searchInputHasFocus: boolean = false; // Track whether the search input has focus
+  
   // Helper method to equalize button heights with ResizeObserver
   private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
     if (!buttonContainer) return;
@@ -273,27 +274,37 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     // Parse filter string: format is "string1,string2|option"
     const filterParts = this.config.entity_removal_filter.split('|');
     const filterStrings = filterParts[0].split(',').map(s => s.trim().toLowerCase()).filter(s => s);
-    const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'contains';
+    const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'exact';  // Changed default to 'exact'
 
     if (filterStrings.length === 0) {
       return entities;
     }
 
-    // IMPORTANT: Logic is inverted compared to previous implementation
-    // Entities that match the filter are REMOVED, not kept
+    // Filter out entities that match any of the filter strings
     return entities.filter(entity => {
       const name = entity.name.toLowerCase();
       
-      // Only keep entities that do NOT match any filter string
-      return !filterStrings.some(filter => {
+      // For each entity, check against all filter strings
+      // If ANY filter string matches, we should remove the entity
+      for (const filter of filterStrings) {
+        let matches = false;
+        
         if (filterOption === 'exact') {
-          return name === filter;
+          matches = name === filter;
         } else if (filterOption === 'start') {
-          return name.startsWith(filter);
-        } else { // default is 'contains'
-          return name.includes(filter);
+          matches = name.startsWith(filter);
+        } else if (filterOption === 'contains') { // Changed to explicit condition
+          matches = name.includes(filter);
         }
-      });
+        
+        // If this filter string matches, remove the entity
+        if (matches) {
+          return false;
+        }
+      }
+      
+      // No filter strings matched, keep this entity
+      return true;
     });
   }
 
@@ -807,6 +818,23 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       // Add our filter handler
       searchInput.addEventListener('input', this._handleFilterInput);
+
+      // Add focus and blur event listeners to track focus state
+      searchInput.addEventListener('focus', () => {
+        this._searchInputHasFocus = true;
+      });
+      
+      searchInput.addEventListener('blur', () => {
+        this._searchInputHasFocus = false;
+      });
+      
+      // If the search input had focus before re-rendering, restore focus
+      if (this._searchInputHasFocus) {
+        // Need to delay this slightly to ensure the DOM is ready
+        setTimeout(() => {
+          searchInput.focus();
+        }, 0);
+      }
       
       searchContainer.appendChild(searchInput);
       card.appendChild(searchContainer);
@@ -901,6 +929,23 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       // Add our filter handler
       searchInput.addEventListener('input', this._handleFilterInput);
+
+      // Add focus and blur event listeners to track focus state
+      searchInput.addEventListener('focus', () => {
+        this._searchInputHasFocus = true;
+      });
+      
+      searchInput.addEventListener('blur', () => {
+        this._searchInputHasFocus = false;
+      });
+      
+      // If the search input had focus before re-rendering, restore focus
+      if (this._searchInputHasFocus) {
+        // Need to delay this slightly to ensure the DOM is ready
+        setTimeout(() => {
+          searchInput.focus();
+        }, 0);
+      }
       
       searchContainer.appendChild(searchInput);
       card.appendChild(searchContainer);
