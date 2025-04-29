@@ -916,13 +916,15 @@ class EnergyDashboardEntityCard extends HTMLElement {
             const toggleStates = {};
             // Get auto_select_count from config, or use default of 6
             const count = (_d = (_c = this.config) === null || _c === void 0 ? void 0 : _c.auto_select_count) !== null && _d !== void 0 ? _d : 6;
-            // Initialize all entities first to ensure they're tracked
+            // Apply entity removal filter first to get only visible entities
+            const visibleEntities = this._applyRemovalFilter(entities);
+            // Initialize all entities to false first (including hidden ones)
             entities.forEach(entity => {
                 // Set to false by default
                 toggleStates[entity.entityId] = false;
             });
-            // Then set the first `count` entities to true
-            entities.slice(0, count).forEach(entity => {
+            // Then set the first `count` VISIBLE entities to true
+            visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
             this.entityToggleStates = toggleStates;
@@ -941,13 +943,15 @@ class EnergyDashboardEntityCard extends HTMLElement {
             const toggleStates = {};
             // Get energy_auto_select_count from config, or use default of 6
             const count = (_d = (_c = this.config) === null || _c === void 0 ? void 0 : _c.energy_auto_select_count) !== null && _d !== void 0 ? _d : 6;
-            // Initialize all entities first to ensure they're tracked
+            // Apply entity removal filter first to get only visible entities
+            const visibleEntities = this._applyRemovalFilter(entities);
+            // Initialize all entities to false first (including hidden ones)
             entities.forEach(entity => {
                 // Set to false by default
                 toggleStates[entity.entityId] = false;
             });
-            // Then set the first `count` entities to true
-            entities.slice(0, count).forEach(entity => {
+            // Then set the first `count` VISIBLE entities to true
+            visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
             this.energyEntityToggleStates = toggleStates;
