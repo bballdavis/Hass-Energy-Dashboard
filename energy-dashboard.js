@@ -1251,10 +1251,28 @@ class EnergyDashboardEntityCard extends HTMLElement {
             refreshControl.appendChild(refreshButton);
             refreshControlContainer.appendChild(refreshControl);
             card.appendChild(refreshControlContainer);
-            // Then add the entities container
-            this._powerEntitiesContainer.style.display = '';
-            this._energyEntitiesContainer.style.display = 'none';
-            card.appendChild(this._powerEntitiesContainer);
+            // Apply max height if configured
+            if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
+                // Create a container with fixed height and scrolling for the entities
+                const scrollContainer = document.createElement('div');
+                scrollContainer.className = 'scroll-container';
+                scrollContainer.style.maxHeight = `${this.config.max_height}px`;
+                scrollContainer.style.overflowY = 'auto';
+                scrollContainer.style.overflowX = 'hidden';
+                scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+                scrollContainer.style.marginBottom = '16px';
+                // Add the entities container to the scroll container
+                this._powerEntitiesContainer.style.display = '';
+                this._energyEntitiesContainer.style.display = 'none';
+                scrollContainer.appendChild(this._powerEntitiesContainer);
+                card.appendChild(scrollContainer);
+            }
+            else {
+                // Regular display without scroll
+                this._powerEntitiesContainer.style.display = '';
+                this._energyEntitiesContainer.style.display = 'none';
+                card.appendChild(this._powerEntitiesContainer);
+            }
             // Update the entity buttons with filtered entities
             if (this._filteredPowerEntities.length > 0) {
                 this._updateEntityButtons(this._powerEntitiesContainer, this._filteredPowerEntities, this._togglePowerEntity, true);
@@ -1344,10 +1362,28 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }
             searchContainer.appendChild(searchInput);
             card.appendChild(searchContainer);
-            // Then add the entities container
-            this._powerEntitiesContainer.style.display = 'none';
-            this._energyEntitiesContainer.style.display = '';
-            card.appendChild(this._energyEntitiesContainer);
+            // Apply max height if configured
+            if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
+                // Create a container with fixed height and scrolling for the entities
+                const scrollContainer = document.createElement('div');
+                scrollContainer.className = 'scroll-container';
+                scrollContainer.style.maxHeight = `${this.config.max_height}px`;
+                scrollContainer.style.overflowY = 'auto';
+                scrollContainer.style.overflowX = 'hidden';
+                scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+                scrollContainer.style.marginBottom = '16px';
+                // Add the entities container to the scroll container
+                this._powerEntitiesContainer.style.display = 'none';
+                this._energyEntitiesContainer.style.display = '';
+                scrollContainer.appendChild(this._energyEntitiesContainer);
+                card.appendChild(scrollContainer);
+            }
+            else {
+                // Regular display without scroll
+                this._powerEntitiesContainer.style.display = 'none';
+                this._energyEntitiesContainer.style.display = '';
+                card.appendChild(this._energyEntitiesContainer);
+            }
             // Show filtered entities or "no results" message
             if (this._filteredEnergyEntities.length > 0) {
                 this._updateEntityButtons(this._energyEntitiesContainer, this._filteredEnergyEntities, this._toggleEnergyEntity, false);
@@ -1559,11 +1595,10 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
             // Then apply defaults for any missing properties
             show_header: config.show_header !== undefined ? config.show_header : true,
             show_state: config.show_state !== undefined ? config.show_state : true,
-            show_toggle: config.show_toggle !== undefined ? config.show_toggle : true,
             auto_select_count: config.auto_select_count !== undefined ? config.auto_select_count : 6,
             max_height: config.max_height !== undefined ? config.max_height : 400, // Default to ~15 entities
+            enable_max_height: config.enable_max_height !== undefined ? config.enable_max_height : false,
             energy_auto_select_count: config.energy_auto_select_count !== undefined ? config.energy_auto_select_count : 6,
-            persist_selection: config.persist_selection !== undefined ? config.persist_selection : true,
             title: config.title !== undefined ? config.title : 'Energy Dashboard',
         };
         this._updateForm();
@@ -1606,31 +1641,6 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         entityFilterField.helperPersistent = true;
         entityFilterRow.appendChild(entityFilterField);
         form.appendChild(entityFilterRow);
-        // Refresh Rate dropdown
-        const refreshRateRow = this._createRow();
-        const refreshRateLabel = document.createElement('div');
-        refreshRateLabel.textContent = 'Auto Refresh';
-        refreshRateLabel.style.width = '30%';
-        const refreshRateSelect = document.createElement('select');
-        refreshRateSelect.className = 'value';
-        refreshRateSelect.style.width = '70%';
-        refreshRateSelect.configValue = 'refresh_rate';
-        const options = [
-            { value: 'off', label: 'Off' },
-            { value: '10s', label: '10 seconds' },
-            { value: '30s', label: '30 seconds' },
-        ];
-        options.forEach(option => {
-            const optionEl = document.createElement('option');
-            optionEl.value = option.value;
-            optionEl.textContent = option.label;
-            optionEl.selected = this.config.refresh_rate === option.value;
-            refreshRateSelect.appendChild(optionEl);
-        });
-        refreshRateSelect.addEventListener('change', this.valueChanged);
-        refreshRateRow.appendChild(refreshRateLabel);
-        refreshRateRow.appendChild(refreshRateSelect);
-        form.appendChild(refreshRateRow);
         // Show Header toggle
         const headerRow = this._createRow();
         const headerSwitch = document.createElement('ha-switch');
@@ -1653,28 +1663,6 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         stateRow.appendChild(stateSwitch);
         stateRow.appendChild(stateLabel);
         form.appendChild(stateRow);
-        // Allow Toggling toggle
-        const toggleRow = this._createRow();
-        const toggleSwitch = document.createElement('ha-switch');
-        toggleSwitch.checked = this.config.show_toggle !== false;
-        toggleSwitch.configValue = 'show_toggle';
-        toggleSwitch.addEventListener('change', this.valueChanged);
-        const toggleLabel = document.createElement('div');
-        toggleLabel.textContent = 'Allow Toggling';
-        toggleRow.appendChild(toggleSwitch);
-        toggleRow.appendChild(toggleLabel);
-        form.appendChild(toggleRow);
-        // Add Persist Selection toggle
-        const persistSelectionRow = this._createRow();
-        const persistSelectionSwitch = document.createElement('ha-switch');
-        persistSelectionSwitch.checked = this.config.persist_selection !== false;
-        persistSelectionSwitch.configValue = 'persist_selection';
-        persistSelectionSwitch.addEventListener('change', this.valueChanged);
-        const persistSelectionLabel = document.createElement('div');
-        persistSelectionLabel.textContent = 'Remember Selection';
-        persistSelectionRow.appendChild(persistSelectionSwitch);
-        persistSelectionRow.appendChild(persistSelectionLabel);
-        form.appendChild(persistSelectionRow);
         // Auto-select Count field
         const autoSelectRow = this._createRow();
         const autoSelectField = document.createElement('ha-textfield');
@@ -1701,18 +1689,29 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         energyAutoSelectField.addEventListener('change', this.valueChanged);
         energyAutoSelectRow.appendChild(energyAutoSelectField);
         form.appendChild(energyAutoSelectRow);
+        // Enable Max Height toggle
+        const enableMaxHeightRow = this._createRow();
+        const enableMaxHeightSwitch = document.createElement('ha-switch');
+        enableMaxHeightSwitch.checked = this.config.enable_max_height === true;
+        enableMaxHeightSwitch.configValue = 'enable_max_height';
+        enableMaxHeightSwitch.addEventListener('change', this.valueChanged);
+        const enableMaxHeightLabel = document.createElement('div');
+        enableMaxHeightLabel.textContent = 'Enable Max Height';
+        enableMaxHeightRow.appendChild(enableMaxHeightSwitch);
+        enableMaxHeightRow.appendChild(enableMaxHeightLabel);
+        form.appendChild(enableMaxHeightRow);
         // Max Height field
         const maxHeightRow = this._createRow();
         const maxHeightField = document.createElement('ha-textfield');
         maxHeightField.className = 'value';
-        maxHeightField.label = 'Max Height (0 for no limit)';
+        maxHeightField.label = 'Max Height (pixels)';
         maxHeightField.type = 'number';
-        maxHeightField.min = '0';
+        maxHeightField.min = '100';
         maxHeightField.max = '1000';
-        maxHeightField.value = String(this.config.max_height || 0);
+        maxHeightField.value = String(this.config.max_height || 400);
         maxHeightField.configValue = 'max_height';
         maxHeightField.addEventListener('change', this.valueChanged);
-        maxHeightField.helperText = 'Set maximum height in pixels (0 = no limit)';
+        maxHeightField.helperText = 'Set maximum height in pixels for scrollable container';
         maxHeightField.helperPersistent = true;
         maxHeightRow.appendChild(maxHeightField);
         form.appendChild(maxHeightRow);
@@ -2704,8 +2703,8 @@ class EnergyDashboardChartCard extends HTMLElement {
         const yAxisPresets = [
             { label: 'Auto', value: 'auto' },
             { label: '500', value: '500' },
-            { label: '2000', value: '2000' },
-            { label: '3000', value: '3000' }
+            { label: '3000', value: '3000' },
+            { label: '9000', value: '9000' }
         ];
         yAxisPresets.forEach((preset, index) => {
             const btn = createButton(preset.label, preset.value === 'auto' ? 'Automatic Y-axis scaling' : `Set Y-axis maximum to ${preset.value}`, preset.value, 'yaxis', index, yAxisPresets.length);
@@ -2713,7 +2712,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             if (preset.label === 'Auto') {
                 btn.style.minWidth = '45px'; // Wider for "Auto"
             }
-            else if (preset.label === '2000' || preset.label === '3000') {
+            else if (preset.label === '3000' || preset.label === '9000') {
                 btn.style.minWidth = '45px'; // Wider for 4-digit numbers
             }
             else {

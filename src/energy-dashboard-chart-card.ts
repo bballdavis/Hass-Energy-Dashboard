@@ -1068,8 +1068,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const yAxisPresets = [
       { label: 'Auto', value: 'auto' },
       { label: '500', value: '500' },
-      { label: '2000', value: '2000' },
-      { label: '3000', value: '3000' }
+      { label: '3000', value: '3000' },
+      { label: '9000', value: '9000' }
     ];
     yAxisPresets.forEach((preset, index) => {
       const btn = createButton(
@@ -1083,7 +1083,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       // Set width based on content
       if (preset.label === 'Auto') {
         btn.style.minWidth = '45px'; // Wider for "Auto"
-      } else if (preset.label === '2000' || preset.label === '3000') {
+      } else if (preset.label === '3000' || preset.label === '9000') {
         btn.style.minWidth = '45px'; // Wider for 4-digit numbers
       } else {
         btn.style.minWidth = '40px'; // Standard width for other buttons

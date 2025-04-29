@@ -981,11 +981,29 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       refreshControlContainer.appendChild(refreshControl);
       card.appendChild(refreshControlContainer);
-      
-      // Then add the entities container
-      this._powerEntitiesContainer!.style.display = '';
-      this._energyEntitiesContainer!.style.display = 'none';
-      card.appendChild(this._powerEntitiesContainer!);
+
+      // Apply max height if configured
+      if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
+        // Create a container with fixed height and scrolling for the entities
+        const scrollContainer = document.createElement('div');
+        scrollContainer.className = 'scroll-container';
+        scrollContainer.style.maxHeight = `${this.config.max_height}px`;
+        scrollContainer.style.overflowY = 'auto';
+        scrollContainer.style.overflowX = 'hidden';
+        scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+        scrollContainer.style.marginBottom = '16px';
+        
+        // Add the entities container to the scroll container
+        this._powerEntitiesContainer!.style.display = '';
+        this._energyEntitiesContainer!.style.display = 'none';
+        scrollContainer.appendChild(this._powerEntitiesContainer!);
+        card.appendChild(scrollContainer);
+      } else {
+        // Regular display without scroll
+        this._powerEntitiesContainer!.style.display = '';
+        this._energyEntitiesContainer!.style.display = 'none';
+        card.appendChild(this._powerEntitiesContainer!);
+      }
       
       // Update the entity buttons with filtered entities
       if (this._filteredPowerEntities.length > 0) {
@@ -1090,10 +1108,28 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       searchContainer.appendChild(searchInput);
       card.appendChild(searchContainer);
 
-      // Then add the entities container
-      this._powerEntitiesContainer!.style.display = 'none';
-      this._energyEntitiesContainer!.style.display = '';
-      card.appendChild(this._energyEntitiesContainer!);
+      // Apply max height if configured
+      if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
+        // Create a container with fixed height and scrolling for the entities
+        const scrollContainer = document.createElement('div');
+        scrollContainer.className = 'scroll-container';
+        scrollContainer.style.maxHeight = `${this.config.max_height}px`;
+        scrollContainer.style.overflowY = 'auto';
+        scrollContainer.style.overflowX = 'hidden';
+        scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+        scrollContainer.style.marginBottom = '16px';
+        
+        // Add the entities container to the scroll container
+        this._powerEntitiesContainer!.style.display = 'none';
+        this._energyEntitiesContainer!.style.display = '';
+        scrollContainer.appendChild(this._energyEntitiesContainer!);
+        card.appendChild(scrollContainer);
+      } else {
+        // Regular display without scroll
+        this._powerEntitiesContainer!.style.display = 'none';
+        this._energyEntitiesContainer!.style.display = '';
+        card.appendChild(this._energyEntitiesContainer!);
+      }
       
       // Show filtered entities or "no results" message
       if (this._filteredEnergyEntities.length > 0) {
