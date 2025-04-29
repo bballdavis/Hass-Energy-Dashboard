@@ -21,6 +21,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _filteredEnergyEntities: EntityInfo[] = []; // Track filtered energy entities
   private _searchInputHasFocus: boolean = false; // Track whether the search input has focus
   private _refreshIntervalId: number | null = null; // Timer ID for auto-refresh
+  private _lastUpdateTimestamp: number = 0; // Track last entity update timestamp
+  private _forceUpdate: boolean = false; // Flag to force update regardless of timestamp
   
   // Helper method to equalize button heights with ResizeObserver
   private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
@@ -213,9 +215,34 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     // Load the persistence setting from localStorage early to ensure it's always available
     if (this.config && isFirstUpdate) {
       this.config.persist_selection = this._loadPersistenceState();
+      // Force first update
+      this._forceUpdate = true;
     }
 
-    this._updateEntities();
+    // Only update entities based on refresh rate settings or force update flag
+    const now = Date.now();
+    let shouldUpdateEntities = false;
+    
+    // Update in these cases:
+    // 1. First update (isFirstUpdate)
+    // 2. Force update flag is set (_forceUpdate)
+    // 3. Refresh rate is active and enough time has passed since last update
+    if (isFirstUpdate || this._forceUpdate) {
+      shouldUpdateEntities = true;
+    } else if (this.config?.refresh_rate && this.config.refresh_rate !== 'off') {
+      const intervalMs = this.config.refresh_rate === '10s' ? 10000 : 30000;
+      if (now - this._lastUpdateTimestamp >= intervalMs) {
+        shouldUpdateEntities = true;
+      }
+    }
+    
+    if (shouldUpdateEntities) {
+      this._updateEntities();
+      this._lastUpdateTimestamp = now;
+      this._forceUpdate = false; // Reset force update flag
+    }
+    
+    // Always update content with current data (doesn't fetch new entity data)
     this._updateContent();
   }
 
@@ -1189,9 +1216,14 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   
   // Manually refresh the card
   _refreshNow() {
+    // Set force update flag to bypass throttling
+    this._forceUpdate = true;
+    
     // Force an update of the entities
     if (this._hass) {
       this._updateEntities();
+      this._lastUpdateTimestamp = Date.now(); // Update timestamp
+      this._forceUpdate = false; // Reset flag after update
       this._updateContent();
     }
   }
