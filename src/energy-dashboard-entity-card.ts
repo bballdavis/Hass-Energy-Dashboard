@@ -148,7 +148,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       auto_select_count: config.auto_select_count ?? 6,
       max_height: config.max_height ?? 0, // No longer using max_height, set to 0 by default
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
-      entity_filter: config.entity_filter ?? '', // Default to empty string for no filter
+      entity_removal_filter: config.entity_removal_filter ?? '', // Default to empty string for no filter
       // Use the stored value as priority for persistence setting
       persist_selection: persistenceFromStorage,
       // Always enable energy section
@@ -235,8 +235,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       isOn: this.entityToggleStates[entity.entityId] || false
     }));
     
-    // Apply the permanent filter from config
-    const filteredEntities = this._applyPermanentFilter(this.powerEntities);
+    // Apply the entity removal filter from config
+    const filteredEntities = this._applyRemovalFilter(this.powerEntities);
     
     // Apply dynamic filter if exists
     this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
@@ -255,8 +255,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       isOn: this.energyEntityToggleStates[entity.entityId] || false
     }));
     
-    // Apply the permanent filter from config
-    const filteredEntities = this._applyPermanentFilter(this.energyEntities);
+    // Apply the entity removal filter from config
+    const filteredEntities = this._applyRemovalFilter(this.energyEntities);
     
     // Apply dynamic filter if exists
     this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
@@ -264,14 +264,14 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     this._saveEnergyToggleStates();
   }
 
-  // Apply permanent filter from configuration
-  _applyPermanentFilter(entities: EntityInfo[]): EntityInfo[] {
-    if (!this.config?.entity_filter) {
+  // Apply entity removal filter from configuration
+  _applyRemovalFilter(entities: EntityInfo[]): EntityInfo[] {
+    if (!this.config?.entity_removal_filter) {
       return entities;
     }
 
     // Parse filter string: format is "string1,string2|option"
-    const filterParts = this.config.entity_filter.split('|');
+    const filterParts = this.config.entity_removal_filter.split('|');
     const filterStrings = filterParts[0].split(',').map(s => s.trim().toLowerCase()).filter(s => s);
     const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'contains';
 
@@ -279,10 +279,13 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       return entities;
     }
 
+    // IMPORTANT: Logic is inverted compared to previous implementation
+    // Entities that match the filter are REMOVED, not kept
     return entities.filter(entity => {
       const name = entity.name.toLowerCase();
       
-      return filterStrings.some(filter => {
+      // Only keep entities that do NOT match any filter string
+      return !filterStrings.some(filter => {
         if (filterOption === 'exact') {
           return name === filter;
         } else if (filterOption === 'start') {
@@ -314,10 +317,10 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     
     // Re-apply filters and update UI
     if (this._viewMode === 'power') {
-      const filteredEntities = this._applyPermanentFilter(this.powerEntities);
+      const filteredEntities = this._applyRemovalFilter(this.powerEntities);
       this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
     } else {
-      const filteredEntities = this._applyPermanentFilter(this.energyEntities);
+      const filteredEntities = this._applyRemovalFilter(this.energyEntities);
       this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
     }
     
@@ -785,7 +788,26 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       searchInput.type = 'text';
       searchInput.placeholder = 'Filter entities...';
       searchInput.value = this._dynamicFilterValue;
+      
+      // Add attribute to prevent Home Assistant from intercepting inputs
+      searchInput.setAttribute('autocomplete', 'off'); 
+      searchInput.setAttribute('autocorrect', 'off');
+      searchInput.setAttribute('autocapitalize', 'none');
+      searchInput.setAttribute('spellcheck', 'false');
+      
+      // Prevent the input from being focused when clicking in empty areas of the card
+      searchInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+      
+      // Prevent the key event from bubbling up to Home Assistant
+      searchInput.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+      });
+      
+      // Add our filter handler
       searchInput.addEventListener('input', this._handleFilterInput);
+      
       searchContainer.appendChild(searchInput);
       card.appendChild(searchContainer);
       
@@ -860,7 +882,26 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       searchInput.type = 'text';
       searchInput.placeholder = 'Filter entities...';
       searchInput.value = this._dynamicFilterValue;
+      
+      // Add attribute to prevent Home Assistant from intercepting inputs
+      searchInput.setAttribute('autocomplete', 'off'); 
+      searchInput.setAttribute('autocorrect', 'off');
+      searchInput.setAttribute('autocapitalize', 'none');
+      searchInput.setAttribute('spellcheck', 'false');
+      
+      // Prevent the input from being focused when clicking in empty areas of the card
+      searchInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+      
+      // Prevent the key event from bubbling up to Home Assistant
+      searchInput.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+      });
+      
+      // Add our filter handler
       searchInput.addEventListener('input', this._handleFilterInput);
+      
       searchContainer.appendChild(searchInput);
       card.appendChild(searchContainer);
 

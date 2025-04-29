@@ -417,11 +417,11 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._dynamicFilterValue = target.value;
             // Re-apply filters and update UI
             if (this._viewMode === 'power') {
-                const filteredEntities = this._applyPermanentFilter(this.powerEntities);
+                const filteredEntities = this._applyRemovalFilter(this.powerEntities);
                 this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
             }
             else {
-                const filteredEntities = this._applyPermanentFilter(this.energyEntities);
+                const filteredEntities = this._applyRemovalFilter(this.energyEntities);
                 this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
             }
             this._updateContent();
@@ -607,7 +607,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             auto_select_count: (_e = config.auto_select_count) !== null && _e !== void 0 ? _e : 6,
             max_height: (_f = config.max_height) !== null && _f !== void 0 ? _f : 0, // No longer using max_height, set to 0 by default
             energy_auto_select_count: (_g = config.energy_auto_select_count) !== null && _g !== void 0 ? _g : 6,
-            entity_filter: (_h = config.entity_filter) !== null && _h !== void 0 ? _h : '', // Default to empty string for no filter
+            entity_removal_filter: (_h = config.entity_removal_filter) !== null && _h !== void 0 ? _h : '', // Default to empty string for no filter
             // Use the stored value as priority for persistence setting
             persist_selection: persistenceFromStorage,
             // Always enable energy section
@@ -683,8 +683,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
             ...entity,
             isOn: this.entityToggleStates[entity.entityId] || false
         }));
-        // Apply the permanent filter from config
-        const filteredEntities = this._applyPermanentFilter(this.powerEntities);
+        // Apply the entity removal filter from config
+        const filteredEntities = this._applyRemovalFilter(this.powerEntities);
         // Apply dynamic filter if exists
         this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
         this._savePowerToggleStates();
@@ -699,28 +699,31 @@ class EnergyDashboardEntityCard extends HTMLElement {
             ...entity,
             isOn: this.energyEntityToggleStates[entity.entityId] || false
         }));
-        // Apply the permanent filter from config
-        const filteredEntities = this._applyPermanentFilter(this.energyEntities);
+        // Apply the entity removal filter from config
+        const filteredEntities = this._applyRemovalFilter(this.energyEntities);
         // Apply dynamic filter if exists
         this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
         this._saveEnergyToggleStates();
     }
-    // Apply permanent filter from configuration
-    _applyPermanentFilter(entities) {
+    // Apply entity removal filter from configuration
+    _applyRemovalFilter(entities) {
         var _a;
-        if (!((_a = this.config) === null || _a === void 0 ? void 0 : _a.entity_filter)) {
+        if (!((_a = this.config) === null || _a === void 0 ? void 0 : _a.entity_removal_filter)) {
             return entities;
         }
         // Parse filter string: format is "string1,string2|option"
-        const filterParts = this.config.entity_filter.split('|');
+        const filterParts = this.config.entity_removal_filter.split('|');
         const filterStrings = filterParts[0].split(',').map(s => s.trim().toLowerCase()).filter(s => s);
         const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'contains';
         if (filterStrings.length === 0) {
             return entities;
         }
+        // IMPORTANT: Logic is inverted compared to previous implementation
+        // Entities that match the filter are REMOVED, not kept
         return entities.filter(entity => {
             const name = entity.name.toLowerCase();
-            return filterStrings.some(filter => {
+            // Only keep entities that do NOT match any filter string
+            return !filterStrings.some(filter => {
                 if (filterOption === 'exact') {
                     return name === filter;
                 }
@@ -1022,6 +1025,20 @@ class EnergyDashboardEntityCard extends HTMLElement {
             searchInput.type = 'text';
             searchInput.placeholder = 'Filter entities...';
             searchInput.value = this._dynamicFilterValue;
+            // Add attribute to prevent Home Assistant from intercepting inputs
+            searchInput.setAttribute('autocomplete', 'off');
+            searchInput.setAttribute('autocorrect', 'off');
+            searchInput.setAttribute('autocapitalize', 'none');
+            searchInput.setAttribute('spellcheck', 'false');
+            // Prevent the input from being focused when clicking in empty areas of the card
+            searchInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            // Prevent the key event from bubbling up to Home Assistant
+            searchInput.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+            });
+            // Add our filter handler
             searchInput.addEventListener('input', this._handleFilterInput);
             searchContainer.appendChild(searchInput);
             card.appendChild(searchContainer);
@@ -1090,6 +1107,20 @@ class EnergyDashboardEntityCard extends HTMLElement {
             searchInput.type = 'text';
             searchInput.placeholder = 'Filter entities...';
             searchInput.value = this._dynamicFilterValue;
+            // Add attribute to prevent Home Assistant from intercepting inputs
+            searchInput.setAttribute('autocomplete', 'off');
+            searchInput.setAttribute('autocorrect', 'off');
+            searchInput.setAttribute('autocapitalize', 'none');
+            searchInput.setAttribute('spellcheck', 'false');
+            // Prevent the input from being focused when clicking in empty areas of the card
+            searchInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            // Prevent the key event from bubbling up to Home Assistant
+            searchInput.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+            });
+            // Add our filter handler
             searchInput.addEventListener('input', this._handleFilterInput);
             searchContainer.appendChild(searchInput);
             card.appendChild(searchContainer);
@@ -1292,15 +1323,15 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         titleField.addEventListener('change', this.valueChanged);
         titleRow.appendChild(titleField);
         form.appendChild(titleRow);
-        // Entity Filter field - new
+        // Entity Removal Filter field
         const entityFilterRow = this._createRow();
         const entityFilterField = document.createElement('ha-textfield');
         entityFilterField.className = 'value';
-        entityFilterField.label = 'Entity Filter';
-        entityFilterField.value = this.config.entity_filter || '';
-        entityFilterField.configValue = 'entity_filter';
+        entityFilterField.label = 'Entity Removal Filter';
+        entityFilterField.value = this.config.entity_removal_filter || '';
+        entityFilterField.configValue = 'entity_removal_filter';
         entityFilterField.addEventListener('change', this.valueChanged);
-        entityFilterField.helperText = 'Filter by name (format: "string,string|exact", options: contains (default), exact, start)';
+        entityFilterField.helperText = 'Entities matching this filter will be REMOVED (format: "string,string|exact", options: contains (default), exact, start)';
         entityFilterField.helperPersistent = true;
         entityFilterRow.appendChild(entityFilterField);
         form.appendChild(entityFilterRow);

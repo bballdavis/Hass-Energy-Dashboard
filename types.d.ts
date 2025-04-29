@@ -18,6 +18,6 @@ export interface EnergyDashboardConfig {
     energy_auto_select_count: number;
     persist_selection: boolean;
     view_mode?: 'power' | 'energy';
-    entity_filter?: string;
+    entity_removal_filter?: string;
     [key: string]: any;
 }

@@ -42,7 +42,7 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     _updateEntities(): void;
     _updatePowerEntities(): void;
     _updateEnergyEntities(): void;
-    _applyPermanentFilter(entities: EntityInfo[]): EntityInfo[];
+    _applyRemovalFilter(entities: EntityInfo[]): EntityInfo[];
     _applyDynamicFilter(entities: EntityInfo[], filterValue: string): EntityInfo[];
     _handleFilterInput: (e: Event) => void;
     _initializePowerToggleStates(entities: EntityInfo[]): void;

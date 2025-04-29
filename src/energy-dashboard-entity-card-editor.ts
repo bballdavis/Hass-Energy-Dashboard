@@ -124,15 +124,15 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
     titleRow.appendChild(titleField);
     form.appendChild(titleRow);
 
-    // Entity Filter field - new
+    // Entity Removal Filter field
     const entityFilterRow = this._createRow();
     const entityFilterField = document.createElement('ha-textfield') as HaFormElement;
     entityFilterField.className = 'value';
-    entityFilterField.label = 'Entity Filter';
-    entityFilterField.value = this.config.entity_filter || '';
-    entityFilterField.configValue = 'entity_filter';
+    entityFilterField.label = 'Entity Removal Filter';
+    entityFilterField.value = this.config.entity_removal_filter || '';
+    entityFilterField.configValue = 'entity_removal_filter';
     entityFilterField.addEventListener('change', this.valueChanged);
-    entityFilterField.helperText = 'Filter by name (format: "string,string|exact", options: contains (default), exact, start)';
+    entityFilterField.helperText = 'Entities matching this filter will be REMOVED (format: "string,string|exact", options: contains (default), exact, start)';
     entityFilterField.helperPersistent = true;
     entityFilterRow.appendChild(entityFilterField);
     form.appendChild(entityFilterRow);
