@@ -127,6 +127,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       this.config.view_mode = this._viewMode;
     }
 
+    // Set up auto-refresh if configured
+    this._setupRefreshInterval();
+
     this._updateContent();
   }
 
@@ -135,6 +138,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     if (!config) {
       throw new Error("Invalid configuration");
     }
+
+    // Clear any existing refresh interval before changing config
+    this._clearRefreshInterval();
 
     // Load persistence setting from localStorage first
     const persistenceFromStorage = this._loadPersistenceState();
@@ -151,11 +157,15 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       max_height: config.max_height ?? 0, // No longer using max_height, set to 0 by default
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
       entity_removal_filter: config.entity_removal_filter ?? '', // Default to empty string for no filter
+      refresh_rate: config.refresh_rate ?? 'off', // Default to off for refresh rate
       // Use the stored value as priority for persistence setting
       persist_selection: persistenceFromStorage,
       // Always enable energy section
       show_energy_section: true,
     };
+
+    // Set up auto-refresh if configured
+    this._setupRefreshInterval();
 
     this._updateContent();
   }
@@ -268,43 +278,85 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
   // Apply entity removal filter from configuration
   _applyRemovalFilter(entities: EntityInfo[]): EntityInfo[] {
-    if (!this.config?.entity_removal_filter) {
+    // If no filter is defined, return all entities
+    if (!this.config?.entity_removal_filter || this.config.entity_removal_filter.trim() === '') {
       return entities;
     }
 
     // Parse filter string: format is "string1,string2|option"
+    // Example: "kitchen,bedroom|contains" to filter out entities with kitchen or bedroom in their names
     const filterParts = this.config.entity_removal_filter.split('|');
-    const filterStrings = filterParts[0].split(',').map(s => s.trim().toLowerCase()).filter(s => s);
-    const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'exact';  // Default is 'exact'
-
-    if (filterStrings.length === 0) {
+    const filterString = filterParts[0].trim();
+    
+    // If filter string is empty after trimming, return all entities
+    if (filterString === '') {
       return entities;
     }
-
-    // Filter out entities that match any of the filter strings
+    
+    // Get filter terms: split by comma, trim each, convert to lowercase, remove empty strings
+    const filterTerms = filterString
+      .split(',')
+      .map(term => term.trim().toLowerCase())
+      .filter(term => term.length > 0);
+    
+    // If no valid filter terms, return all entities
+    if (filterTerms.length === 0) {
+      return entities;
+    }
+    
+    // Get filter mode: default to 'contains' if not specified or invalid
+    let filterMode = 'contains'; // Default to contains for better usability
+    if (filterParts.length > 1) {
+      const mode = filterParts[1].trim().toLowerCase();
+      if (['exact', 'start', 'contains', 'entity_id'].includes(mode)) {
+        filterMode = mode;
+      }
+    }
+    
+    // Log the active filter for debugging
+    console.log(`Applying entity removal filter: terms=${filterTerms.join(', ')}, mode=${filterMode}`);
+    
+    // Apply filter using the specified mode to remove matching entities
     return entities.filter(entity => {
-      const name = entity.name.toLowerCase();
+      // Convert entity name to lowercase for case-insensitive matching
+      const nameLower = entity.name.toLowerCase();
+      const entityIdLower = entity.entityId.toLowerCase();
       
-      // For each entity, check against all filter strings
-      // If ANY filter string matches, we should remove the entity
-      for (const filter of filterStrings) {
-        let matches = false;
+      // Check each filter term against this entity
+      for (const term of filterTerms) {
+        let shouldRemove = false;
         
-        if (filterOption === 'exact') {
-          matches = name === filter;
-        } else if (filterOption === 'start') {
-          matches = name.startsWith(filter);
-        } else if (filterOption === 'contains') {
-          matches = name.includes(filter);
+        // Apply different matching logic based on filter mode
+        switch (filterMode) {
+          case 'exact':
+            // Remove if the entity name exactly matches the term
+            shouldRemove = nameLower === term;
+            break;
+            
+          case 'start':
+            // Remove if the entity name starts with the term
+            shouldRemove = nameLower.startsWith(term);
+            break;
+            
+          case 'entity_id':
+            // Remove if the entity ID contains the term
+            shouldRemove = entityIdLower.includes(term);
+            break;
+            
+          case 'contains':
+          default:
+            // Remove if the entity name contains the term (default behavior)
+            shouldRemove = nameLower.includes(term);
+            break;
         }
         
-        // If this filter string matches, remove the entity
-        if (matches) {
+        // If any term matches according to the filter mode, remove this entity
+        if (shouldRemove) {
           return false;
         }
       }
       
-      // No filter strings matched, keep this entity
+      // Keep the entity if it didn't match any filter terms
       return true;
     });
   }

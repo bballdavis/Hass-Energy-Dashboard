@@ -132,7 +132,7 @@ export class EnergyDashboardEntityCardEditor extends HTMLElement {
     entityFilterField.value = this.config.entity_removal_filter || '';
     entityFilterField.configValue = 'entity_removal_filter';
     entityFilterField.addEventListener('change', this.valueChanged);
-    entityFilterField.helperText = 'Entities matching this filter will be REMOVED (format: "string,string|exact", options: contains (default), exact, start)';
+    entityFilterField.helperText = 'Format: "string,string|mode" - Entities matching these terms will be REMOVED. Modes: contains (default), exact, start, entity_id';
     entityFilterField.helperPersistent = true;
     entityFilterRow.appendChild(entityFilterField);
     form.appendChild(entityFilterRow);

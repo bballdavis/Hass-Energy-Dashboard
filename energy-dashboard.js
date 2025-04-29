@@ -671,14 +671,18 @@ class EnergyDashboardEntityCard extends HTMLElement {
         if (this.config) {
             this.config.view_mode = this._viewMode;
         }
+        // Set up auto-refresh if configured
+        this._setupRefreshInterval();
         this._updateContent();
     }
     // Home Assistant specific method to set config
     setConfig(config) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!config) {
             throw new Error("Invalid configuration");
         }
+        // Clear any existing refresh interval before changing config
+        this._clearRefreshInterval();
         // Load persistence setting from localStorage first
         const persistenceFromStorage = this._loadPersistenceState();
         // Create a merged config object correctly by spreading config first
@@ -693,11 +697,14 @@ class EnergyDashboardEntityCard extends HTMLElement {
             max_height: (_f = config.max_height) !== null && _f !== void 0 ? _f : 0, // No longer using max_height, set to 0 by default
             energy_auto_select_count: (_g = config.energy_auto_select_count) !== null && _g !== void 0 ? _g : 6,
             entity_removal_filter: (_h = config.entity_removal_filter) !== null && _h !== void 0 ? _h : '', // Default to empty string for no filter
+            refresh_rate: (_j = config.refresh_rate) !== null && _j !== void 0 ? _j : 'off', // Default to off for refresh rate
             // Use the stored value as priority for persistence setting
             persist_selection: persistenceFromStorage,
             // Always enable energy section
             show_energy_section: true,
         };
+        // Set up auto-refresh if configured
+        this._setupRefreshInterval();
         this._updateContent();
     }
     // Home Assistant specific methods
@@ -793,38 +800,71 @@ class EnergyDashboardEntityCard extends HTMLElement {
     // Apply entity removal filter from configuration
     _applyRemovalFilter(entities) {
         var _a;
-        if (!((_a = this.config) === null || _a === void 0 ? void 0 : _a.entity_removal_filter)) {
+        // If no filter is defined, return all entities
+        if (!((_a = this.config) === null || _a === void 0 ? void 0 : _a.entity_removal_filter) || this.config.entity_removal_filter.trim() === '') {
             return entities;
         }
         // Parse filter string: format is "string1,string2|option"
+        // Example: "kitchen,bedroom|contains" to filter out entities with kitchen or bedroom in their names
         const filterParts = this.config.entity_removal_filter.split('|');
-        const filterStrings = filterParts[0].split(',').map(s => s.trim().toLowerCase()).filter(s => s);
-        const filterOption = filterParts.length > 1 ? filterParts[1].trim().toLowerCase() : 'exact'; // Default is 'exact'
-        if (filterStrings.length === 0) {
+        const filterString = filterParts[0].trim();
+        // If filter string is empty after trimming, return all entities
+        if (filterString === '') {
             return entities;
         }
-        // Filter out entities that match any of the filter strings
+        // Get filter terms: split by comma, trim each, convert to lowercase, remove empty strings
+        const filterTerms = filterString
+            .split(',')
+            .map(term => term.trim().toLowerCase())
+            .filter(term => term.length > 0);
+        // If no valid filter terms, return all entities
+        if (filterTerms.length === 0) {
+            return entities;
+        }
+        // Get filter mode: default to 'contains' if not specified or invalid
+        let filterMode = 'contains'; // Default to contains for better usability
+        if (filterParts.length > 1) {
+            const mode = filterParts[1].trim().toLowerCase();
+            if (['exact', 'start', 'contains', 'entity_id'].includes(mode)) {
+                filterMode = mode;
+            }
+        }
+        // Log the active filter for debugging
+        console.log(`Applying entity removal filter: terms=${filterTerms.join(', ')}, mode=${filterMode}`);
+        // Apply filter using the specified mode to remove matching entities
         return entities.filter(entity => {
-            const name = entity.name.toLowerCase();
-            // For each entity, check against all filter strings
-            // If ANY filter string matches, we should remove the entity
-            for (const filter of filterStrings) {
-                let matches = false;
-                if (filterOption === 'exact') {
-                    matches = name === filter;
+            // Convert entity name to lowercase for case-insensitive matching
+            const nameLower = entity.name.toLowerCase();
+            const entityIdLower = entity.entityId.toLowerCase();
+            // Check each filter term against this entity
+            for (const term of filterTerms) {
+                let shouldRemove = false;
+                // Apply different matching logic based on filter mode
+                switch (filterMode) {
+                    case 'exact':
+                        // Remove if the entity name exactly matches the term
+                        shouldRemove = nameLower === term;
+                        break;
+                    case 'start':
+                        // Remove if the entity name starts with the term
+                        shouldRemove = nameLower.startsWith(term);
+                        break;
+                    case 'entity_id':
+                        // Remove if the entity ID contains the term
+                        shouldRemove = entityIdLower.includes(term);
+                        break;
+                    case 'contains':
+                    default:
+                        // Remove if the entity name contains the term (default behavior)
+                        shouldRemove = nameLower.includes(term);
+                        break;
                 }
-                else if (filterOption === 'start') {
-                    matches = name.startsWith(filter);
-                }
-                else if (filterOption === 'contains') {
-                    matches = name.includes(filter);
-                }
-                // If this filter string matches, remove the entity
-                if (matches) {
+                // If any term matches according to the filter mode, remove this entity
+                if (shouldRemove) {
                     return false;
                 }
             }
-            // No filter strings matched, keep this entity
+            // Keep the entity if it didn't match any filter terms
             return true;
         });
     }
@@ -1528,7 +1568,7 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         entityFilterField.value = this.config.entity_removal_filter || '';
         entityFilterField.configValue = 'entity_removal_filter';
         entityFilterField.addEventListener('change', this.valueChanged);
-        entityFilterField.helperText = 'Entities matching this filter will be REMOVED (format: "string,string|exact", options: contains (default), exact, start)';
+        entityFilterField.helperText = 'Format: "string,string|mode" - Entities matching these terms will be REMOVED. Modes: contains (default), exact, start, entity_id';
         entityFilterField.helperPersistent = true;
         entityFilterRow.appendChild(entityFilterField);
         form.appendChild(entityFilterRow);
