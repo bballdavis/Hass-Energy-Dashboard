@@ -1422,31 +1422,17 @@ class EnergyDashboardEntityCard extends HTMLElement {
         });
     }
     _updateEntityButtons(container, entities, onClick, isPower) {
-        // Map existing entity items by entityId
-        const existingItems = {};
-        Array.from(container.children).forEach(child => {
-            const el = child;
-            if (el.dataset && el.dataset.entity) {
-                existingItems[el.dataset.entity] = el;
-            }
-        });
-        // Track which nodes are still needed
-        const usedNodes = new Set();
-        // Add or update entity items
+        // Clear the container and recreate all elements to ensure clean event handling
+        container.innerHTML = '';
+        // Create entity items
         entities.forEach(entity => {
             var _a;
-            let entityItem = existingItems[entity.entityId];
-            if (!entityItem) {
-                entityItem = document.createElement('div');
-                entityItem.dataset.entity = entity.entityId;
-                entityItem.addEventListener('click', onClick);
-                container.appendChild(entityItem);
-            }
-            // Update class and content
+            const entityItem = document.createElement('div');
             entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-            entityItem.style.gap = '4px';
+            entityItem.dataset.entity = entity.entityId;
+            // Ensure the entity item is clickable with proper styling
+            entityItem.style.cursor = 'pointer';
             // Build content
-            entityItem.innerHTML = '';
             const entityLeft = document.createElement('div');
             entityLeft.className = 'entity-left';
             const entityName = document.createElement('div');
@@ -1470,13 +1456,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             entityState.appendChild(statusIndicator);
             entityState.appendChild(valueDiv);
             entityItem.appendChild(entityState);
-            usedNodes.add(entity.entityId);
-        });
-        // Remove any nodes that are no longer needed
-        Object.keys(existingItems).forEach(entityId => {
-            if (!usedNodes.has(entityId)) {
-                container.removeChild(existingItems[entityId]);
-            }
+            // Add the click event listener
+            entityItem.addEventListener('click', onClick);
+            container.appendChild(entityItem);
         });
     }
     // Refresh functionality methods

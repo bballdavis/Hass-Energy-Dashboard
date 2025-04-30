@@ -1187,60 +1187,54 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _updateEntityButtons(container: HTMLElement, entities: EntityInfo[], onClick: (e: Event) => void, isPower: boolean) {
-    // Map existing entity items by entityId
-    const existingItems: Record<string, HTMLElement> = {};
-    Array.from(container.children).forEach(child => {
-      const el = child as HTMLElement;
-      if (el.dataset && el.dataset.entity) {
-        existingItems[el.dataset.entity] = el;
-      }
-    });
-    // Track which nodes are still needed
-    const usedNodes = new Set<string>();
-    // Add or update entity items
+    // Clear the container and recreate all elements to ensure clean event handling
+    container.innerHTML = '';
+    
+    // Create entity items
     entities.forEach(entity => {
-      let entityItem = existingItems[entity.entityId];
-      if (!entityItem) {
-        entityItem = document.createElement('div');
-        entityItem.dataset.entity = entity.entityId;
-        entityItem.addEventListener('click', onClick);
-        container.appendChild(entityItem);
-      }
-      // Update class and content
+      const entityItem = document.createElement('div');
       entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-      entityItem.style.gap = '4px';
+      entityItem.dataset.entity = entity.entityId;
+      
+      // Ensure the entity item is clickable with proper styling
+      entityItem.style.cursor = 'pointer';
+      
       // Build content
-      entityItem.innerHTML = '';
       const entityLeft = document.createElement('div');
       entityLeft.className = 'entity-left';
+      
       const entityName = document.createElement('div');
       entityName.className = 'entity-name';
       entityName.title = entity.name;
       entityName.textContent = entity.name;
+      
       entityLeft.appendChild(entityName);
       entityItem.appendChild(entityLeft);
+      
       const entityState = document.createElement('div');
       entityState.className = 'entity-state';
+      
       const statusIndicator = document.createElement('div');
       statusIndicator.className = 'status-indicator';
       statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
+      
       const valueDiv = document.createElement('div');
       valueDiv.className = 'power-value';
+      
       if (this.config?.show_state) {
         valueDiv.textContent = isPower
           ? `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`
           : `${entity.state} ${entity.unit}`;
       }
+      
       entityState.appendChild(statusIndicator);
       entityState.appendChild(valueDiv);
       entityItem.appendChild(entityState);
-      usedNodes.add(entity.entityId);
-    });
-    // Remove any nodes that are no longer needed
-    Object.keys(existingItems).forEach(entityId => {
-      if (!usedNodes.has(entityId)) {
-        container.removeChild(existingItems[entityId]);
-      }
+      
+      // Add the click event listener
+      entityItem.addEventListener('click', onClick);
+      
+      container.appendChild(entityItem);
     });
   }
 
