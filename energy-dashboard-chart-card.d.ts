@@ -53,8 +53,7 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
         energy_auto_select_count?: number | undefined;
         persist_selection?: boolean | undefined;
         view_mode?: "power" | "energy" | undefined;
-        entity_removal_filter?: string | undefined;
-        refresh_rate?: "off" | "10s" | "30s" | undefined;
+        entity_filter?: string | undefined;
     };
     getCardSize(): number;
     set hass(hass: any);

@@ -17,8 +17,6 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _filteredEnergyEntities;
     private _searchInputHasFocus;
     private _refreshIntervalId;
-    private _lastUpdateTimestamp;
-    private _forceUpdate;
     private _equalizeButtonHeights;
     private _forceRecalculation;
     static get cardType(): string;
