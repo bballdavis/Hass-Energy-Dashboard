@@ -341,9 +341,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       }
     }
     
-    // Log the active filter for debugging
-    console.log(`Applying entity removal filter: terms=${filterTerms.join(', ')}, mode=${filterMode}`);
-    
     // Apply filter using the specified mode to remove matching entities
     return entities.filter(entity => {
       // Convert entity name to lowercase for case-insensitive matching
