@@ -21,6 +21,8 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _filteredEnergyEntities: EntityInfo[] = []; // Track filtered energy entities
   private _searchInputHasFocus: boolean = false; // Track whether the search input has focus
   private _refreshIntervalId: number | null = null; // Timer ID for auto-refresh
+  private _lastUpdateTimestamp: number = 0; // Track last entity update timestamp
+  private _forceUpdate: boolean = false; // Flag to force update regardless of timestamp
   
   // Helper method to equalize button heights with ResizeObserver
   private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
@@ -213,9 +215,34 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     // Load the persistence setting from localStorage early to ensure it's always available
     if (this.config && isFirstUpdate) {
       this.config.persist_selection = this._loadPersistenceState();
+      // Force first update
+      this._forceUpdate = true;
     }
 
-    this._updateEntities();
+    // Only update entities based on refresh rate settings or force update flag
+    const now = Date.now();
+    let shouldUpdateEntities = false;
+    
+    // Update in these cases:
+    // 1. First update (isFirstUpdate)
+    // 2. Force update flag is set (_forceUpdate)
+    // 3. Refresh rate is active and enough time has passed since last update
+    if (isFirstUpdate || this._forceUpdate) {
+      shouldUpdateEntities = true;
+    } else if (this.config?.refresh_rate && this.config.refresh_rate !== 'off') {
+      const intervalMs = this.config.refresh_rate === '10s' ? 10000 : 30000;
+      if (now - this._lastUpdateTimestamp >= intervalMs) {
+        shouldUpdateEntities = true;
+      }
+    }
+    
+    if (shouldUpdateEntities) {
+      this._updateEntities();
+      this._lastUpdateTimestamp = now;
+      this._forceUpdate = false; // Reset force update flag
+    }
+    
+    // Always update content with current data (doesn't fetch new entity data)
     this._updateContent();
   }
 
@@ -404,15 +431,18 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
       // Get auto_select_count from config, or use default of 6
       const count = this.config?.auto_select_count ?? 6;
+      
+      // Apply entity removal filter first to get only visible entities
+      const visibleEntities = this._applyRemovalFilter(entities);
 
-      // Initialize all entities first to ensure they're tracked
+      // Initialize all entities to false first (including hidden ones)
       entities.forEach(entity => {
         // Set to false by default
         toggleStates[entity.entityId] = false;
       });
 
-      // Then set the first `count` entities to true
-      entities.slice(0, count).forEach(entity => {
+      // Then set the first `count` VISIBLE entities to true
+      visibleEntities.slice(0, count).forEach(entity => {
         toggleStates[entity.entityId] = true;
       });
 
@@ -433,15 +463,18 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
       // Get energy_auto_select_count from config, or use default of 6
       const count = this.config?.energy_auto_select_count ?? 6;
+      
+      // Apply entity removal filter first to get only visible entities
+      const visibleEntities = this._applyRemovalFilter(entities);
 
-      // Initialize all entities first to ensure they're tracked
+      // Initialize all entities to false first (including hidden ones)
       entities.forEach(entity => {
         // Set to false by default
         toggleStates[entity.entityId] = false;
       });
 
-      // Then set the first `count` entities to true
-      entities.slice(0, count).forEach(entity => {
+      // Then set the first `count` VISIBLE entities to true
+      visibleEntities.slice(0, count).forEach(entity => {
         toggleStates[entity.entityId] = true;
       });
 
@@ -948,11 +981,29 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       
       refreshControlContainer.appendChild(refreshControl);
       card.appendChild(refreshControlContainer);
-      
-      // Then add the entities container
-      this._powerEntitiesContainer!.style.display = '';
-      this._energyEntitiesContainer!.style.display = 'none';
-      card.appendChild(this._powerEntitiesContainer!);
+
+      // Apply max height if configured
+      if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
+        // Create a container with fixed height and scrolling for the entities
+        const scrollContainer = document.createElement('div');
+        scrollContainer.className = 'scroll-container';
+        scrollContainer.style.maxHeight = `${this.config.max_height}px`;
+        scrollContainer.style.overflowY = 'auto';
+        scrollContainer.style.overflowX = 'hidden';
+        scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+        scrollContainer.style.marginBottom = '16px';
+        
+        // Add the entities container to the scroll container
+        this._powerEntitiesContainer!.style.display = '';
+        this._energyEntitiesContainer!.style.display = 'none';
+        scrollContainer.appendChild(this._powerEntitiesContainer!);
+        card.appendChild(scrollContainer);
+      } else {
+        // Regular display without scroll
+        this._powerEntitiesContainer!.style.display = '';
+        this._energyEntitiesContainer!.style.display = 'none';
+        card.appendChild(this._powerEntitiesContainer!);
+      }
       
       // Update the entity buttons with filtered entities
       if (this._filteredPowerEntities.length > 0) {
@@ -1057,10 +1108,28 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       searchContainer.appendChild(searchInput);
       card.appendChild(searchContainer);
 
-      // Then add the entities container
-      this._powerEntitiesContainer!.style.display = 'none';
-      this._energyEntitiesContainer!.style.display = '';
-      card.appendChild(this._energyEntitiesContainer!);
+      // Apply max height if configured
+      if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
+        // Create a container with fixed height and scrolling for the entities
+        const scrollContainer = document.createElement('div');
+        scrollContainer.className = 'scroll-container';
+        scrollContainer.style.maxHeight = `${this.config.max_height}px`;
+        scrollContainer.style.overflowY = 'auto';
+        scrollContainer.style.overflowX = 'hidden';
+        scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+        scrollContainer.style.marginBottom = '16px';
+        
+        // Add the entities container to the scroll container
+        this._powerEntitiesContainer!.style.display = 'none';
+        this._energyEntitiesContainer!.style.display = '';
+        scrollContainer.appendChild(this._energyEntitiesContainer!);
+        card.appendChild(scrollContainer);
+      } else {
+        // Regular display without scroll
+        this._powerEntitiesContainer!.style.display = 'none';
+        this._energyEntitiesContainer!.style.display = '';
+        card.appendChild(this._energyEntitiesContainer!);
+      }
       
       // Show filtered entities or "no results" message
       if (this._filteredEnergyEntities.length > 0) {
@@ -1189,9 +1258,14 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   
   // Manually refresh the card
   _refreshNow() {
+    // Set force update flag to bypass throttling
+    this._forceUpdate = true;
+    
     // Force an update of the entities
     if (this._hass) {
       this._updateEntities();
+      this._lastUpdateTimestamp = Date.now(); // Update timestamp
+      this._forceUpdate = false; // Reset flag after update
       this._updateContent();
     }
   }
