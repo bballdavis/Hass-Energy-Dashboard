@@ -169,6 +169,11 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     // Set up auto-refresh if configured
     this._setupRefreshInterval();
 
+    // Reset initialization flags so that entity selection is re-initialized with new config values
+    this._initialized = false;
+    this._energyInitialized = false;
+    this._forceUpdate = true; // Force update to apply new config
+
     this._updateContent();
   }
 
