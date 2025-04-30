@@ -23,8 +23,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   private _refreshIntervalId: number | null = null; // Timer ID for auto-refresh
   private _lastUpdateTimestamp: number = 0; // Track last entity update timestamp
   private _forceUpdate: boolean = false; // Flag to force update regardless of timestamp
-  private _lastConfigState: string = ''; // Track last config state
-
+  
   // Helper method to equalize button heights with ResizeObserver
   private _equalizeButtonHeights(buttonContainer: HTMLElement): void {
     if (!buttonContainer) return;
@@ -340,6 +339,9 @@ export class EnergyDashboardEntityCard extends HTMLElement {
         filterMode = mode;
       }
     }
+    
+    // Log the active filter for debugging
+    console.log(`Applying entity removal filter: terms=${filterTerms.join(', ')}, mode=${filterMode}`);
     
     // Apply filter using the specified mode to remove matching entities
     return entities.filter(entity => {
@@ -721,41 +723,13 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     if (!this.config) return;
     const card = this._root.querySelector('ha-card');
     if (!card) return;
-
-    // Check if we need to update the content based on changes
-    const currentPowerCount = this._filteredPowerEntities.length;
-    const currentEnergyCount = this._filteredEnergyEntities.length;
-    
-    // Create a simple hash of the current configuration state to detect changes
-    const currentConfigState = JSON.stringify({
-      view: this._viewMode,
-      filter: this._dynamicFilterValue,
-      persist: this.config.persist_selection,
-      refresh: this.config.refresh_rate,
-      powerCount: currentPowerCount,
-      energyCount: currentEnergyCount,
-      enableMaxHeight: this.config.enable_max_height,
-      maxHeight: this.config.max_height
-    });
-    
-    // If nothing has changed, don't re-render
-    if (currentConfigState === this._lastConfigState && !this._forceUpdate) {
-      return;
-    }
-    
-    // Update our tracking variables
-    this._lastConfigState = currentConfigState;
-    
-    // Now proceed with the render
     card.innerHTML = '';
-    
     if (this.config.show_header) {
       const header = document.createElement('div');
       header.className = 'card-header';
       header.textContent = this.config.title;
       card.appendChild(header);
     }
-    
     const modeToggleContainer = document.createElement('div');
     modeToggleContainer.className = 'mode-toggle-container';
     modeToggleContainer.style.display = 'flex';
@@ -764,7 +738,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     modeToggleContainer.style.marginTop = '8px';
     modeToggleContainer.style.marginBottom = '8px';
     modeToggleContainer.style.padding = '4px';
-    
     const toggleWrapper = document.createElement('div');
     toggleWrapper.className = 'toggle-wrapper';
     toggleWrapper.style.display = 'flex';
@@ -775,7 +748,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     toggleWrapper.style.width = '200px';
     toggleWrapper.style.backgroundColor = 'var(--card-background-color)';
     toggleWrapper.style.overflow = 'hidden';
-    
     const activeBackground = document.createElement('div');
     activeBackground.className = 'active-background';
     activeBackground.style.position = 'absolute';
@@ -787,7 +759,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     activeBackground.style.borderRadius = '25px';
     activeBackground.style.transition = 'left 0.3s ease-in-out';
     activeBackground.style.opacity = '0.2';
-    
     const powerOption = document.createElement('div');
     powerOption.className = 'toggle-option';
     powerOption.textContent = 'Power';
@@ -803,7 +774,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
         this._toggleViewMode();
       }
     });
-    
     const energyOption = document.createElement('div');
     energyOption.className = 'toggle-option';
     energyOption.textContent = 'Energy';
@@ -819,7 +789,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
         this._toggleViewMode();
       }
     });
-    
     toggleWrapper.appendChild(activeBackground);
     toggleWrapper.appendChild(powerOption);
     toggleWrapper.appendChild(energyOption);
@@ -828,6 +797,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
 
     // Section rendering
     const renderPersistenceToggle = () => {
+      console.log("Rendering persistence toggle, config:", this.config);
       const persistenceToggle = document.createElement('div');
       persistenceToggle.className = 'persistence-toggle';
       persistenceToggle.style.display = 'flex';
@@ -838,18 +808,15 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       persistenceToggle.style.cursor = 'pointer';
       persistenceToggle.addEventListener('click', this._togglePersistence);
       persistenceToggle.setAttribute('id', 'persistence-toggle');
-      
       const toggleLabel = document.createElement('span');
       toggleLabel.style.marginRight = '8px';
       toggleLabel.textContent = 'Remember Selection: ';
-      
       const toggleSwitch = document.createElement('span');
       toggleSwitch.className = 'toggle-switch';
       toggleSwitch.style.position = 'relative';
       toggleSwitch.style.display = 'inline-block';
       toggleSwitch.style.width = '36px';
       toggleSwitch.style.height = '20px';
-      
       const toggleSlider = document.createElement('span');
       toggleSlider.className = 'toggle-slider';
       toggleSlider.style.position = 'absolute';
@@ -861,7 +828,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       toggleSlider.style.backgroundColor = this.config?.persist_selection ? 'var(--primary-color, #03a9f4)' : '#ccc';
       toggleSlider.style.borderRadius = '34px';
       toggleSlider.style.transition = '.4s';
-      
       const toggleButton = document.createElement('span');
       toggleButton.style.position = 'absolute';
       toggleButton.style.content = '""';
@@ -872,7 +838,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       toggleButton.style.backgroundColor = 'white';
       toggleButton.style.borderRadius = '50%';
       toggleButton.style.transition = '.4s';
-      
       toggleSlider.appendChild(toggleButton);
       toggleSwitch.appendChild(toggleSlider);
       persistenceToggle.appendChild(toggleLabel);
@@ -921,6 +886,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       // Add the persistence toggle right after control buttons
       const persistenceToggleEl = renderPersistenceToggle();
       card.appendChild(persistenceToggleEl);
+      console.log("Appended persistence toggle to card:", persistenceToggleEl);
       
       const sectionTitle = document.createElement('div');
       sectionTitle.className = 'section-title';
@@ -1087,6 +1053,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       // Add the persistence toggle right after control buttons
       const persistenceToggleEl = renderPersistenceToggle();
       card.appendChild(persistenceToggleEl);
+      console.log("Appended persistence toggle to card:", persistenceToggleEl);
       
       const sectionTitle = document.createElement('div');
       sectionTitle.className = 'section-title';
@@ -1172,69 +1139,96 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       }
     }
 
+    // Check after a short delay if the toggle actually appears in the DOM
+    setTimeout(() => {
+      const toggle = this._root.querySelector('#persistence-toggle');
+      console.log("Persistence toggle in DOM after rendering:", toggle);
+      if (toggle) {
+        console.log("Toggle styles:", window.getComputedStyle(toggle));
+      }
+    }, 100);
+
     // Force layout recalculation to ensure all elements have proper dimensions
     requestAnimationFrame(() => {
       this._forceRecalculation(card as HTMLElement);
 
-      // Equalize button heights once with a single timeout, don't use multiple nested timeouts
+      // Wait a bit for the DOM to be fully rendered before equalizing button heights
       setTimeout(() => {
         const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
-        controlButtonsContainers.forEach((container) => {
+        console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
+        controlButtonsContainers.forEach((container, index) => {
+          console.log(`Equalizing heights for container ${index}`);
           this._equalizeButtonHeights(container as HTMLElement);
         });
-      }, 50);
+
+        // Also check for entity lists and make sure they're visible
+        const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
+        console.log(`Found ${entityContainers.length} entity containers`);
+        entityContainers.forEach(container => {
+          console.log(`Entity container has ${container.childElementCount} children`);
+          if (container.childElementCount === 0) {
+            console.warn("Entity container is empty!");
+          }
+        });
+      }, 100);
     });
   }
 
   _updateEntityButtons(container: HTMLElement, entities: EntityInfo[], onClick: (e: Event) => void, isPower: boolean) {
-    // Clear the container and recreate all elements to ensure clean event handling
-    container.innerHTML = '';
-    
-    // Create entity items
+    // Map existing entity items by entityId
+    const existingItems: Record<string, HTMLElement> = {};
+    Array.from(container.children).forEach(child => {
+      const el = child as HTMLElement;
+      if (el.dataset && el.dataset.entity) {
+        existingItems[el.dataset.entity] = el;
+      }
+    });
+    // Track which nodes are still needed
+    const usedNodes = new Set<string>();
+    // Add or update entity items
     entities.forEach(entity => {
-      const entityItem = document.createElement('div');
+      let entityItem = existingItems[entity.entityId];
+      if (!entityItem) {
+        entityItem = document.createElement('div');
+        entityItem.dataset.entity = entity.entityId;
+        entityItem.addEventListener('click', onClick);
+        container.appendChild(entityItem);
+      }
+      // Update class and content
       entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-      entityItem.dataset.entity = entity.entityId;
-      
-      // Ensure the entity item is clickable with proper styling
-      entityItem.style.cursor = 'pointer';
-      
+      entityItem.style.gap = '4px';
       // Build content
+      entityItem.innerHTML = '';
       const entityLeft = document.createElement('div');
       entityLeft.className = 'entity-left';
-      
       const entityName = document.createElement('div');
       entityName.className = 'entity-name';
       entityName.title = entity.name;
       entityName.textContent = entity.name;
-      
       entityLeft.appendChild(entityName);
       entityItem.appendChild(entityLeft);
-      
       const entityState = document.createElement('div');
       entityState.className = 'entity-state';
-      
       const statusIndicator = document.createElement('div');
       statusIndicator.className = 'status-indicator';
       statusIndicator.textContent = entity.isToggleable ? (entity.isOn ? 'ON' : 'OFF') : '';
-      
       const valueDiv = document.createElement('div');
       valueDiv.className = 'power-value';
-      
       if (this.config?.show_state) {
         valueDiv.textContent = isPower
           ? `${entity.unit === 'kW' ? entity.state : Math.round(entity.powerValue || 0)} ${entity.unit || 'W'}`
           : `${entity.state} ${entity.unit}`;
       }
-      
       entityState.appendChild(statusIndicator);
       entityState.appendChild(valueDiv);
       entityItem.appendChild(entityState);
-      
-      // Add the click event listener
-      entityItem.addEventListener('click', onClick);
-      
-      container.appendChild(entityItem);
+      usedNodes.add(entity.entityId);
+    });
+    // Remove any nodes that are no longer needed
+    Object.keys(existingItems).forEach(entityId => {
+      if (!usedNodes.has(entityId)) {
+        container.removeChild(existingItems[entityId]);
+      }
     });
   }
 

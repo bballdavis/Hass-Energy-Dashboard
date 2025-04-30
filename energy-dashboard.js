@@ -486,7 +486,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._refreshIntervalId = null; // Timer ID for auto-refresh
         this._lastUpdateTimestamp = 0; // Track last entity update timestamp
         this._forceUpdate = false; // Flag to force update regardless of timestamp
-        this._lastConfigState = ''; // Track last config state
         // Handle dynamic filter input change
         this._handleFilterInput = (e) => {
             const target = e.target;
@@ -856,6 +855,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 filterMode = mode;
             }
         }
+        // Log the active filter for debugging
+        console.log(`Applying entity removal filter: terms=${filterTerms.join(', ')}, mode=${filterMode}`);
         // Apply filter using the specified mode to remove matching entities
         return entities.filter(entity => {
             // Convert entity name to lowercase for case-insensitive matching
@@ -1016,27 +1017,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         const card = this._root.querySelector('ha-card');
         if (!card)
             return;
-        // Check if we need to update the content based on changes
-        const currentPowerCount = this._filteredPowerEntities.length;
-        const currentEnergyCount = this._filteredEnergyEntities.length;
-        // Create a simple hash of the current configuration state to detect changes
-        const currentConfigState = JSON.stringify({
-            view: this._viewMode,
-            filter: this._dynamicFilterValue,
-            persist: this.config.persist_selection,
-            refresh: this.config.refresh_rate,
-            powerCount: currentPowerCount,
-            energyCount: currentEnergyCount,
-            enableMaxHeight: this.config.enable_max_height,
-            maxHeight: this.config.max_height
-        });
-        // If nothing has changed, don't re-render
-        if (currentConfigState === this._lastConfigState && !this._forceUpdate) {
-            return;
-        }
-        // Update our tracking variables
-        this._lastConfigState = currentConfigState;
-        // Now proceed with the render
         card.innerHTML = '';
         if (this.config.show_header) {
             const header = document.createElement('div');
@@ -1111,6 +1091,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
         // Section rendering
         const renderPersistenceToggle = () => {
             var _a, _b;
+            console.log("Rendering persistence toggle, config:", this.config);
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';
             persistenceToggle.style.display = 'flex';
@@ -1193,6 +1174,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             // Add the persistence toggle right after control buttons
             const persistenceToggleEl = renderPersistenceToggle();
             card.appendChild(persistenceToggleEl);
+            console.log("Appended persistence toggle to card:", persistenceToggleEl);
             const sectionTitle = document.createElement('div');
             sectionTitle.className = 'section-title';
             sectionTitle.textContent = 'Power Entities';
@@ -1336,6 +1318,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             // Add the persistence toggle right after control buttons
             const persistenceToggleEl = renderPersistenceToggle();
             card.appendChild(persistenceToggleEl);
+            console.log("Appended persistence toggle to card:", persistenceToggleEl);
             const sectionTitle = document.createElement('div');
             sectionTitle.className = 'section-title';
             sectionTitle.textContent = 'Energy Entities';
@@ -1409,30 +1392,63 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 this._energyEntitiesContainer.innerHTML = '';
             }
         }
+        // Check after a short delay if the toggle actually appears in the DOM
+        setTimeout(() => {
+            const toggle = this._root.querySelector('#persistence-toggle');
+            console.log("Persistence toggle in DOM after rendering:", toggle);
+            if (toggle) {
+                console.log("Toggle styles:", window.getComputedStyle(toggle));
+            }
+        }, 100);
         // Force layout recalculation to ensure all elements have proper dimensions
         requestAnimationFrame(() => {
             this._forceRecalculation(card);
-            // Equalize button heights once with a single timeout, don't use multiple nested timeouts
+            // Wait a bit for the DOM to be fully rendered before equalizing button heights
             setTimeout(() => {
                 const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
-                controlButtonsContainers.forEach((container) => {
+                console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
+                controlButtonsContainers.forEach((container, index) => {
+                    console.log(`Equalizing heights for container ${index}`);
                     this._equalizeButtonHeights(container);
                 });
-            }, 50);
+                // Also check for entity lists and make sure they're visible
+                const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
+                console.log(`Found ${entityContainers.length} entity containers`);
+                entityContainers.forEach(container => {
+                    console.log(`Entity container has ${container.childElementCount} children`);
+                    if (container.childElementCount === 0) {
+                        console.warn("Entity container is empty!");
+                    }
+                });
+            }, 100);
         });
     }
     _updateEntityButtons(container, entities, onClick, isPower) {
-        // Clear the container and recreate all elements to ensure clean event handling
-        container.innerHTML = '';
-        // Create entity items
+        // Map existing entity items by entityId
+        const existingItems = {};
+        Array.from(container.children).forEach(child => {
+            const el = child;
+            if (el.dataset && el.dataset.entity) {
+                existingItems[el.dataset.entity] = el;
+            }
+        });
+        // Track which nodes are still needed
+        const usedNodes = new Set();
+        // Add or update entity items
         entities.forEach(entity => {
             var _a;
-            const entityItem = document.createElement('div');
+            let entityItem = existingItems[entity.entityId];
+            if (!entityItem) {
+                entityItem = document.createElement('div');
+                entityItem.dataset.entity = entity.entityId;
+                entityItem.addEventListener('click', onClick);
+                container.appendChild(entityItem);
+            }
+            // Update class and content
             entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
-            entityItem.dataset.entity = entity.entityId;
-            // Ensure the entity item is clickable with proper styling
-            entityItem.style.cursor = 'pointer';
+            entityItem.style.gap = '4px';
             // Build content
+            entityItem.innerHTML = '';
             const entityLeft = document.createElement('div');
             entityLeft.className = 'entity-left';
             const entityName = document.createElement('div');
@@ -1456,9 +1472,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
             entityState.appendChild(statusIndicator);
             entityState.appendChild(valueDiv);
             entityItem.appendChild(entityState);
-            // Add the click event listener
-            entityItem.addEventListener('click', onClick);
-            container.appendChild(entityItem);
+            usedNodes.add(entity.entityId);
+        });
+        // Remove any nodes that are no longer needed
+        Object.keys(existingItems).forEach(entityId => {
+            if (!usedNodes.has(entityId)) {
+                container.removeChild(existingItems[entityId]);
+            }
         });
     }
     // Refresh functionality methods
