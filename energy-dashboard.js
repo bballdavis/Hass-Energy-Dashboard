@@ -509,7 +509,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             const visibleEntities = this._applyRemovalFilter(entities);
             // Create a new toggle state object
             const toggleStates = {};
+            // Always use the current config value, not hardcoded default
             const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.auto_select_count) !== null && _b !== void 0 ? _b : 6;
+            console.log(`Resetting power entities with count=${count} from config:`, this.config);
             // First initialize all to false
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
@@ -518,8 +520,10 @@ class EnergyDashboardEntityCard extends HTMLElement {
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
-            // Always overwrite saved state so reset always matches config
+            // Update the toggle states
             this.entityToggleStates = toggleStates;
+            // Always save to localStorage, even if persistence is disabled
+            // This ensures consistency between resets and chart card display
             this._savePowerToggleStates();
             this._updatePowerEntities();
             this._updateContent();
@@ -565,7 +569,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             const visibleEntities = this._applyRemovalFilter(entities);
             // Create a new toggle state object
             const toggleStates = {};
+            // Always use the current config value, not hardcoded default
             const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.energy_auto_select_count) !== null && _b !== void 0 ? _b : 6;
+            console.log(`Resetting energy entities with count=${count} from config:`, this.config);
             // First initialize all to false
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
@@ -574,8 +580,10 @@ class EnergyDashboardEntityCard extends HTMLElement {
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
-            // Always overwrite saved state so reset always matches config
+            // Update the toggle states
             this.energyEntityToggleStates = toggleStates;
+            // Always save to localStorage, even if persistence is disabled
+            // This ensures consistency between resets and chart card display
             this._saveEnergyToggleStates();
             this._updateEnergyEntities();
             this._updateContent();
@@ -802,10 +810,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._initializePowerToggleStates(newPowerEntities);
             this._initialized = true;
         }
+        // Map the entities with their toggle state
         this.powerEntities = newPowerEntities.map(entity => ({
             ...entity,
             isOn: this.entityToggleStates[entity.entityId] || false
         }));
+        // Re-sort by power value to ensure most power-consuming entities are at the top
+        this.powerEntities.sort((a, b) => b.powerValue - a.powerValue);
         // Apply the entity removal filter from config
         const filteredEntities = this._applyRemovalFilter(this.powerEntities);
         // Apply dynamic filter if exists
@@ -818,10 +829,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._initializeEnergyToggleStates(newEnergyEntities);
             this._energyInitialized = true;
         }
+        // Map the entities with their toggle state
         this.energyEntities = newEnergyEntities.map(entity => ({
             ...entity,
             isOn: this.energyEntityToggleStates[entity.entityId] || false
         }));
+        // Re-sort by energy value to ensure most energy-consuming entities are at the top
+        this.energyEntities.sort((a, b) => b.energyValue - a.energyValue);
         // Apply the entity removal filter from config
         const filteredEntities = this._applyRemovalFilter(this.energyEntities);
         // Apply dynamic filter if exists
