@@ -274,22 +274,17 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       this._initializePowerToggleStates(newPowerEntities);
       this._initialized = true;
     }
-    
     // Map the entities with their toggle state
     this.powerEntities = newPowerEntities.map(entity => ({
       ...entity,
       isOn: this.entityToggleStates[entity.entityId] || false
     }));
-    
-    // Re-sort by power value to ensure most power-consuming entities are at the top
-    this.powerEntities.sort((a, b) => b.powerValue! - a.powerValue!);
-    
+    // Sort by absolute power value, descending
+    this.powerEntities.sort((a, b) => Math.abs(b.powerValue ?? 0) - Math.abs(a.powerValue ?? 0));
     // Apply the entity removal filter from config
     const filteredEntities = this._applyRemovalFilter(this.powerEntities);
-    
     // Apply dynamic filter if exists
     this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
-    
     this._savePowerToggleStates();
   }
 
@@ -299,22 +294,17 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       this._initializeEnergyToggleStates(newEnergyEntities);
       this._energyInitialized = true;
     }
-    
     // Map the entities with their toggle state
     this.energyEntities = newEnergyEntities.map(entity => ({
       ...entity,
       isOn: this.energyEntityToggleStates[entity.entityId] || false
     }));
-    
-    // Re-sort by energy value to ensure most energy-consuming entities are at the top
-    this.energyEntities.sort((a, b) => b.energyValue! - a.energyValue!);
-    
+    // Sort by absolute energy value, descending
+    this.energyEntities.sort((a, b) => Math.abs(b.energyValue ?? 0) - Math.abs(a.energyValue ?? 0));
     // Apply the entity removal filter from config
     const filteredEntities = this._applyRemovalFilter(this.energyEntities);
-    
     // Apply dynamic filter if exists
     this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
-    
     this._saveEnergyToggleStates();
   }
 

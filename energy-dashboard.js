@@ -815,8 +815,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
             ...entity,
             isOn: this.entityToggleStates[entity.entityId] || false
         }));
-        // Re-sort by power value to ensure most power-consuming entities are at the top
-        this.powerEntities.sort((a, b) => b.powerValue - a.powerValue);
+        // Sort by absolute power value, descending
+        this.powerEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.powerValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.powerValue) !== null && _b !== void 0 ? _b : 0); });
         // Apply the entity removal filter from config
         const filteredEntities = this._applyRemovalFilter(this.powerEntities);
         // Apply dynamic filter if exists
@@ -834,8 +834,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
             ...entity,
             isOn: this.energyEntityToggleStates[entity.entityId] || false
         }));
-        // Re-sort by energy value to ensure most energy-consuming entities are at the top
-        this.energyEntities.sort((a, b) => b.energyValue - a.energyValue);
+        // Sort by absolute energy value, descending
+        this.energyEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.energyValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.energyValue) !== null && _b !== void 0 ? _b : 0); });
         // Apply the entity removal filter from config
         const filteredEntities = this._applyRemovalFilter(this.energyEntities);
         // Apply dynamic filter if exists
