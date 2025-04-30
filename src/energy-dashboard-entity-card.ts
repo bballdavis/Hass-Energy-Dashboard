@@ -240,10 +240,10 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       this._updateEntities();
       this._lastUpdateTimestamp = now;
       this._forceUpdate = false; // Reset force update flag
+      // Only update content when entities are updated
+      this._updateContent();
     }
-    
-    // Always update content with current data (doesn't fetch new entity data)
-    this._updateContent();
+    // Do NOT call _updateContent() on every hass update
   }
 
   get hass() {
