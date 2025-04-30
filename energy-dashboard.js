@@ -518,7 +518,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
-            // Update the toggle states
+            // Always overwrite saved state so reset always matches config
             this.entityToggleStates = toggleStates;
             this._savePowerToggleStates();
             this._updatePowerEntities();
@@ -574,7 +574,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
-            // Update the toggle states
+            // Always overwrite saved state so reset always matches config
             this.energyEntityToggleStates = toggleStates;
             this._saveEnergyToggleStates();
             this._updateEnergyEntities();
