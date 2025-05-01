@@ -447,6 +447,29 @@ const cardStyles = `
     border-radius: 0 16px 16px 0;
     border-right: 1px solid var(--divider-color, #e0e0e0);
   }
+
+  /* Add styles for the manual refresh button */
+  .refresh-rate-button.manual-refresh {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Remove padding to rely on flex centering */
+    min-width: 36px; /* Keep minimum width */
+    /* Ensure consistent height with other pills */
+    height: 26px;
+    /* Specific border radius for the first pill */
+    border-radius: 16px 0 0 16px;
+    margin-right: -1px; /* For pill group effect */
+  }
+
+  .refresh-rate-button.manual-refresh ha-icon {
+    /* Set explicit size for the icon */
+    --mdc-icon-size: 14px;
+    height: 14px;
+    width: 14px;
+    /* No extra margins needed with flex centering */
+    margin: 0;
+  }
 `;
 const editorStyles = `
   .form {
@@ -2742,48 +2765,38 @@ class EnergyDashboardChartCard extends HTMLElement {
         container.className = 'refresh-rate-controls pill-row';
         // Manual refresh button as first pill
         const manualBtn = document.createElement('button');
-        manualBtn.className = 'pill-control refresh-rate-button';
-        // Adjusted icon style for better centering and size
-        manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="height:1.2em; width:1.2em;"></ha-icon>';
+        // Apply the base class and the new specific class
+        manualBtn.className = 'pill-control refresh-rate-button manual-refresh';
+        // Remove inline styles for flex centering and icon size, now handled by CSS class
+        manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
         manualBtn.title = 'Manual Refresh';
-        manualBtn.style.borderRadius = '16px 0 0 16px';
-        manualBtn.style.minWidth = '36px'; // Keep minimum width for touch targets
-        manualBtn.style.height = '26px';
-        manualBtn.style.marginRight = '-1px'; // For pill group effect
-        // Use flexbox to center the icon within the button
-        manualBtn.style.display = 'flex';
-        manualBtn.style.alignItems = 'center';
-        manualBtn.style.justifyContent = 'center';
-        manualBtn.style.padding = '0'; // Remove padding to rely on flex centering
+        // Removed inline styles previously here, now controlled by CSS
         manualBtn.addEventListener('click', () => this._manualRefresh());
         container.appendChild(manualBtn);
-        // Refresh rate options
-        const options = [
-            { label: 'Off', value: 0 },
-            { label: '15s', value: 15 },
-            { label: '30s', value: 30 },
-            { label: '60s', value: 60 }
-        ];
-        options.forEach((option, index) => {
+        // Add other refresh rate options (5s, 15s, 30s, 60s)
+        const rates = [5, 15, 30, 60];
+        rates.forEach((rate) => {
             const btn = document.createElement('button');
             btn.className = 'pill-control refresh-rate-button';
-            btn.textContent = option.label;
-            btn.dataset.value = String(option.value);
-            btn.style.borderRadius =
-                index === options.length - 1 ? '0 16px 16px 0' : '0';
-            btn.style.marginLeft = '-1px';
-            btn.style.minWidth = '40px';
-            btn.style.height = '26px';
-            btn.style.display = 'flex';
-            btn.style.alignItems = 'center';
-            btn.style.justifyContent = 'center';
-            btn.style.padding = '0';
-            btn.addEventListener('click', () => this._setRefreshInterval(option.value));
-            if (this._currentRefreshInterval === option.value) {
-                btn.classList.add('active');
-            }
+            btn.textContent = `${rate}s`;
+            btn.dataset.rate = rate.toString();
+            // Removed height style, assuming base pill-control handles it or adjust base class if needed
+            btn.style.marginRight = '-1px'; // Overlap borders for pill effect
+            btn.addEventListener('click', () => this._setRefreshInterval(rate));
             container.appendChild(btn);
         });
+        // Add 'Off' option
+        const offBtn = document.createElement('button');
+        offBtn.className = 'pill-control refresh-rate-button';
+        offBtn.textContent = 'Off';
+        offBtn.dataset.rate = '0'; // Use 0 for 'Off'
+        // Removed height style, assuming base pill-control handles it or adjust base class if needed
+        offBtn.style.borderRadius = '0 16px 16px 0'; // Apply border radius as it's the last logical item
+        offBtn.style.marginLeft = '-1px'; // Overlap with previous
+        // Removed marginRight style
+        offBtn.addEventListener('click', () => this._setRefreshInterval(0)); // 0 represents 'Off'
+        container.appendChild(offBtn);
+        this._updateRefreshRatePillControlsUI(container); // Initial selection update
         return container;
     }
     _updateRefreshRatePillControlsUI(container) {

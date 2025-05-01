@@ -352,6 +352,29 @@ export const cardStyles = `
     border-radius: 0 16px 16px 0;
     border-right: 1px solid var(--divider-color, #e0e0e0);
   }
+
+  /* Add styles for the manual refresh button */
+  .refresh-rate-button.manual-refresh {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Remove padding to rely on flex centering */
+    min-width: 36px; /* Keep minimum width */
+    /* Ensure consistent height with other pills */
+    height: 26px;
+    /* Specific border radius for the first pill */
+    border-radius: 16px 0 0 16px;
+    margin-right: -1px; /* For pill group effect */
+  }
+
+  .refresh-rate-button.manual-refresh ha-icon {
+    /* Set explicit size for the icon */
+    --mdc-icon-size: 14px;
+    height: 14px;
+    width: 14px;
+    /* No extra margins needed with flex centering */
+    margin: 0;
+  }
 `;
 
 export const editorStyles = `
