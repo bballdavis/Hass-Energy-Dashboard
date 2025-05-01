@@ -854,49 +854,15 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const pillRow = document.createElement('div');
     pillRow.className = 'pill-row';
     pillRow.style.display = 'flex';
-    pillRow.style.justifyContent = 'space-between';
+    pillRow.style.justifyContent = 'flex-start';
     pillRow.style.alignItems = 'flex-end';
     pillRow.style.width = '100%';
     pillRow.style.margin = '0 0 12px 0';
-    pillRow.style.gap = '0';
+    pillRow.style.gap = '10px'; // Compact horizontal spacing
 
-    // Flex distribute all controls evenly
-    pillRow.style.display = 'flex';
-    pillRow.style.flexDirection = 'row';
-    pillRow.style.justifyContent = 'space-between';
-    pillRow.style.alignItems = 'flex-end';
-    pillRow.style.width = '100%';
-    pillRow.style.gap = '0';
-
-    // Manual refresh pill (its own group)
-    const manualGroup = document.createElement('div');
-    manualGroup.className = 'pill-group';
-    manualGroup.style.flex = '1 1 0';
-    manualGroup.style.display = 'flex';
-    manualGroup.style.flexDirection = 'column';
-    manualGroup.style.alignItems = 'center';
-    manualGroup.style.justifyContent = 'center';
-    const manualLabel = document.createElement('div');
-    manualLabel.className = 'pill-label';
-    manualLabel.textContent = 'Refresh';
-    manualLabel.style.textAlign = 'center';
-    manualGroup.appendChild(manualLabel);
-    const manualBtn = document.createElement('button');
-    manualBtn.className = 'pill-control refresh-rate-button';
-    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
-    manualBtn.title = 'Manual Refresh';
-    manualBtn.style.borderRadius = '16px';
-    manualBtn.style.minWidth = '36px';
-    manualBtn.style.height = '26px';
-    manualBtn.style.margin = '0 auto';
-    manualBtn.addEventListener('click', () => this._manualRefresh());
-    manualGroup.appendChild(manualBtn);
-    pillRow.appendChild(manualGroup);
-
-    // Refresh rate group
+    // Refresh rate group (with manual refresh as first pill)
     const refreshGroup = document.createElement('div');
     refreshGroup.className = 'pill-group';
-    refreshGroup.style.flex = '1 1 0';
     refreshGroup.style.display = 'flex';
     refreshGroup.style.flexDirection = 'column';
     refreshGroup.style.alignItems = 'center';
@@ -906,14 +872,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
     refreshLabel.textContent = 'Refresh Rate';
     refreshLabel.style.textAlign = 'center';
     refreshGroup.appendChild(refreshLabel);
-    const refreshControls = this._createRefreshRatePillControls({ noManual: true });
+    const refreshControls = this._createRefreshRatePillControls();
     refreshGroup.appendChild(refreshControls);
     pillRow.appendChild(refreshGroup);
 
     // Time range group
     const timeGroup = document.createElement('div');
     timeGroup.className = 'pill-group';
-    timeGroup.style.flex = '1 1 0';
     timeGroup.style.display = 'flex';
     timeGroup.style.flexDirection = 'column';
     timeGroup.style.alignItems = 'center';
@@ -930,7 +895,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     // Y-axis group (renamed to Max Range)
     const yaxisGroup = document.createElement('div');
     yaxisGroup.className = 'pill-group';
-    yaxisGroup.style.flex = '1 1 0';
     yaxisGroup.style.display = 'flex';
     yaxisGroup.style.flexDirection = 'column';
     yaxisGroup.style.alignItems = 'center';
@@ -945,10 +909,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
     yaxisGroup.appendChild(yAxisControls);
     pillRow.appendChild(yaxisGroup);
 
-    // Averaging group
+    // Averaging group (smoothing)
     const avgGroup = document.createElement('div');
     avgGroup.className = 'pill-group';
-    avgGroup.style.flex = '1 1 0';
     avgGroup.style.display = 'flex';
     avgGroup.style.flexDirection = 'column';
     avgGroup.style.alignItems = 'center';
@@ -961,6 +924,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     avgGroup.appendChild(avgLabel);
     const averagingControls = this._createAveragingControls();
     averagingControls.style.height = '26px'; // Match other controls
+    averagingControls.style.alignItems = 'center'; // Ensure vertical alignment
     avgGroup.appendChild(averagingControls);
     pillRow.appendChild(avgGroup);
 
@@ -1048,9 +1012,21 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this._updateCharts();
   }
   
-  private _createRefreshRatePillControls(opts?: { noManual?: boolean }): HTMLElement {
+  private _createRefreshRatePillControls(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'refresh-rate-controls pill-row';
+    // Manual refresh button as first pill
+    const manualBtn = document.createElement('button');
+    manualBtn.className = 'pill-control refresh-rate-button';
+    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
+    manualBtn.title = 'Manual Refresh';
+    manualBtn.style.borderRadius = '16px 0 0 16px';
+    manualBtn.style.minWidth = '36px';
+    manualBtn.style.height = '26px';
+    manualBtn.style.marginRight = '-1px';
+    manualBtn.addEventListener('click', () => this._manualRefresh());
+    container.appendChild(manualBtn);
+    // Refresh rate options
     const options = [
       { label: 'Off', value: 0 },
       { label: '15s', value: 15 },
@@ -1063,9 +1039,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
       btn.textContent = option.label;
       btn.dataset.value = String(option.value);
       btn.style.borderRadius =
-        index === 0 ? '16px 0 0 16px' :
         index === options.length - 1 ? '0 16px 16px 0' : '0';
-      btn.style.marginLeft = index > 0 ? '-1px' : '0';
+      btn.style.marginLeft = '-1px';
       btn.style.minWidth = '40px';
       btn.style.height = '26px';
       btn.addEventListener('click', () => this._setRefreshInterval(option.value));
@@ -1074,19 +1049,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
       }
       container.appendChild(btn);
     });
-    if (!opts?.noManual) {
-      // Add manual refresh button at the end
-      const manualBtn = document.createElement('button');
-      manualBtn.className = 'pill-control refresh-rate-button';
-      manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
-      manualBtn.title = 'Manual Refresh';
-      manualBtn.style.borderRadius = '0 16px 16px 0';
-      manualBtn.style.marginLeft = '-1px';
-      manualBtn.style.minWidth = '36px';
-      manualBtn.style.height = '26px';
-      manualBtn.addEventListener('click', () => this._manualRefresh());
-      container.appendChild(manualBtn);
-    }
     return container;
   }
 
