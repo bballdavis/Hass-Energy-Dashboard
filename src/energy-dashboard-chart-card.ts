@@ -854,11 +854,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const pillRow = document.createElement('div');
     pillRow.className = 'pill-row';
     pillRow.style.display = 'flex';
-    pillRow.style.justifyContent = 'flex-start';
+    pillRow.style.justifyContent = 'flex-start'; // Align left
     pillRow.style.alignItems = 'center'; // Ensure vertical alignment
     pillRow.style.width = '100%';
     pillRow.style.margin = '0 0 12px 0';
-    pillRow.style.gap = '10px'; // Consistent spacing between controls
+    pillRow.style.gap = '8px'; // Minimal spacing between controls
 
     // Refresh rate group (with manual refresh as first pill)
     const refreshGroup = document.createElement('div');
@@ -1018,7 +1018,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     // Manual refresh button as first pill
     const manualBtn = document.createElement('button');
     manualBtn.className = 'pill-control refresh-rate-button';
-    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="font-size:1em;height:1em;width:1em;display:inline-block;vertical-align:middle;"></ha-icon>';
+    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="font-size:0.85em;height:1em;width:1em;display:inline-block;vertical-align:middle;line-height:1;"></ha-icon>';
     manualBtn.title = 'Manual Refresh';
     manualBtn.style.borderRadius = '16px 0 0 16px';
     manualBtn.style.minWidth = '36px';
