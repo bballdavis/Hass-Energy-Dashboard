@@ -2065,9 +2065,10 @@ class EnergyDashboardChartCard extends HTMLElement {
         let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
         if ((_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.title)
             yTitle = options.y_axis.title;
-        // If yMin is not set, calculate from data (including negatives)
-        if (typeof yMin === 'undefined') {
+        // If yMin/yMax are not set, calculate from data (including negatives)
+        if (typeof yMin === 'undefined' || typeof yMax === 'undefined') {
             let minVal = undefined;
+            let maxVal = undefined;
             for (const entityId of entities) {
                 const stateObj = this._hass.states[entityId];
                 if (stateObj) {
@@ -2077,10 +2078,17 @@ class EnergyDashboardChartCard extends HTMLElement {
                             minVal = val;
                         else
                             minVal = Math.min(minVal, val);
+                        if (typeof maxVal === 'undefined')
+                            maxVal = val;
+                        else
+                            maxVal = Math.max(maxVal, val);
                     }
                 }
             }
-            yMin = typeof minVal !== 'undefined' ? minVal : 0;
+            if (typeof yMin === 'undefined')
+                yMin = typeof minVal !== 'undefined' ? minVal : 0;
+            if (typeof yMax === 'undefined')
+                yMax = typeof maxVal !== 'undefined' ? maxVal : 0;
         }
         // Calculate appropriate tick amount based on y-axis range
         let tickAmount = 5; // Default to 5 grid lines
@@ -2591,11 +2599,11 @@ class EnergyDashboardChartCard extends HTMLElement {
         const pillRow = document.createElement('div');
         pillRow.className = 'pill-row';
         pillRow.style.display = 'flex';
-        pillRow.style.justifyContent = 'flex-start'; // Align left
-        pillRow.style.alignItems = 'center'; // Ensure vertical alignment
+        pillRow.style.justifyContent = 'flex-start';
+        pillRow.style.alignItems = 'center';
         pillRow.style.width = '100%';
         pillRow.style.margin = '0 0 12px 0';
-        pillRow.style.gap = '8px'; // Minimal spacing between controls
+        pillRow.style.gap = '10px'; // Ensure exactly 10px between all pill groups
         // Refresh rate group (with manual refresh as first pill)
         const refreshGroup = document.createElement('div');
         refreshGroup.className = 'pill-group';
@@ -2735,7 +2743,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         // Manual refresh button as first pill
         const manualBtn = document.createElement('button');
         manualBtn.className = 'pill-control refresh-rate-button';
-        manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="font-size:0.85em;height:1em;width:1em;display:inline-block;vertical-align:middle;line-height:1;"></ha-icon>';
+        manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="font-size:0.6em;height:0.9em;width:0.9em;display:inline-block;vertical-align:middle;line-height:1;"></ha-icon>';
         manualBtn.title = 'Manual Refresh';
         manualBtn.style.borderRadius = '16px 0 0 16px';
         manualBtn.style.minWidth = '36px';
