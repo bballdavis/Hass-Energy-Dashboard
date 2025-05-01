@@ -1591,9 +1591,7 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
     }
     setConfig(config) {
         this.config = {
-            // First spread the provided config
             ...config,
-            // Then apply defaults for any missing properties
             show_header: config.show_header !== undefined ? config.show_header : true,
             show_state: config.show_state !== undefined ? config.show_state : true,
             auto_select_count: config.auto_select_count !== undefined ? config.auto_select_count : 6,
@@ -1601,6 +1599,10 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
             enable_max_height: config.enable_max_height !== undefined ? config.enable_max_height : false,
             title: config.title !== undefined ? config.title : 'Energy Dashboard',
         };
+        // Remove any lingering energy_auto_select_count property
+        if ('energy_auto_select_count' in this.config) {
+            delete this.config.energy_auto_select_count;
+        }
         this._updateForm();
     }
     _updateForm() {
