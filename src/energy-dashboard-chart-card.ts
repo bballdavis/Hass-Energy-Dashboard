@@ -855,10 +855,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
     pillRow.className = 'pill-row';
     pillRow.style.display = 'flex';
     pillRow.style.justifyContent = 'flex-start';
-    pillRow.style.alignItems = 'flex-end';
+    pillRow.style.alignItems = 'center'; // Ensure vertical alignment
     pillRow.style.width = '100%';
     pillRow.style.margin = '0 0 12px 0';
-    pillRow.style.gap = '10px'; // Compact horizontal spacing
+    pillRow.style.gap = '10px'; // Consistent spacing between controls
 
     // Refresh rate group (with manual refresh as first pill)
     const refreshGroup = document.createElement('div');
@@ -1018,7 +1018,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     // Manual refresh button as first pill
     const manualBtn = document.createElement('button');
     manualBtn.className = 'pill-control refresh-rate-button';
-    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="vertical-align: middle; font-size: 1.1em; height: 1em; width: 1em; display: inline-flex; align-items: center; justify-content: center;"></ha-icon>';
+    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="font-size:1em;height:1em;width:1em;display:inline-block;vertical-align:middle;"></ha-icon>';
     manualBtn.title = 'Manual Refresh';
     manualBtn.style.borderRadius = '16px 0 0 16px';
     manualBtn.style.minWidth = '36px';
@@ -1027,6 +1027,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     manualBtn.style.display = 'flex';
     manualBtn.style.alignItems = 'center';
     manualBtn.style.justifyContent = 'center';
+    manualBtn.style.padding = '0';
     manualBtn.addEventListener('click', () => this._manualRefresh());
     container.appendChild(manualBtn);
     // Refresh rate options
@@ -1049,6 +1050,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       btn.style.display = 'flex';
       btn.style.alignItems = 'center';
       btn.style.justifyContent = 'center';
+      btn.style.padding = '0';
       btn.addEventListener('click', () => this._setRefreshInterval(option.value));
       if (this._currentRefreshInterval === option.value) {
         btn.classList.add('active');
@@ -1064,12 +1066,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.refresh-rate-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
+      button.classList.remove('active'); // Remove active from all
       button.style.backgroundColor = 'var(--card-background-color, white)';
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
     const activeButton = controls.querySelector(`.refresh-rate-button[data-value="${this._currentRefreshInterval}"]`) as HTMLElement;
     if (activeButton) {
+      activeButton.classList.add('active');
       activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
       activeButton.style.color = 'var(--text-primary-color, #fff)';
       activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
@@ -1077,17 +1081,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _updateTimeRangeControlsUI(container?: HTMLElement) {
-    const controls = container || this._root.querySelector('.time-range-container');
+    const controls = container || this._root.querySelector('.time-range-controls');
     if (!controls) return;
     const buttons = controls.querySelectorAll('.time-range-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color
+      button.classList.remove('active');
+      button.style.backgroundColor = 'var(--card-background-color, white)';
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
     const activeButton = controls.querySelector(`.time-range-button[data-hours="${this._currentTimeRangeHours}"]`) as HTMLElement;
     if (activeButton) {
+      activeButton.classList.add('active');
       activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
       activeButton.style.color = 'var(--text-primary-color, #fff)';
       activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
@@ -1095,7 +1101,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _updateYAxisControlsUI(container?: HTMLElement) {
-    const controls = container || this._root.querySelector('.y-axis-container');
+    const controls = container || this._root.querySelector('.y-axis-controls');
     if (!controls) return;
 
     // Get the current max value based on the view mode
@@ -1110,6 +1116,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.yaxis-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
+      button.classList.remove('active');
       button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
@@ -1118,6 +1125,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     // Find the active button by its data-yaxis attribute
     const activeButton = controls.querySelector(`.yaxis-button[data-yaxis="${currentMaxStr}"]`) as HTMLElement;
     if (activeButton) {
+      activeButton.classList.add('active');
       activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
       activeButton.style.color = 'var(--text-primary-color, #fff)';
       activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
@@ -1172,14 +1180,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
     averagingContainer.style.alignItems = 'center';
     averagingContainer.style.gap = '0';
     averagingContainer.style.height = '26px';
-
+    averagingContainer.style.padding = '0';
     const averagingOptions = [
       { label: 'Off', value: 'off' },
       { label: '15m', value: '15min' },
       { label: '1h', value: '1h' },
       { label: '5h', value: '5h' }
     ];
-
     averagingOptions.forEach((option, index) => {
       const btn = document.createElement('button');
       btn.className = 'pill-control averaging-button';
@@ -1200,6 +1207,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       btn.style.color = 'var(--primary-text-color)';
       btn.style.cursor = 'pointer';
       btn.style.transition = 'all 0.2s';
+      btn.style.padding = '0';
       if ((this.config as any)?.average_window === option.value || (!this.config?.average_window && option.value === 'off')) {
         btn.style.backgroundColor = 'var(--primary-color, #03a9f4)';
         btn.style.color = 'var(--text-primary-color, #fff)';
@@ -1223,6 +1231,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const buttons = controls.querySelectorAll('.averaging-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
+      button.classList.remove('active');
       button.style.backgroundColor = 'var(--card-background-color, white)';
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
@@ -1230,6 +1239,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const activeValue = (this.config as any)?.average_window || 'off';
     const activeButton = controls.querySelector(`.averaging-button[data-value="${activeValue}"]`) as HTMLElement;
     if (activeButton) {
+      activeButton.classList.add('active');
       activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
       activeButton.style.color = 'var(--text-primary-color, #fff)';
       activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
@@ -1263,6 +1273,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       btn.style.justifyContent = 'center';
       btn.style.fontSize = '0.95em';
       btn.style.letterSpacing = '0.01em';
+      btn.style.padding = '0';
       btn.addEventListener('click', () => this._setTimeRange(range.hours));
       if (this._currentTimeRangeHours === range.hours) {
         btn.classList.add('active');
