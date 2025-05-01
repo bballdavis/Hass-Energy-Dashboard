@@ -834,8 +834,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
     
     card.appendChild(chartContainer);
 
+    // Insert averaging controls below the chart container
+    const averagingControls = this._createAveragingControls();
+    card.appendChild(averagingControls);
+
     setTimeout(() => this._updateCharts(), 0);
     setTimeout(() => this._startUpdateInterval(), 50);
+    setTimeout(() => this._updateAveragingControlsUI(), 100);
   }
 
   private _checkApexChartsRegistration() {
@@ -1263,6 +1268,76 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this._updateCharts();
     
     console.log(`Set Y-axis max to ${maxValue} for ${isEnergy ? 'energy' : 'power'} chart`);
+  }
+
+  private _createAveragingControls(): HTMLElement {
+    const averagingContainer = document.createElement('div');
+    averagingContainer.className = 'averaging-controls';
+    averagingContainer.style.display = 'flex';
+    averagingContainer.style.justifyContent = 'center';
+    averagingContainer.style.alignItems = 'center';
+    averagingContainer.style.margin = '8px 0 0 0';
+    averagingContainer.style.gap = '0';
+
+    const averagingOptions = [
+      { label: 'Off', value: 'off' },
+      { label: '15min', value: '15min' },
+      { label: '1h', value: '1h' },
+      { label: '5h', value: '5h' }
+    ];
+
+    averagingOptions.forEach((option, index) => {
+      const btn = document.createElement('button');
+      btn.className = 'pill-control averaging-button';
+      btn.textContent = option.label;
+      btn.dataset.value = option.value;
+      btn.style.borderRadius =
+        index === 0 ? '16px 0 0 16px' :
+        index === averagingOptions.length - 1 ? '0 16px 16px 0' : '0';
+      btn.style.marginLeft = index > 0 ? '-1px' : '0';
+      btn.style.minWidth = '40px';
+      btn.style.padding = '4px 12px';
+      btn.style.fontSize = '0.9em';
+      btn.style.height = '32px';
+      btn.style.border = '1px solid var(--divider-color, #e0e0e0)';
+      btn.style.backgroundColor = 'var(--card-background-color, white)';
+      btn.style.color = 'var(--primary-text-color)';
+      btn.style.cursor = 'pointer';
+      btn.style.transition = 'all 0.2s';
+      if ((this.config as any)?.average_window === option.value || (!this.config?.average_window && option.value === 'off')) {
+        btn.style.backgroundColor = 'var(--primary-color, #03a9f4)';
+        btn.style.color = 'var(--text-primary-color, #fff)';
+        btn.style.borderColor = 'var(--primary-color, #03a9f4)';
+      }
+      btn.addEventListener('click', () => {
+        if (this.config) {
+          (this.config as any).average_window = option.value;
+          this._updateCharts();
+          this._updateAveragingControlsUI(averagingContainer);
+        }
+      });
+      averagingContainer.appendChild(btn);
+    });
+    return averagingContainer;
+  }
+
+  private _updateAveragingControlsUI(container?: HTMLElement) {
+    const controls = container || this._root.querySelector('.averaging-controls');
+    if (!controls) return;
+    const buttons = controls.querySelectorAll('.averaging-button');
+    buttons.forEach(btn => {
+      const button = btn as HTMLElement;
+      button.style.backgroundColor = 'var(--card-background-color, white)';
+      button.style.color = 'var(--primary-text-color, #212121)';
+      button.style.borderColor = 'var(--divider-color, #e0e0e0)';
+    });
+    const activeValue = (this.config as any)?.average_window || 'off';
+    const activeButton = controls.querySelector(`.averaging-button[data-value="${activeValue}"]`) as HTMLElement;
+    if (activeButton) {
+      activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
+      activeButton.style.color = 'var(--text-primary-color, #fff)';
+      activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
+    }
   }
 }
 
