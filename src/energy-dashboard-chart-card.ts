@@ -1022,16 +1022,18 @@ export class EnergyDashboardChartCard extends HTMLElement {
     // Manual refresh button as first pill
     const manualBtn = document.createElement('button');
     manualBtn.className = 'pill-control refresh-rate-button';
-    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="font-size:0.6em;height:0.9em;width:0.9em;display:inline-block;vertical-align:middle;line-height:1;"></ha-icon>';
+    // Adjusted icon style for better centering and size
+    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="height:1.2em; width:1.2em;"></ha-icon>';
     manualBtn.title = 'Manual Refresh';
     manualBtn.style.borderRadius = '16px 0 0 16px';
-    manualBtn.style.minWidth = '36px';
+    manualBtn.style.minWidth = '36px'; // Keep minimum width for touch targets
     manualBtn.style.height = '26px';
-    manualBtn.style.marginRight = '-1px';
+    manualBtn.style.marginRight = '-1px'; // For pill group effect
+    // Use flexbox to center the icon within the button
     manualBtn.style.display = 'flex';
     manualBtn.style.alignItems = 'center';
     manualBtn.style.justifyContent = 'center';
-    manualBtn.style.padding = '0';
+    manualBtn.style.padding = '0'; // Remove padding to rely on flex centering
     manualBtn.addEventListener('click', () => this._manualRefresh());
     container.appendChild(manualBtn);
     // Refresh rate options
