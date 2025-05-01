@@ -157,7 +157,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       show_toggle: config.show_toggle ?? true,
       auto_select_count: config.auto_select_count ?? 6,
       max_height: config.max_height ?? 0, // No longer using max_height, set to 0 by default
-      energy_auto_select_count: config.energy_auto_select_count ?? 6,
       entity_removal_filter: config.entity_removal_filter ?? '', // Default to empty string for no filter
       refresh_rate: config.refresh_rate ?? 'off', // Default to off for refresh rate
       // Use the stored value as priority for persistence setting
@@ -190,7 +189,6 @@ export class EnergyDashboardEntityCard extends HTMLElement {
       show_toggle: true,
       auto_select_count: 6,
       max_height: 0,
-      energy_auto_select_count: 6,
       persist_selection: true,
       entity_removal_filter: '' // Fixed: renamed from entity_filter to entity_removal_filter
     };
@@ -460,7 +458,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     } else {
       // Create a new toggle states object
       const toggleStates: Record<string, boolean> = {};
-      const count = this.config?.energy_auto_select_count ?? 6;
+      const count = this.config?.auto_select_count ?? 6;
       // Apply entity removal filter first to get only visible entities
       let visibleEntities = this._applyRemovalFilter(entities);
       // Sort by absolute value descending
@@ -554,7 +552,7 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     const entities = getEnergyEntities(this._hass);
     let visibleEntities = this._applyRemovalFilter(entities);
     const toggleStates: Record<string, boolean> = {};
-    const count = this.config?.energy_auto_select_count ?? 6;
+    const count = this.config?.auto_select_count ?? 6;
     // Sort by absolute value descending
     visibleEntities = visibleEntities.sort((a, b) => Math.abs(b.energyValue ?? 0) - Math.abs(a.energyValue ?? 0));
     entities.forEach(entity => {

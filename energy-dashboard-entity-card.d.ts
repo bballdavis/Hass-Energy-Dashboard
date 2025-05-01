@@ -36,7 +36,6 @@ export declare class EnergyDashboardEntityCard extends HTMLElement {
         show_toggle: boolean;
         auto_select_count: number;
         max_height: number;
-        energy_auto_select_count: number;
         persist_selection: boolean;
         entity_removal_filter: string;
     };
