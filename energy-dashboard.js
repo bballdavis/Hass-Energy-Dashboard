@@ -1599,7 +1599,6 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
             auto_select_count: config.auto_select_count !== undefined ? config.auto_select_count : 6,
             max_height: config.max_height !== undefined ? config.max_height : 400, // Default to ~15 entities
             enable_max_height: config.enable_max_height !== undefined ? config.enable_max_height : false,
-            energy_auto_select_count: config.energy_auto_select_count !== undefined ? config.energy_auto_select_count : 6,
             title: config.title !== undefined ? config.title : 'Energy Dashboard',
         };
         this._updateForm();
@@ -1677,19 +1676,6 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
         autoSelectField.addEventListener('change', this.valueChanged);
         autoSelectRow.appendChild(autoSelectField);
         form.appendChild(autoSelectRow);
-        // Energy Auto-select Count field
-        const energyAutoSelectRow = this._createRow();
-        const energyAutoSelectField = document.createElement('ha-textfield');
-        energyAutoSelectField.className = 'value';
-        energyAutoSelectField.label = 'Energy Auto-select Count';
-        energyAutoSelectField.type = 'number';
-        energyAutoSelectField.min = '0';
-        energyAutoSelectField.max = '50';
-        energyAutoSelectField.value = String(this.config.energy_auto_select_count || 6);
-        energyAutoSelectField.configValue = 'energy_auto_select_count';
-        energyAutoSelectField.addEventListener('change', this.valueChanged);
-        energyAutoSelectRow.appendChild(energyAutoSelectField);
-        form.appendChild(energyAutoSelectRow);
         // Enable Max Height toggle
         const enableMaxHeightRow = this._createRow();
         const enableMaxHeightSwitch = document.createElement('ha-switch');
