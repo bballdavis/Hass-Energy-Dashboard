@@ -287,8 +287,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
     // If yMin is not set, calculate from data (including negatives)
     if (typeof yMin === 'undefined') {
-      // Find min value from the entity states
-      let minVal = 0;
+      let minVal: number | undefined = undefined;
       for (const entityId of entities) {
         const stateObj = this._hass.states[entityId];
         if (stateObj) {
@@ -299,7 +298,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
           }
         }
       }
-      yMin = minVal;
+      yMin = typeof minVal !== 'undefined' ? minVal : 0;
     }
 
     // Calculate appropriate tick amount based on y-axis range
@@ -864,9 +863,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
     refreshGroup.className = 'pill-group';
     const refreshLabel = document.createElement('div');
     refreshLabel.className = 'pill-label';
-    refreshLabel.textContent = 'Refresh';
+    refreshLabel.textContent = 'Refresh Rate';
     refreshGroup.appendChild(refreshLabel);
-    const refreshControls = this._createRefreshControls();
+    const refreshControls = this._createRefreshRatePillControls();
     refreshGroup.appendChild(refreshControls);
     pillRow.appendChild(refreshGroup);
 
@@ -881,12 +880,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
     timeGroup.appendChild(timeRangeControls);
     pillRow.appendChild(timeGroup);
 
-    // Y-axis group
+    // Y-axis group (renamed to Max Range)
     const yaxisGroup = document.createElement('div');
     yaxisGroup.className = 'pill-group';
     const yaxisLabel = document.createElement('div');
     yaxisLabel.className = 'pill-label';
-    yaxisLabel.textContent = 'Y-Axis';
+    yaxisLabel.textContent = 'Max Range';
     yaxisGroup.appendChild(yaxisLabel);
     const yAxisControls = this._createYAxisControls();
     yaxisGroup.appendChild(yAxisControls);
@@ -964,7 +963,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
       this.config.update_interval = seconds; 
     }
     this._currentRefreshInterval = seconds;
-    this._updateRefreshControlsUI();
+    this._updateRefreshRatePillControlsUI();
 
     this._stopUpdateInterval();
 
@@ -987,296 +986,57 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this._updateCharts();
   }
   
-  private _createRefreshControls(): HTMLElement {
-    const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'refresh-controls';
-    controlsContainer.style.display = 'flex';
-    controlsContainer.style.justifyContent = 'space-between';
-    controlsContainer.style.alignItems = 'center';
-    controlsContainer.style.padding = '0 16px';
-    controlsContainer.style.marginTop = '8px';  // Match entity card mode toggle container
-    controlsContainer.style.marginBottom = '8px';  // Match entity card mode toggle container
-    controlsContainer.style.gap = '8px';
-    controlsContainer.style.flexWrap = 'wrap'; // Allow wrapping
-
-    // --- Refresh Rate Controls ---
-    const refreshTitle = document.createElement('div');
-    refreshTitle.className = 'refresh-title';
-    refreshTitle.textContent = 'Refresh Rate:';
-    refreshTitle.style.fontWeight = '500';
-    refreshTitle.style.fontSize = '0.9em';
-    refreshTitle.style.marginRight = '8px';
-    refreshTitle.style.whiteSpace = 'nowrap'; // Prevent text wrapping
-
-    const buttonsContainer = document.createElement('div');
-    buttonsContainer.className = 'buttons-container';
-    buttonsContainer.style.display = 'flex';
-    buttonsContainer.style.justifyContent = 'flex-end';
-    buttonsContainer.style.alignItems = 'center';
-    buttonsContainer.style.gap = '0'; // Remove gap between buttons
-    buttonsContainer.style.flexShrink = '0'; // Prevent shrinking
-
-    // --- Time Range Controls ---
-    const timeRangeTitle = document.createElement('div');
-    timeRangeTitle.className = 'time-range-title';
-    timeRangeTitle.textContent = 'Time Range:';
-    timeRangeTitle.style.fontWeight = '500';
-    timeRangeTitle.style.fontSize = '0.9em';
-    timeRangeTitle.style.marginRight = '8px';
-    timeRangeTitle.style.marginLeft = '8px'; // Add left margin
-    timeRangeTitle.style.whiteSpace = 'nowrap'; // Prevent text wrapping
-
-    const timeRangeContainer = document.createElement('div');
-    timeRangeContainer.className = 'time-range-container';
-    timeRangeContainer.style.display = 'flex';
-    timeRangeContainer.style.justifyContent = 'flex-end';
-    timeRangeContainer.style.alignItems = 'center';
-    timeRangeContainer.style.gap = '0'; // Remove gap between buttons
-    timeRangeContainer.style.flexShrink = '0'; // Prevent shrinking
-
-    // --- Max Range Controls ---
-    const maxRangeTitle = document.createElement('div');
-    maxRangeTitle.className = 'y-axis-title';
-    maxRangeTitle.textContent = 'Max Range:';
-    maxRangeTitle.style.fontWeight = '500';
-    maxRangeTitle.style.fontSize = '0.9em';
-    maxRangeTitle.style.marginRight = '8px';
-    maxRangeTitle.style.marginLeft = '8px'; // Add left margin
-    maxRangeTitle.style.whiteSpace = 'nowrap'; // Prevent text wrapping
-
-    const maxRangeContainer = document.createElement('div');
-    maxRangeContainer.className = 'y-axis-container';
-    maxRangeContainer.style.display = 'flex';
-    maxRangeContainer.style.justifyContent = 'flex-end';
-    maxRangeContainer.style.alignItems = 'center';
-    maxRangeContainer.style.gap = '0'; // Remove gap between buttons
-    maxRangeContainer.style.flexShrink = '0'; // Prevent shrinking
-
-    // Helper for all controls
-    const createButton = (text: string, title: string, value?: string, controlType?: 'time' | 'refresh' | 'yaxis', index?: number, total?: number) => {
-      const button = document.createElement('button');
-      button.style.padding = '4px 8px';
-      button.style.border = '1px solid var(--divider-color)';
-      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color to card-background-color
-      button.style.color = 'var(--primary-text-color)';
-      button.style.cursor = 'pointer';
-      button.style.display = 'flex';
-      button.style.alignItems = 'center';
-      button.style.justifyContent = 'center';
-      button.style.transition = 'all 0.2s ease-in-out';
-      button.style.height = 'var(--button-height, 32px)'; // Use CSS variable
-      button.style.minHeight = 'var(--button-height, 32px)'; // Use CSS variable
-      button.style.fontSize = '0.9em';
-      button.style.margin = '0';
-      button.style.position = 'relative';
-      button.style.boxSizing = 'border-box'; // Important to include borders in size
-      button.style.whiteSpace = 'nowrap'; // Prevent text wrapping
-      
-      // Set minimum width to accommodate at least 5 characters
-      if (!text.includes('<ha-icon')) {
-        button.style.minWidth = '40px'; // Minimum width for text buttons
-      }
-      
-      // Handle button border radius based on position
-      if (index !== undefined && total !== undefined) {
-        // First button - round left corners only
-        if (index === 0) {
-          button.style.borderRadius = '4px 0 0 4px';
-        } 
-        // Last button - round right corners only
-        else if (index === total - 1) {
-          button.style.borderRadius = '0 4px 4px 0';
-        } 
-        // Middle buttons - no rounded corners
-        else {
-          button.style.borderRadius = '0';
-        }
-        
-        // Apply negative margin to every button except first to overlap borders
-        if (index > 0) {
-          button.style.marginLeft = '-1px';
-        }
-      } else {
-        // Default for refresh button
-        button.style.borderRadius = '4px';
-      }
-      
-      button.title = title;
-      if (text.includes('<ha-icon')) {
-        const iconWrapper = document.createElement('div');
-        iconWrapper.innerHTML = text;
-        while (iconWrapper.firstChild) {
-          button.appendChild(iconWrapper.firstChild);
-        }
-      } else {
-        button.textContent = text;
-      }
-      
-      if (controlType === 'time' && value !== undefined) {
-        button.className = 'time-range-button control-button';
-        button.dataset.hours = value;
-        button.addEventListener('click', () => this._setTimeRange(Number(value)));
-      } else if (controlType === 'refresh' && value !== undefined) {
-        button.className = 'interval-button control-button';
-        button.dataset.seconds = value;
-        button.addEventListener('click', () => this._setRefreshInterval(Number(value)));
-      } else if (controlType === 'yaxis' && value !== undefined) {
-        button.className = 'yaxis-button control-button';
-        button.dataset.yaxis = value;
-        button.addEventListener('click', () => this._setYAxisMax(value));
-      } else {
-        button.className = 'refresh-button control-button';
-        button.addEventListener('click', () => this._manualRefresh());
-      }
-      
-      return button;
-    };
-
-    // Refresh rate buttons
-    const refreshButton = createButton('<ha-icon icon="mdi:refresh"></ha-icon>', 'Refresh now');
-    refreshButton.style.minWidth = '30px'; // Smaller
-    refreshButton.style.width = '30px';
-    refreshButton.style.marginRight = '4px'; // Add space between refresh and interval buttons
-    
-    // Make interval buttons as a single connected group
-    const refreshOptions = [
-      { text: 'Off', title: 'Disable automatic refresh', value: '0' },
-      { text: '15s', title: 'Refresh every 15 seconds', value: '15' },
-      { text: '30s', title: 'Refresh every 30 seconds', value: '30' },
-      { text: '60s', title: 'Refresh every 60 seconds', value: '60' }
+  private _createRefreshRatePillControls(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'refresh-rate-controls pill-row';
+    const options = [
+      { label: 'Off', value: 0 },
+      { label: '15s', value: 15 },
+      { label: '30s', value: 30 },
+      { label: '60s', value: 60 }
     ];
-    
-    refreshOptions.forEach((option, index) => {
-      const btn = createButton(option.text, option.title, option.value, 'refresh', index, refreshOptions.length);
-      // Ensure buttons are wide enough for their content
-      if (option.text === 'Off') {
-        btn.style.minWidth = '36px'; // Minimum width for "Off"
-      } else {
-        btn.style.minWidth = '40px'; // Minimum width for other options
+    options.forEach((option, index) => {
+      const btn = document.createElement('button');
+      btn.className = 'pill-control refresh-rate-button';
+      btn.textContent = option.label;
+      btn.dataset.value = String(option.value);
+      btn.style.borderRadius =
+        index === 0 ? '16px 0 0 16px' :
+        index === options.length - 1 ? '0 16px 16px 0' : '0';
+      btn.style.marginLeft = index > 0 ? '-1px' : '0';
+      btn.style.minWidth = '40px';
+      btn.style.height = '26px';
+      btn.addEventListener('click', () => this._setRefreshInterval(option.value));
+      if (this._currentRefreshInterval === option.value) {
+        btn.classList.add('active');
       }
-      buttonsContainer.appendChild(btn);
+      container.appendChild(btn);
     });
-    
-    buttonsContainer.insertBefore(refreshButton, buttonsContainer.firstChild);
-
-    // Time range buttons with minimum width to prevent wrapping
-    const timeRanges = [
-      { label: '1h', hours: 1 },
-      { label: '3h', hours: 3 },
-      { label: '12h', hours: 12 },
-      { label: '24h', hours: 24 },
-      { label: '3d', hours: 72 },
-      { label: '1w', hours: 168 }
-    ];
-    timeRanges.forEach((range, index) => {
-      const btn = createButton(
-        range.label, 
-        `Show last ${range.label}`, 
-        String(range.hours), 
-        'time',
-        index,
-        timeRanges.length
-      );
-      // Set consistent min-width to prevent wrapping
-      btn.style.minWidth = '36px';
-      // Do NOT override height here to ensure it uses CSS variable
-      timeRangeContainer.appendChild(btn);
-    });
-
-    // Y-axis preset buttons with minimum width to prevent wrapping
-    const yAxisPresets = [
-      { label: 'Auto', value: 'auto' },
-      { label: '500', value: '500' },
-      { label: '3000', value: '3000' },
-      { label: '9000', value: '9000' }
-    ];
-    yAxisPresets.forEach((preset, index) => {
-      const btn = createButton(
-        preset.label, 
-        preset.value === 'auto' ? 'Automatic Y-axis scaling' : `Set Y-axis maximum to ${preset.value}`,
-        preset.value,
-        'yaxis',
-        index,
-        yAxisPresets.length
-      );
-      // Set width based on content
-      if (preset.label === 'Auto') {
-        btn.style.minWidth = '45px'; // Wider for "Auto"
-      } else if (preset.label === '3000' || preset.label === '9000') {
-        btn.style.minWidth = '45px'; // Wider for 4-digit numbers
-      } else {
-        btn.style.minWidth = '40px'; // Standard width for other buttons
-      }
-      // Do NOT override height here to ensure it uses CSS variable
-      maxRangeContainer.appendChild(btn);
-    });
-
-    // Create control groups that can wrap properly
-    const refreshGroup = document.createElement('div');
-    refreshGroup.className = 'refresh-group';
-    refreshGroup.style.display = 'flex';
-    refreshGroup.style.alignItems = 'center';
-    refreshGroup.style.margin = '4px 0';
-    refreshGroup.style.whiteSpace = 'nowrap'; // Keep group items on same line
-    refreshGroup.style.flexShrink = '0'; // Don't shrink the group
-    refreshGroup.appendChild(refreshTitle);
-    refreshGroup.appendChild(buttonsContainer);
-    
-    const timeRangeGroup = document.createElement('div');
-    timeRangeGroup.className = 'time-range-group';
-    timeRangeGroup.style.display = 'flex';
-    timeRangeGroup.style.alignItems = 'center';
-    timeRangeGroup.style.margin = '4px 0';
-    timeRangeGroup.style.whiteSpace = 'nowrap'; // Keep group items on same line
-    timeRangeGroup.style.flexShrink = '0'; // Don't shrink the group
-    timeRangeGroup.appendChild(timeRangeTitle);
-    timeRangeGroup.appendChild(timeRangeContainer);
-    
-    const maxRangeGroup = document.createElement('div');
-    maxRangeGroup.className = 'y-axis-group';
-    maxRangeGroup.style.display = 'flex';
-    maxRangeGroup.style.alignItems = 'center';
-    maxRangeGroup.style.margin = '4px 0';
-    maxRangeGroup.style.whiteSpace = 'nowrap'; // Keep group items on same line
-    maxRangeGroup.style.flexShrink = '0'; // Don't shrink the group
-    maxRangeGroup.appendChild(maxRangeTitle);
-    maxRangeGroup.appendChild(maxRangeContainer);
-    
-    // Add a flex container for the controls that can wrap
-    const controlsWrapper = document.createElement('div');
-    controlsWrapper.className = 'controls-wrapper';
-    controlsWrapper.style.display = 'flex';
-    controlsWrapper.style.flexWrap = 'wrap';
-    controlsWrapper.style.gap = '8px';
-    controlsWrapper.style.width = '100%';
-    controlsWrapper.style.justifyContent = 'flex-start';
-    
-    // Add the control groups to the wrapper
-    controlsWrapper.appendChild(refreshGroup);
-    controlsWrapper.appendChild(timeRangeGroup);
-    controlsWrapper.appendChild(maxRangeGroup);
-    
-    // Add the wrapper to the container
-    controlsContainer.appendChild(controlsWrapper);
-
-    this._updateRefreshControlsUI(buttonsContainer);
-    this._updateTimeRangeControlsUI(timeRangeContainer);
-    this._updateYAxisControlsUI(maxRangeContainer);
-
-    return controlsContainer;
+    // Add manual refresh button at the end
+    const manualBtn = document.createElement('button');
+    manualBtn.className = 'pill-control refresh-rate-button';
+    manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
+    manualBtn.title = 'Manual Refresh';
+    manualBtn.style.borderRadius = '0 16px 16px 0';
+    manualBtn.style.marginLeft = '-1px';
+    manualBtn.style.minWidth = '36px';
+    manualBtn.style.height = '26px';
+    manualBtn.addEventListener('click', () => this._manualRefresh());
+    container.appendChild(manualBtn);
+    return container;
   }
 
-  private _updateRefreshControlsUI(container?: HTMLElement) {
-    const controls = container || this._root.querySelector('.buttons-container');
+  private _updateRefreshRatePillControlsUI(container?: HTMLElement) {
+    const controls = container || this._root.querySelector('.refresh-rate-controls');
     if (!controls) return;
-    const buttons = controls.querySelectorAll('.interval-button');
+    const buttons = controls.querySelectorAll('.refresh-rate-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color
+      button.style.backgroundColor = 'var(--card-background-color, white)';
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
-    const activeButton = controls.querySelector(`.interval-button[data-seconds="${this._currentRefreshInterval}"]`) as HTMLElement;
+    const activeButton = controls.querySelector(`.refresh-rate-button[data-value="${this._currentRefreshInterval}"]`) as HTMLElement;
     if (activeButton) {
       activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
       activeButton.style.color = 'var(--text-primary-color, #fff)';
