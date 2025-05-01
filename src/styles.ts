@@ -279,6 +279,79 @@ export const cardStyles = `
   .refresh-option ha-icon {
     --mdc-icon-size: 14px;
   }
+
+  .pill-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 8px;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+  .pill-label {
+    font-size: 0.75em;
+    color: var(--secondary-text-color, #888);
+    margin-bottom: 0px;
+    margin-top: 0px;
+    text-align: center;
+    letter-spacing: 0.01em;
+    font-weight: 500;
+    user-select: none;
+    line-height: 1.1;
+  }
+  .pill-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: stretch;
+    width: 100%;
+    gap: 0;
+    margin-bottom: 4px;
+    margin-top: 0px;
+    min-height: 0;
+  }
+  .pill-control {
+    background-color: var(--card-background-color, white);
+    border: 1px solid var(--divider-color, #e0e0e0);
+    color: var(--primary-text-color);
+    font-size: 0.92em;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 10px;
+    min-width: 36px;
+    min-height: 24px;
+    height: 26px;
+    box-sizing: border-box;
+    transition: all 0.2s;
+    border-radius: 16px;
+    margin: 0;
+    outline: none;
+    border-right: none;
+    line-height: 1.2;
+  }
+  .pill-control:last-child {
+    border-right: 1px solid var(--divider-color, #e0e0e0);
+  }
+  .pill-control.active {
+    background-color: var(--primary-color, #03a9f4);
+    color: var(--text-primary-color, #fff);
+    border-color: var(--primary-color, #03a9f4);
+    z-index: 1;
+  }
+  .pill-control:not(.active):hover {
+    background-color: var(--divider-color, #e0e0e0);
+    color: var(--primary-text-color);
+  }
+  .pill-row .pill-control {
+    border-radius: 0;
+  }
+  .pill-row .pill-control:first-child {
+    border-radius: 16px 0 0 16px;
+  }
+  .pill-row .pill-control:last-child {
+    border-radius: 0 16px 16px 0;
+    border-right: 1px solid var(--divider-color, #e0e0e0);
+  }
 `;
 
 export const editorStyles = `

@@ -81,4 +81,6 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
     private _setYAxisMax;
     private _createAveragingControls;
     private _updateAveragingControlsUI;
+    private _createTimeRangeControls;
+    private _createYAxisControls;
 }

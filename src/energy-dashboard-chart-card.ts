@@ -2,6 +2,38 @@ import { createStyles, cardStyles } from './styles';
 import { loadToggleStates } from './entity-utils';
 import { EnergyDashboardChartConfig, getDefaultChartConfig } from './energy-dashboard-chart-config';
 
+// Gaussian smoothing utility
+function gaussianSmooth(data: number[], window: number): number[] {
+  if (window <= 1) return data;
+  const sigma = window / 3;
+  const kernel = [];
+  const mean = Math.floor(window / 2);
+  let sum = 0;
+  for (let i = 0; i < window; i++) {
+    const x = i - mean;
+    const value = Math.exp(-(x * x) / (2 * sigma * sigma));
+    kernel.push(value);
+    sum += value;
+  }
+  // Normalize
+  for (let i = 0; i < kernel.length; i++) kernel[i] /= sum;
+  const half = Math.floor(window / 2);
+  const smoothed = [];
+  for (let i = 0; i < data.length; i++) {
+    let acc = 0;
+    let weight = 0;
+    for (let j = 0; j < window; j++) {
+      const idx = i + j - half;
+      if (idx >= 0 && idx < data.length) {
+        acc += data[idx] * kernel[j];
+        weight += kernel[j];
+      }
+    }
+    smoothed.push(acc / (weight || 1));
+  }
+  return smoothed;
+}
+
 export class EnergyDashboardChartCard extends HTMLElement {
   // Properties
   private _hass: any;
@@ -432,6 +464,27 @@ export class EnergyDashboardChartCard extends HTMLElement {
       }
     };
 
+    // --- Data Smoothing (Averaging) ---
+    let averageWindow = 1;
+    if ((this.config as any)?.average_window && (this.config as any).average_window !== 'off') {
+      if ((this.config as any).average_window === '15min') averageWindow = 3;
+      if ((this.config as any).average_window === '1h') averageWindow = 12;
+      if ((this.config as any).average_window === '5h') averageWindow = 60;
+    }
+    // Patch series with smoothed data if needed
+    if (averageWindow > 1) {
+      if (chartType === 'line' || chartType === 'area') {
+        if (apexChartCardConfig.series) {
+          apexChartCardConfig.series = apexChartCardConfig.series.map((s: any) => {
+            if (s.data && Array.isArray(s.data)) {
+              return { ...s, data: gaussianSmooth(s.data, averageWindow) };
+            }
+            return s;
+          });
+        }
+      }
+    }
+
     return apexChartCardConfig;
   }
 
@@ -796,9 +849,62 @@ export class EnergyDashboardChartCard extends HTMLElement {
       card.appendChild(errorMessage);
       return;
     }
-    
+
+    // --- Pills Layout ---
+    const pillRow = document.createElement('div');
+    pillRow.className = 'pill-row';
+    pillRow.style.display = 'flex';
+    pillRow.style.justifyContent = 'space-between';
+    pillRow.style.alignItems = 'flex-end';
+    pillRow.style.width = '100%';
+    pillRow.style.margin = '0 0 12px 0';
+
+    // Refresh group
+    const refreshGroup = document.createElement('div');
+    refreshGroup.className = 'pill-group';
+    const refreshLabel = document.createElement('div');
+    refreshLabel.className = 'pill-label';
+    refreshLabel.textContent = 'Refresh';
+    refreshGroup.appendChild(refreshLabel);
     const refreshControls = this._createRefreshControls();
-    card.appendChild(refreshControls);
+    refreshGroup.appendChild(refreshControls);
+    pillRow.appendChild(refreshGroup);
+
+    // Time range group
+    const timeGroup = document.createElement('div');
+    timeGroup.className = 'pill-group';
+    const timeLabel = document.createElement('div');
+    timeLabel.className = 'pill-label';
+    timeLabel.textContent = 'Time Range';
+    timeGroup.appendChild(timeLabel);
+    const timeRangeControls = this._createTimeRangeControls();
+    timeGroup.appendChild(timeRangeControls);
+    pillRow.appendChild(timeGroup);
+
+    // Y-axis group
+    const yaxisGroup = document.createElement('div');
+    yaxisGroup.className = 'pill-group';
+    const yaxisLabel = document.createElement('div');
+    yaxisLabel.className = 'pill-label';
+    yaxisLabel.textContent = 'Y-Axis';
+    yaxisGroup.appendChild(yaxisLabel);
+    const yAxisControls = this._createYAxisControls();
+    yaxisGroup.appendChild(yAxisControls);
+    pillRow.appendChild(yaxisGroup);
+
+    // Averaging group
+    const avgGroup = document.createElement('div');
+    avgGroup.className = 'pill-group';
+    const avgLabel = document.createElement('div');
+    avgLabel.className = 'pill-label';
+    avgLabel.textContent = 'Smoothing';
+    avgGroup.appendChild(avgLabel);
+    const averagingControls = this._createAveragingControls();
+    avgGroup.appendChild(averagingControls);
+    pillRow.appendChild(avgGroup);
+
+    // Add the pill row to the card above the chart
+    card.appendChild(pillRow);
 
     const chartContainer = document.createElement('div');
     chartContainer.className = 'chart-container';
@@ -833,10 +939,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     }
     
     card.appendChild(chartContainer);
-
-    // Insert averaging controls below the chart container
-    const averagingControls = this._createAveragingControls();
-    card.appendChild(averagingControls);
 
     setTimeout(() => this._updateCharts(), 0);
     setTimeout(() => this._startUpdateInterval(), 50);
@@ -1338,6 +1440,71 @@ export class EnergyDashboardChartCard extends HTMLElement {
       activeButton.style.color = 'var(--text-primary-color, #fff)';
       activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
     }
+  }
+
+  private _createTimeRangeControls(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'time-range-controls pill-row';
+    const timeRanges = [
+      { label: '1h', hours: 1 },
+      { label: '3h', hours: 3 },
+      { label: '12h', hours: 12 },
+      { label: '24h', hours: 24 },
+      { label: '3d', hours: 72 },
+      { label: '1w', hours: 168 }
+    ];
+    timeRanges.forEach((range, index) => {
+      const btn = document.createElement('button');
+      btn.className = 'pill-control time-range-button';
+      btn.textContent = range.label;
+      btn.dataset.hours = String(range.hours);
+      btn.style.borderRadius =
+        index === 0 ? '16px 0 0 16px' :
+        index === timeRanges.length - 1 ? '0 16px 16px 0' : '0';
+      btn.style.marginLeft = index > 0 ? '-1px' : '0';
+      btn.style.minWidth = '36px';
+      btn.style.height = '26px';
+      btn.addEventListener('click', () => this._setTimeRange(range.hours));
+      if (this._currentTimeRangeHours === range.hours) {
+        btn.classList.add('active');
+      }
+      container.appendChild(btn);
+    });
+    return container;
+  }
+
+  private _createYAxisControls(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'y-axis-controls pill-row';
+    const yAxisPresets = [
+      { label: 'Auto', value: 'auto' },
+      { label: '500', value: '500' },
+      { label: '3000', value: '3000' },
+      { label: '9000', value: '9000' }
+    ];
+    const isEnergy = this._viewMode === 'energy';
+    const currentMax = isEnergy
+      ? (this.config?.energy_chart_options?.y_axis?.max ?? 'auto')
+      : (this.config?.power_chart_options?.y_axis?.max ?? 'auto');
+    const currentMaxStr = currentMax === undefined ? 'auto' : String(currentMax);
+    yAxisPresets.forEach((preset, index) => {
+      const btn = document.createElement('button');
+      btn.className = 'pill-control yaxis-button';
+      btn.textContent = preset.label;
+      btn.dataset.yaxis = preset.value;
+      btn.style.borderRadius =
+        index === 0 ? '16px 0 0 16px' :
+        index === yAxisPresets.length - 1 ? '0 16px 16px 0' : '0';
+      btn.style.marginLeft = index > 0 ? '-1px' : '0';
+      btn.style.minWidth = '36px';
+      btn.style.height = '26px';
+      btn.addEventListener('click', () => this._setYAxisMax(preset.value));
+      if (currentMaxStr === preset.value) {
+        btn.classList.add('active');
+      }
+      container.appendChild(btn);
+    });
+    return container;
   }
 }
 
