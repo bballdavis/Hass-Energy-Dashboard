@@ -2735,12 +2735,15 @@ class EnergyDashboardChartCard extends HTMLElement {
         // Manual refresh button as first pill
         const manualBtn = document.createElement('button');
         manualBtn.className = 'pill-control refresh-rate-button';
-        manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
+        manualBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="vertical-align: middle; font-size: 1.1em; height: 1em; width: 1em; display: inline-flex; align-items: center; justify-content: center;"></ha-icon>';
         manualBtn.title = 'Manual Refresh';
         manualBtn.style.borderRadius = '16px 0 0 16px';
         manualBtn.style.minWidth = '36px';
         manualBtn.style.height = '26px';
         manualBtn.style.marginRight = '-1px';
+        manualBtn.style.display = 'flex';
+        manualBtn.style.alignItems = 'center';
+        manualBtn.style.justifyContent = 'center';
         manualBtn.addEventListener('click', () => this._manualRefresh());
         container.appendChild(manualBtn);
         // Refresh rate options
@@ -2760,6 +2763,9 @@ class EnergyDashboardChartCard extends HTMLElement {
             btn.style.marginLeft = '-1px';
             btn.style.minWidth = '40px';
             btn.style.height = '26px';
+            btn.style.display = 'flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
             btn.addEventListener('click', () => this._setRefreshInterval(option.value));
             if (this._currentRefreshInterval === option.value) {
                 btn.classList.add('active');
@@ -2867,15 +2873,15 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     _createAveragingControls() {
         const averagingContainer = document.createElement('div');
-        averagingContainer.className = 'averaging-controls';
+        averagingContainer.className = 'averaging-controls pill-row';
         averagingContainer.style.display = 'flex';
         averagingContainer.style.justifyContent = 'center';
         averagingContainer.style.alignItems = 'center';
-        averagingContainer.style.margin = '8px 0 0 0';
         averagingContainer.style.gap = '0';
+        averagingContainer.style.height = '26px';
         const averagingOptions = [
             { label: 'Off', value: 'off' },
-            { label: '15min', value: '15min' },
+            { label: '15m', value: '15min' },
             { label: '1h', value: '1h' },
             { label: '5h', value: '5h' }
         ];
@@ -2890,9 +2896,11 @@ class EnergyDashboardChartCard extends HTMLElement {
                     index === averagingOptions.length - 1 ? '0 16px 16px 0' : '0';
             btn.style.marginLeft = index > 0 ? '-1px' : '0';
             btn.style.minWidth = '40px';
-            btn.style.padding = '4px 12px';
-            btn.style.fontSize = '0.9em';
             btn.style.height = '26px';
+            btn.style.display = 'flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.style.fontSize = '0.9em';
             btn.style.border = '1px solid var(--divider-color, #e0e0e0)';
             btn.style.backgroundColor = 'var(--card-background-color, white)';
             btn.style.color = 'var(--primary-text-color)';
@@ -2956,6 +2964,11 @@ class EnergyDashboardChartCard extends HTMLElement {
             btn.style.marginLeft = index > 0 ? '-1px' : '0';
             btn.style.minWidth = '36px';
             btn.style.height = '26px';
+            btn.style.display = 'flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.style.fontSize = '0.95em';
+            btn.style.letterSpacing = '0.01em';
             btn.addEventListener('click', () => this._setTimeRange(range.hours));
             if (this._currentTimeRangeHours === range.hours) {
                 btn.classList.add('active');
