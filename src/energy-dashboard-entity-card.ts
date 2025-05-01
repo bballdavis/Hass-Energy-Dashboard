@@ -433,24 +433,19 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     } else {
       // Create a new toggle states object
       const toggleStates: Record<string, boolean> = {};
-
-      // Get auto_select_count from config, or use default of 6
       const count = this.config?.auto_select_count ?? 6;
-      
       // Apply entity removal filter first to get only visible entities
-      const visibleEntities = this._applyRemovalFilter(entities);
-
+      let visibleEntities = this._applyRemovalFilter(entities);
+      // Sort by absolute value descending
+      visibleEntities = visibleEntities.sort((a, b) => Math.abs(b.powerValue ?? 0) - Math.abs(a.powerValue ?? 0));
       // Initialize all entities to false first (including hidden ones)
       entities.forEach(entity => {
-        // Set to false by default
         toggleStates[entity.entityId] = false;
       });
-
       // Then set the first `count` VISIBLE entities to true
       visibleEntities.slice(0, count).forEach(entity => {
         toggleStates[entity.entityId] = true;
       });
-
       this.entityToggleStates = toggleStates;
     }
   }
@@ -465,24 +460,19 @@ export class EnergyDashboardEntityCard extends HTMLElement {
     } else {
       // Create a new toggle states object
       const toggleStates: Record<string, boolean> = {};
-
-      // Get energy_auto_select_count from config, or use default of 6
       const count = this.config?.energy_auto_select_count ?? 6;
-      
       // Apply entity removal filter first to get only visible entities
-      const visibleEntities = this._applyRemovalFilter(entities);
-
+      let visibleEntities = this._applyRemovalFilter(entities);
+      // Sort by absolute value descending
+      visibleEntities = visibleEntities.sort((a, b) => Math.abs(b.energyValue ?? 0) - Math.abs(a.energyValue ?? 0));
       // Initialize all entities to false first (including hidden ones)
       entities.forEach(entity => {
-        // Set to false by default
         toggleStates[entity.entityId] = false;
       });
-
       // Then set the first `count` VISIBLE entities to true
       visibleEntities.slice(0, count).forEach(entity => {
         toggleStates[entity.entityId] = true;
       });
-
       this.energyEntityToggleStates = toggleStates;
     }
   }
@@ -502,34 +492,19 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _resetToPowerDefaultEntities = () => {
-    // Get current entities
     const entities = getPowerEntities(this._hass);
-    
-    // Apply entity removal filter first to get only visible entities
-    const visibleEntities = this._applyRemovalFilter(entities);
-
-    // Create a new toggle state object
+    let visibleEntities = this._applyRemovalFilter(entities);
     const toggleStates: Record<string, boolean> = {};
-    
-    // Always use the current config value, not hardcoded default
     const count = this.config?.auto_select_count ?? 6;
-    console.log(`Resetting power entities with count=${count} from config:`, this.config);
-
-    // First initialize all to false
+    // Sort by absolute value descending
+    visibleEntities = visibleEntities.sort((a, b) => Math.abs(b.powerValue ?? 0) - Math.abs(a.powerValue ?? 0));
     entities.forEach(entity => {
       toggleStates[entity.entityId] = false;
     });
-
-    // Then set first 'count' VISIBLE entities to true
     visibleEntities.slice(0, count).forEach(entity => {
       toggleStates[entity.entityId] = true;
     });
-
-    // Update the toggle states
     this.entityToggleStates = toggleStates;
-    
-    // Always save to localStorage, even if persistence is disabled
-    // This ensures consistency between resets and chart card display
     this._savePowerToggleStates();
     this._updatePowerEntities();
     this._updateContent();
@@ -576,34 +551,19 @@ export class EnergyDashboardEntityCard extends HTMLElement {
   }
 
   _resetToEnergyDefaultEntities = () => {
-    // Get current energy entities
     const entities = getEnergyEntities(this._hass);
-    
-    // Apply entity removal filter first to get only visible entities
-    const visibleEntities = this._applyRemovalFilter(entities);
-
-    // Create a new toggle state object
+    let visibleEntities = this._applyRemovalFilter(entities);
     const toggleStates: Record<string, boolean> = {};
-    
-    // Always use the current config value, not hardcoded default
     const count = this.config?.energy_auto_select_count ?? 6;
-    console.log(`Resetting energy entities with count=${count} from config:`, this.config);
-
-    // First initialize all to false
+    // Sort by absolute value descending
+    visibleEntities = visibleEntities.sort((a, b) => Math.abs(b.energyValue ?? 0) - Math.abs(a.energyValue ?? 0));
     entities.forEach(entity => {
       toggleStates[entity.entityId] = false;
     });
-
-    // Then set first 'count' VISIBLE entities to true
     visibleEntities.slice(0, count).forEach(entity => {
       toggleStates[entity.entityId] = true;
     });
-
-    // Update the toggle states
     this.energyEntityToggleStates = toggleStates;
-    
-    // Always save to localStorage, even if persistence is disabled
-    // This ensures consistency between resets and chart card display
     this._saveEnergyToggleStates();
     this._updateEnergyEntities();
     this._updateContent();

@@ -253,9 +253,21 @@ export class EnergyDashboardChartCard extends HTMLElement {
     let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
     if (options?.y_axis?.title) yTitle = options.y_axis.title;
 
-    // Set minimum to 0 for power (if not specified in config)
+    // If yMin is not set, calculate from data (including negatives)
     if (typeof yMin === 'undefined') {
-      yMin = 0;
+      // Find min value from the entity states
+      let minVal = 0;
+      for (const entityId of entities) {
+        const stateObj = this._hass.states[entityId];
+        if (stateObj) {
+          const val = parseFloat(stateObj.state);
+          if (!isNaN(val)) {
+            if (typeof minVal === 'undefined') minVal = val;
+            else minVal = Math.min(minVal, val);
+          }
+        }
+      }
+      yMin = minVal;
     }
 
     // Calculate appropriate tick amount based on y-axis range

@@ -503,27 +503,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
         };
         this._resetToPowerDefaultEntities = () => {
             var _a, _b;
-            // Get current entities
             const entities = getPowerEntities(this._hass);
-            // Apply entity removal filter first to get only visible entities
-            const visibleEntities = this._applyRemovalFilter(entities);
-            // Create a new toggle state object
+            let visibleEntities = this._applyRemovalFilter(entities);
             const toggleStates = {};
-            // Always use the current config value, not hardcoded default
             const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.auto_select_count) !== null && _b !== void 0 ? _b : 6;
-            console.log(`Resetting power entities with count=${count} from config:`, this.config);
-            // First initialize all to false
+            // Sort by absolute value descending
+            visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.powerValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.powerValue) !== null && _b !== void 0 ? _b : 0); });
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
             });
-            // Then set first 'count' VISIBLE entities to true
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
-            // Update the toggle states
             this.entityToggleStates = toggleStates;
-            // Always save to localStorage, even if persistence is disabled
-            // This ensures consistency between resets and chart card display
             this._savePowerToggleStates();
             this._updatePowerEntities();
             this._updateContent();
@@ -563,27 +555,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
         };
         this._resetToEnergyDefaultEntities = () => {
             var _a, _b;
-            // Get current energy entities
             const entities = getEnergyEntities(this._hass);
-            // Apply entity removal filter first to get only visible entities
-            const visibleEntities = this._applyRemovalFilter(entities);
-            // Create a new toggle state object
+            let visibleEntities = this._applyRemovalFilter(entities);
             const toggleStates = {};
-            // Always use the current config value, not hardcoded default
             const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.energy_auto_select_count) !== null && _b !== void 0 ? _b : 6;
-            console.log(`Resetting energy entities with count=${count} from config:`, this.config);
-            // First initialize all to false
+            // Sort by absolute value descending
+            visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.energyValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.energyValue) !== null && _b !== void 0 ? _b : 0); });
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
             });
-            // Then set first 'count' VISIBLE entities to true
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
-            // Update the toggle states
             this.energyEntityToggleStates = toggleStates;
-            // Always save to localStorage, even if persistence is disabled
-            // This ensures consistency between resets and chart card display
             this._saveEnergyToggleStates();
             this._updateEnergyEntities();
             this._updateContent();
@@ -933,13 +917,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
         else {
             // Create a new toggle states object
             const toggleStates = {};
-            // Get auto_select_count from config, or use default of 6
             const count = (_d = (_c = this.config) === null || _c === void 0 ? void 0 : _c.auto_select_count) !== null && _d !== void 0 ? _d : 6;
             // Apply entity removal filter first to get only visible entities
-            const visibleEntities = this._applyRemovalFilter(entities);
+            let visibleEntities = this._applyRemovalFilter(entities);
+            // Sort by absolute value descending
+            visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.powerValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.powerValue) !== null && _b !== void 0 ? _b : 0); });
             // Initialize all entities to false first (including hidden ones)
             entities.forEach(entity => {
-                // Set to false by default
                 toggleStates[entity.entityId] = false;
             });
             // Then set the first `count` VISIBLE entities to true
@@ -960,13 +944,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
         else {
             // Create a new toggle states object
             const toggleStates = {};
-            // Get energy_auto_select_count from config, or use default of 6
             const count = (_d = (_c = this.config) === null || _c === void 0 ? void 0 : _c.energy_auto_select_count) !== null && _d !== void 0 ? _d : 6;
             // Apply entity removal filter first to get only visible entities
-            const visibleEntities = this._applyRemovalFilter(entities);
+            let visibleEntities = this._applyRemovalFilter(entities);
+            // Sort by absolute value descending
+            visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.energyValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.energyValue) !== null && _b !== void 0 ? _b : 0); });
             // Initialize all entities to false first (including hidden ones)
             entities.forEach(entity => {
-                // Set to false by default
                 toggleStates[entity.entityId] = false;
             });
             // Then set the first `count` VISIBLE entities to true
@@ -1989,9 +1973,23 @@ class EnergyDashboardChartCard extends HTMLElement {
         let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
         if ((_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.title)
             yTitle = options.y_axis.title;
-        // Set minimum to 0 for power (if not specified in config)
+        // If yMin is not set, calculate from data (including negatives)
         if (typeof yMin === 'undefined') {
-            yMin = 0;
+            // Find min value from the entity states
+            let minVal = 0;
+            for (const entityId of entities) {
+                const stateObj = this._hass.states[entityId];
+                if (stateObj) {
+                    const val = parseFloat(stateObj.state);
+                    if (!isNaN(val)) {
+                        if (typeof minVal === 'undefined')
+                            minVal = val;
+                        else
+                            minVal = Math.min(minVal, val);
+                    }
+                }
+            }
+            yMin = minVal;
         }
         // Calculate appropriate tick amount based on y-axis range
         let tickAmount = 5; // Default to 5 grid lines
