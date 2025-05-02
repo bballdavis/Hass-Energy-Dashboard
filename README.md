@@ -68,7 +68,7 @@ This ensures the chart is large and readable, while the entity card remains comp
 
 ## Usage
 
-1. Add the cards to your Home Assistant dashboard (via YAML or UI).
+1. Add the cards to your Home Assistant dashboard (via YAML or UI).  The cards are designed to be added from the UI and configured with in the card configuration panel.
 2. Configure options as needed (see above).
 3. Use the entity card to select/filter entities. Use the chart card to visualize data.
 
