@@ -376,32 +376,28 @@ const cardStyles = `
     --mdc-icon-size: 14px;
   }
 
+  /* Controls container layout */
+  .controls-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-end;
+    width: 100%;
+    padding: 8px var(--card-padding);
+    box-sizing: border-box;
+    gap: 10px !important; /* Ensure 10px between groups */
+    margin: 0;
+  }
+
   /* Pill controls layout */
   .pill-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 0;
-    margin-right: 5px; /* Fixed 5px spacing */
+    margin: 0 !important;
     min-width: 0;
     flex: 1 1 auto;
-  }
-  
-  /* No margin on the last pill group */
-  .pill-group:last-child {
-    margin-right: 0;
-  }
-  
-  .pill-label {
-    font-size: 0.75em;
-    color: var(--secondary-text-color, #888);
-    margin-bottom: 2px;
-    margin-top: 0px;
-    text-align: center;
-    letter-spacing: 0.01em;
-    font-weight: 500;
-    user-select: none;
-    line-height: 1.1;
   }
   
   .pill-row {
@@ -410,11 +406,10 @@ const cardStyles = `
     align-items: flex-end;
     justify-content: flex-start;
     width: 100%;
-    gap: 5px; /* Set to exactly 5px */
-    margin-bottom: 4px;
-    margin-top: 0px;
+    gap: 0 !important; /* No gap between buttons in a group */
+    margin: 0;
     min-height: 0;
-    padding: 0 var(--card-padding);
+    padding: 0;
     box-sizing: border-box;
   }
   
