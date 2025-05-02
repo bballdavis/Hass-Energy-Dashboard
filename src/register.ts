@@ -1,3 +1,8 @@
+/**
+ * Main entry point for registering custom elements and cards with Home Assistant.
+ * Ensures all custom cards are available for use in Lovelace dashboards.
+ */
+
 // Import the components and their implementations
 import './energy-dashboard-entity-card';
 import './energy-dashboard-entity-card-editor';

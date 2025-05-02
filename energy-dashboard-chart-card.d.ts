@@ -1,3 +1,14 @@
+/**
+ * Main component for the Energy Dashboard Chart Card.
+ * Renders power and energy charts, handles user interaction, and manages chart configuration.
+ * Designed for Home Assistant custom dashboards.
+ *
+ * Key responsibilities:
+ * - Display power/energy charts with configurable options
+ * - Handle refresh, time range, and Y-axis controls
+ * - Sync with entity selection from the entity card
+ * - Manage chart state and updates
+ */
 import { EnergyDashboardChartConfig } from './energy-dashboard-chart-config';
 export declare class EnergyDashboardChartCard extends HTMLElement {
     private _hass;

@@ -1,5 +1,15 @@
+/**
+ * Utility functions for entity selection, persistence, and Home Assistant state parsing.
+ * Includes helpers for power/energy entity extraction and toggle state management.
+ */
+
 import { EntityInfo } from './types';
 
+/**
+ * Returns all power entities (W/kW) from Home Assistant state.
+ * @param hass Home Assistant state object
+ * @returns Array of EntityInfo for power entities
+ */
 export function getPowerEntities(hass: any): EntityInfo[] {
   return Object.keys(hass.states)
     .filter(entityId => {
@@ -36,6 +46,11 @@ export function getPowerEntities(hass: any): EntityInfo[] {
     .sort((a, b) => b.powerValue! - a.powerValue!);
 }
 
+/**
+ * Returns all energy entities (Wh/kWh) from Home Assistant state.
+ * @param hass Home Assistant state object
+ * @returns Array of EntityInfo for energy entities
+ */
 export function getEnergyEntities(hass: any): EntityInfo[] {
   return Object.keys(hass.states)
     .filter(entityId => {
@@ -72,6 +87,11 @@ export function getEnergyEntities(hass: any): EntityInfo[] {
     .sort((a, b) => b.energyValue! - a.energyValue!);
 }
 
+/**
+ * Loads toggle states from localStorage for a given key.
+ * @param key Storage key
+ * @returns Record of entityId to boolean, or null if not found
+ */
 export function loadToggleStates(key: string): Record<string, boolean> | null {
   try {
     const stored = localStorage.getItem(key);
@@ -81,6 +101,11 @@ export function loadToggleStates(key: string): Record<string, boolean> | null {
   }
 }
 
+/**
+ * Saves toggle states to localStorage for a given key.
+ * @param states Record of entityId to boolean
+ * @param key Storage key
+ */
 export function saveToggleStates(states: Record<string, boolean>, key: string): void {
   try {
     localStorage.setItem(key, JSON.stringify(states));

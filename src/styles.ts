@@ -1,3 +1,7 @@
+/**
+ * Style definitions for the Energy Dashboard cards and editors.
+ * Includes card layout, entity list, controls, and editor form styles.
+ */
 export function createStyles(cssText: string): HTMLStyleElement {
   const style = document.createElement('style');
   style.textContent = cssText;

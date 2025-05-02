@@ -1,9 +1,20 @@
+/**
+ * Main component for the Energy Dashboard Chart Card.
+ * Renders power and energy charts, handles user interaction, and manages chart configuration.
+ * Designed for Home Assistant custom dashboards.
+ *
+ * Key responsibilities:
+ * - Display power/energy charts with configurable options
+ * - Handle refresh, time range, and Y-axis controls
+ * - Sync with entity selection from the entity card
+ * - Manage chart state and updates
+ */
+
 import { createStyles, cardStyles } from './styles';
 import { loadToggleStates } from './entity-utils';
 import { EnergyDashboardChartConfig, getDefaultChartConfig } from './energy-dashboard-chart-config';
 
 export class EnergyDashboardChartCard extends HTMLElement {
-  // Properties
   private _hass: any;
   config?: EnergyDashboardChartConfig;
   private _root: ShadowRoot;
@@ -14,11 +25,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _energyEntities: string[] = [];
   private _isLoading: boolean = true;
   private _apexChartCardRegistered: boolean | null = null;
-  private _currentRefreshInterval: number = 30; // Default to 30 seconds
-  private _currentTimeRangeHours: number = 24; // Default to 24 hours
-  private _viewMode: 'power' | 'energy' = 'power'; // Default to power view
+  private _currentRefreshInterval: number = 30;
+  private _currentTimeRangeHours: number = 24;
+  private _viewMode: 'power' | 'energy' = 'power';
 
-  // Define card name and icon for card picker
   static get cardType() {
     return 'energy-dashboard-chart-card';
   }
@@ -39,66 +49,45 @@ export class EnergyDashboardChartCard extends HTMLElement {
     super();
     this._root = this.attachShadow({ mode: 'open' });
     this._root.appendChild(createStyles(cardStyles));
-    
-    // Create the card element
     const card = document.createElement('ha-card');
     this._root.appendChild(card);
   }
 
-  // Load the view mode from localStorage
   private _loadViewMode(): 'power' | 'energy' {
     try {
       const stored = localStorage.getItem('energy-dashboard-view-mode');
       return (stored === 'power' || stored === 'energy') ? stored : 'power';
     } catch {
-      return 'power'; // Default to power view if we can't load from localStorage
+      return 'power';
     }
   }
 
-  // Called when the element is added to the DOM
   connectedCallback() {
-    // Load the selected view mode from localStorage
     this._viewMode = this._loadViewMode();
-    
-    // Add event listener for view mode changes from entity card
     window.addEventListener('view-mode-changed', this._handleViewModeChange as EventListener);
-    
     this._loadSelectedEntities();
     this._checkApexChartsRegistration();
-    
-    // First update the content without starting the timer
     this._updateContent();
-    
-    // Cancel and reset any existing timers and configuration
     this._stopUpdateInterval();
-    
-    // Wait until the content is fully loaded before starting timers
-    // This ensures all chart elements have properly initialized
     setTimeout(() => {
-      // Only start the update timer if explicitly set
       if (this._currentRefreshInterval > 0) {
         this._startUpdateInterval();
       }
-    }, 1000); // Longer timeout to ensure everything is properly loaded
+    }, 1000);
   }
 
   disconnectedCallback() {
     this._stopUpdateInterval();
-    // Remove event listener when component is removed
     window.removeEventListener('view-mode-changed', this._handleViewModeChange as EventListener);
   }
 
-  // Handle view mode changes from entity card
   private _handleViewModeChange = (event: CustomEvent) => {
     if (event.detail && event.detail.mode) {
       this._viewMode = event.detail.mode;
-      console.log(`View mode changed to: ${this._viewMode}`);
-      // Update the chart display based on view mode
       this._updateContent();
     }
   }
 
-  // Home Assistant specific method to set config
   setConfig(config: Partial<EnergyDashboardChartConfig>) {
     if (!config) {
       throw new Error("Invalid configuration");
@@ -133,7 +122,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this._checkApexChartsRegistration();
   }
 
-  // Home Assistant specific methods
   static getConfigElement() {
     return document.createElement('energy-dashboard-chart-card-editor');
   }
@@ -151,13 +139,10 @@ export class EnergyDashboardChartCard extends HTMLElement {
     return this.config?.chart_height ? Math.ceil(this.config.chart_height / 50) : 6;
   }
 
-  // Called when Home Assistant updates
   set hass(hass: any) {
     const firstUpdate = !this._hass;
     this._hass = hass;
-    
     if (firstUpdate) {
-      // When we get hass for the first time, end the loading state
       this._isLoading = false;
       this._updateContent();
     }
@@ -168,16 +153,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _loadSelectedEntities() {
-    // Load the toggle states from localStorage to get the entities selected in the entity card
     const powerToggleStates = loadToggleStates('energy-dashboard-power-toggle-states');
     const energyToggleStates = loadToggleStates('energy-dashboard-energy-toggle-states');
-
     if (powerToggleStates) {
       this._powerEntities = Object.keys(powerToggleStates).filter(
         entityId => powerToggleStates[entityId]
       );
     }
-
     if (energyToggleStates) {
       this._energyEntities = Object.keys(energyToggleStates).filter(
         entityId => energyToggleStates[entityId]
@@ -186,18 +168,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _startUpdateInterval() {
-    this._stopUpdateInterval(); // Ensure no duplicate timers
-
+    this._stopUpdateInterval();
     const seconds = this._currentRefreshInterval;
-
     if (seconds > 0) {
       this._updateTimer = window.setInterval(() => {
-        console.log(`Timer triggered: Refreshing charts (Interval: ${seconds}s)`);
         this._updateCharts();
       }, seconds * 1000);
-      console.log(`Update timer started with interval: ${seconds}s`);
-    } else {
-      console.log('Update timer not started (interval is 0).');
     }
   }
 
@@ -205,14 +181,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
     if (this._updateTimer !== null) {
       window.clearInterval(this._updateTimer);
       this._updateTimer = null;
-      console.log('Update timer stopped.');
     }
   }
 
   private _generateApexchartsConfig(entities: string[], isEnergy: boolean) {
     if (!this.config || !entities.length || !this._hass) return null;
     const options = this.config.chart_options;
-    // Always use 'line' chart type
     const chartType = 'line';
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
@@ -339,19 +313,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
     if (this._isLoading) {
       return this._createLoadingIndicator();
     }
-    
     const entities = isEnergy ? this._energyEntities : this._powerEntities;
-    
     if (!entities || entities.length === 0) {
       return this._createEmptyCard(isEnergy);
     }
-    
     if (!this._hass) {
       return this._createLoadingIndicator();
     }
-    
     const chartConfig = this._generateApexchartsConfig(entities, isEnergy);
-    
     if (!chartConfig) {
       return this._createErrorMessage(
         `Failed to generate chart configuration for ${isEnergy ? 'energy' : 'power'} chart`,
@@ -359,14 +328,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
          'Refresh the page and try again']
       );
     }
-    
     const chartElement = document.createElement('div');
     chartElement.className = isEnergy ? 'energy-chart-container' : 'power-chart-container';
     chartElement.style.width = '100%';
     chartElement.style.marginBottom = '16px';
     chartElement.style.position = 'relative';
     chartElement.style.minHeight = `${this.config?.chart_height || 300}px`;
-    
     try {
       if (this._apexChartCardRegistered === false) {
         return this._createErrorMessage(
@@ -378,24 +345,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
           ]
         );
       }
-      
       const apexCard = document.createElement('apexcharts-card') as HTMLElement;
-      
       try {
         (apexCard as any).setConfig(chartConfig);
         (apexCard as any).hass = this._hass;
       } catch (configError) {
-        console.error('Error configuring apexcharts-card:', configError);
         return this._createErrorMessage(
           'Error configuring chart',
           ['The chart configuration is invalid', 
            'Check the console for more details']
         );
       }
-      
       chartElement.appendChild(apexCard);
     } catch (err) {
-      console.error(`Error creating ${isEnergy ? 'energy' : 'power'} chart:`, err);
       return this._createErrorMessage(
         `Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`,
         [
@@ -405,7 +367,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         ]
       );
     }
-    
     return chartElement;
   }
 
@@ -423,17 +384,14 @@ export class EnergyDashboardChartCard extends HTMLElement {
     container.style.border = '1px dashed var(--divider-color)';
     container.style.borderRadius = '8px';
     container.style.margin = '8px 16px';
-    
     const icon = document.createElement('ha-icon');
     icon.setAttribute('icon', 'mdi:chart-line-variant');
     icon.style.marginBottom = '8px';
     icon.style.color = 'var(--secondary-text-color)';
     icon.style.width = '48px';
     icon.style.height = '48px';
-    
     const message = document.createElement('div');
     message.textContent = `No ${isEnergy ? 'energy' : 'power'} entities selected. Please select entities in the Energy Dashboard Entity Card.`;
-    
     container.appendChild(icon);
     container.appendChild(message);
     return container;
@@ -449,7 +407,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     container.style.height = `${this.config?.chart_height || 200}px`;
     container.style.width = '100%';
     container.style.transition = 'opacity 0.3s ease-in-out';
-    
     const spinner = document.createElement('div');
     spinner.className = 'loading-spinner';
     spinner.innerHTML = `
@@ -474,15 +431,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
     spinner.style.width = '30px';
     spinner.style.height = '30px';
     spinner.style.marginBottom = '16px';
-    
     const text = document.createElement('div');
     text.textContent = 'Initializing chart...';
     text.style.color = 'var(--secondary-text-color)';
     text.style.fontSize = '0.9em';
-    
     container.appendChild(spinner);
     container.appendChild(text);
-    
     return container;
   }
 
@@ -498,72 +452,51 @@ export class EnergyDashboardChartCard extends HTMLElement {
     container.style.border = '1px dashed var(--error-color, red)';
     container.style.borderRadius = '8px';
     container.style.margin = '8px 16px';
-    
     const icon = document.createElement('ha-icon');
     icon.setAttribute('icon', 'mdi:alert-circle-outline');
     icon.style.color = 'var(--error-color, red)';
     icon.style.width = '40px';
     icon.style.height = '40px';
     icon.style.marginBottom = '8px';
-    
     const errorText = document.createElement('div');
     errorText.textContent = error;
     errorText.style.color = 'var(--error-color, red)';
     errorText.style.fontWeight = 'bold';
     errorText.style.marginBottom = '8px';
-    
     const suggestionsList = document.createElement('ul');
     suggestionsList.style.color = 'var(--secondary-text-color)';
     suggestionsList.style.textAlign = 'left';
     suggestionsList.style.margin = '8px 0';
     suggestionsList.style.paddingLeft = '20px';
-    
     suggestions.forEach(suggestion => {
       const item = document.createElement('li');
       item.textContent = suggestion;
       item.style.marginBottom = '4px';
       suggestionsList.appendChild(item);
     });
-    
     container.appendChild(icon);
     container.appendChild(errorText);
     container.appendChild(suggestionsList);
-    
     return container;
   }
 
   private _updateCharts() {
-    console.log("Executing _updateCharts: Updating chart elements.");
     if (!this._hass || this._isLoading || this._apexChartCardRegistered === false) {
-      console.log("Skipping _updateCharts: Hass not ready, loading, or apexcharts-card not registered.");
       return;
     }
-
-    // Always reload selected entities to ensure we have the latest selection
     this._loadSelectedEntities();
-
     const powerChartContainer = this._root.querySelector('.power-chart-placeholder');
     if (powerChartContainer) {
-      // Check for existing apexcharts-card element
       const existingPowerChart = powerChartContainer.querySelector('apexcharts-card') as any;
-      
       if (existingPowerChart) {
-        console.log("Refreshing existing power chart.");
-        
-        // Generate updated chart config with latest entity selections
         const updatedChartConfig = this._generateApexchartsConfig(this._powerEntities, false);
-        
         if (updatedChartConfig) {
-          // Update the chart config with latest entity selections
           try {
             existingPowerChart.setConfig(updatedChartConfig);
             existingPowerChart.hass = this._hass;
-          } catch (err) {
-            console.warn("Failed to update chart config:", err);
-          }
+          } catch (err) {}
         }
       } else {
-        console.log("Creating new power chart (no existing chart found).");
         const newPowerChart = this._createChart(false);
         powerChartContainer.innerHTML = '';
         powerChartContainer.appendChild(newPowerChart);
@@ -574,7 +507,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
       if (card) {
         const powerSectionTitle = card.querySelector('.section-title:not([data-energy])');
         if (powerSectionTitle) {
-          console.log("Creating initial power chart (fallback).");
           const placeholder = document.createElement('div');
           placeholder.className = 'power-chart-placeholder';
           const newChart = this._createChart(false);
@@ -584,30 +516,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
         }
       }
     }
-
     const energyChartContainer = this._root.querySelector('.energy-chart-placeholder');
     if (this.config?.show_energy_section) {
       if (energyChartContainer) {
-        // Check for existing apexcharts-card element
         const existingEnergyChart = energyChartContainer.querySelector('apexcharts-card') as any;
-        
         if (existingEnergyChart) {
-          console.log("Refreshing existing energy chart.");
-          
-          // Generate updated chart config with latest entity selections
           const updatedChartConfig = this._generateApexchartsConfig(this._energyEntities, true);
-          
           if (updatedChartConfig) {
-            // Update the chart config with latest entity selections
             try {
               existingEnergyChart.setConfig(updatedChartConfig);
               existingEnergyChart.hass = this._hass;
-            } catch (err) {
-              console.warn("Failed to update chart config:", err);
-            }
+            } catch (err) {}
           }
         } else {
-          console.log("Creating new energy chart (no existing chart found).");
           const newEnergyChart = this._createChart(true);
           energyChartContainer.innerHTML = '';
           energyChartContainer.appendChild(newEnergyChart);
@@ -618,7 +539,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         if (card) {
           const energySectionTitle = card.querySelector('.section-title[data-energy]');
           if (energySectionTitle) {
-            console.log("Creating initial energy chart (fallback).");
             const placeholder = document.createElement('div');
             placeholder.className = 'energy-chart-placeholder';
             const newChart = this._createChart(true);
@@ -657,32 +577,23 @@ export class EnergyDashboardChartCard extends HTMLElement {
       }
       return;
     }
-
     const card = this._root.querySelector('ha-card') as HTMLElement;
     if (!card) return;
-
-    // Clear previous content
     card.innerHTML = '';
-    
-    // Reset any previous inline styles
     card.style.paddingTop = '';
-
     if (this.config.show_header) {
       const header = document.createElement('div');
       header.className = 'card-header';
       header.textContent = this.config.title;
       card.appendChild(header);
     } else {
-      // Add padding to the top of the card when header is disabled
       card.style.paddingTop = 'var(--card-padding, 0px)';
     }
-
     if (this._isLoading) {
       const loadingIndicator = this._createLoadingIndicator();
       card.appendChild(loadingIndicator);
       return;
     }
-
     if (this._apexChartCardRegistered === false) {
       const errorMessage = this._createErrorMessage(
         'The apexcharts-card integration is not installed',
@@ -695,12 +606,8 @@ export class EnergyDashboardChartCard extends HTMLElement {
       card.appendChild(errorMessage);
       return;
     }
-
-    // --- Controls Layout Container ---
     const controlsContainer = document.createElement('div');
     controlsContainer.className = 'controls-container';
-
-    // Helper to create a group
     const createGroup = (labelText: string, controls: HTMLElement): HTMLElement => {
       const group = document.createElement('div');
       group.className = 'pill-group';
@@ -717,62 +624,41 @@ export class EnergyDashboardChartCard extends HTMLElement {
       group.appendChild(controls);
       return group;
     };
-
-    // Create controls
     const refreshControls = this._createRefreshRatePillControls();
     const timeRangeControls = this._createTimeRangeControls();
     const yAxisControls = this._createYAxisControls();
-
-    // Ensure pill-row gap is 0
     [refreshControls, timeRangeControls, yAxisControls].forEach(row => {
       row.style.gap = '0';
       row.style.margin = '0';
       row.style.padding = '0';
     });
-
-    // Add groups to container
     controlsContainer.appendChild(createGroup('Refresh Rate', refreshControls));
     controlsContainer.appendChild(createGroup('Time Range', timeRangeControls));
     controlsContainer.appendChild(createGroup('Max Range', yAxisControls));
-
-    // Add the controls container to the card
     card.appendChild(controlsContainer);
-
     const chartContainer = document.createElement('div');
     chartContainer.className = 'chart-container';
     chartContainer.style.width = '100%';
     chartContainer.style.display = 'flex';
     chartContainer.style.flexDirection = 'column';
     chartContainer.style.marginTop = '8px';
-    
-    // Load the view mode from localStorage (in case it changed)
     this._viewMode = this._loadViewMode();
-    
-    // Only show the appropriate chart based on view mode
     if (this._viewMode === 'power' || !this.config.show_energy_section) {
-      // Power chart section
       chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
       const powerPlaceholder = document.createElement('div'); 
       powerPlaceholder.className = 'power-chart-placeholder';
       chartContainer.appendChild(powerPlaceholder);
       this._powerChartEl = null;
-      
-      // Reset energy chart element so it doesn't get updated
       this._energyChartEl = null;
     } else if (this._viewMode === 'energy' && this.config.show_energy_section) {
-      // Energy chart section
       chartContainer.appendChild(this._renderSectionTitle('Energy Consumption', true));
       const energyPlaceholder = document.createElement('div'); 
       energyPlaceholder.className = 'energy-chart-placeholder';
       chartContainer.appendChild(energyPlaceholder);
       this._energyChartEl = null;
-      
-      // Reset power chart element so it doesn't get updated
       this._powerChartEl = null;
     }
-    
     card.appendChild(chartContainer);
-
     setTimeout(() => this._updateCharts(), 0);
     setTimeout(() => this._startUpdateInterval(), 50);
     setTimeout(() => {
@@ -783,17 +669,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _setRefreshInterval(seconds: number) {
-    console.log(`Setting refresh interval to: ${seconds} seconds`);
     if (this.config) {
       this.config.update_interval = seconds; 
     }
     this._currentRefreshInterval = seconds;
     this._updateRefreshRatePillControlsUI();
-
     this._stopUpdateInterval();
-
     this._updateCharts();
-
     this._startUpdateInterval();
   }
 
@@ -807,23 +689,18 @@ export class EnergyDashboardChartCard extends HTMLElement {
   }
 
   private _manualRefresh() {
-    console.log("Manual refresh triggered.");
     this._updateCharts();
   }
   
   private _createRefreshRatePillControls(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'refresh-rate-controls pill-row';
-
-    // Manual refresh button as first pill
     const manualBtn = document.createElement('button');
     manualBtn.className = 'pill-control refresh-rate-button manual-refresh';
     manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
     manualBtn.title = 'Manual Refresh';
     manualBtn.addEventListener('click', () => this._manualRefresh());
     container.appendChild(manualBtn);
-
-    // Off option as second pill
     const offBtn = document.createElement('button');
     offBtn.className = 'pill-control refresh-rate-button';
     offBtn.textContent = 'Off';
@@ -832,8 +709,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     offBtn.style.marginLeft = '-1px';
     offBtn.addEventListener('click', () => this._setRefreshInterval(0));
     container.appendChild(offBtn);
-
-    // Add other refresh rate options (5s, 15s, 30s, 60s)
     const rates = [5, 15, 30, 60];
     rates.forEach((rate, idx) => {
       const btn = document.createElement('button');
@@ -846,7 +721,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
       btn.addEventListener('click', () => this._setRefreshInterval(rate));
       container.appendChild(btn);
     });
-
     this._updateRefreshRatePillControlsUI(container);
     return container;
   }
@@ -854,27 +728,19 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _updateRefreshRatePillControlsUI(container?: HTMLElement) {
     const controls = container || this._root.querySelector('.refresh-rate-controls');
     if (!controls) return;
-    
-    // Get all buttons including the manual refresh button
     const buttons = controls.querySelectorAll('.refresh-rate-button');
-    
-    // Reset all buttons to default state
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
-      button.classList.remove('active'); // Remove active from all
+      button.classList.remove('active');
       button.style.backgroundColor = 'var(--card-background-color, white)';
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
-    
-    // Find the active button by rate value (skip manual refresh which has no rate)
     const activeRate = this._currentRefreshInterval.toString();
     const activeButton = Array.from(buttons).find(btn => {
       const button = btn as HTMLElement;
       return button.dataset.rate === activeRate;
     }) as HTMLElement | undefined;
-    
-    // Apply active styling if found
     if (activeButton) {
       activeButton.classList.add('active');
       activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
@@ -933,7 +799,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this.config.chart_options.y_axis.max = maxValue === 'auto' ? undefined : Number(maxValue);
     this._updateYAxisControlsUI();
     this._updateCharts();
-    console.log(`Set Y-axis max to ${maxValue}`);
   }
 
   private _createTimeRangeControls(): HTMLElement {
@@ -1004,20 +869,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
     return container;
   }
 
-  // Check if apexcharts-card is registered as a custom element
   private _checkApexChartsRegistration() {
-    // Check if apexcharts-card is registered as a custom element
     const isRegistered = customElements.get('apexcharts-card') !== undefined;
-    
-    if (isRegistered) {
-      console.log('apexcharts-card is registered as a custom element');
-      this._apexChartCardRegistered = true;
-    } else {
-      console.warn('apexcharts-card is not registered as a custom element');
-      this._apexChartCardRegistered = false;
-    }
-    
-    // Update content once we know the status
+    this._apexChartCardRegistered = !!isRegistered;
     if (!this._isLoading) {
       this._updateContent();
     }

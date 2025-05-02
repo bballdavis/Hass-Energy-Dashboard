@@ -1,3 +1,9 @@
+/**
+ * Editor component for the Energy Dashboard Chart Card.
+ * Provides a UI for users to configure chart options in Home Assistant.
+ * Handles form rendering, validation, and config change events.
+ */
+
 import { EnergyDashboardChartConfig, getDefaultChartConfig } from './energy-dashboard-chart-config';
 import { createStyles, editorStyles } from './styles';
 

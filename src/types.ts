@@ -1,3 +1,11 @@
+/**
+ * Type definitions for entity information and dashboard configuration.
+ * Used throughout the dashboard for type safety and clarity.
+ */
+
+/**
+ * EntityInfo describes a Home Assistant entity with power/energy data and toggle state.
+ */
 export interface EntityInfo {
   entityId: string;
   name: string;
@@ -9,6 +17,9 @@ export interface EntityInfo {
   isOn?: boolean;
 }
 
+/**
+ * EnergyDashboardConfig describes the configuration for the entity card.
+ */
 export interface EnergyDashboardConfig {
   title: string;
   show_header: boolean;

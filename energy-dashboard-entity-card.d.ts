@@ -1,3 +1,14 @@
+/**
+ * Main component for the Energy Dashboard Entity Card.
+ * Handles entity selection, filtering, persistence, and UI controls for power and energy entities.
+ * Designed for Home Assistant custom dashboards.
+ *
+ * Key responsibilities:
+ * - Display and manage selectable power/energy entities
+ * - Provide search/filter, auto-select, clear, and reset controls
+ * - Persist entity selections and view mode
+ * - Sync with the chart card for visualization
+ */
 import { EntityInfo, EnergyDashboardConfig } from './types';
 export declare class EnergyDashboardEntityCard extends HTMLElement {
     private _hass;

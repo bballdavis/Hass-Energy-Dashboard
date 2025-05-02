@@ -1,3 +1,8 @@
+/**
+ * Configuration and type definitions for the Energy Dashboard chart card.
+ * Describes chart options, presets, and config structure for type safety.
+ */
+
 import { EnergyDashboardConfig } from './types';
 
 export interface ChartSeries {

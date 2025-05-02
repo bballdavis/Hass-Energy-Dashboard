@@ -1,3 +1,12 @@
+/**
+ * Utility functions for entity selection, persistence, and Home Assistant state parsing.
+ * Includes helpers for power/energy entity extraction and toggle state management.
+ */
+/**
+ * Returns all power entities (W/kW) from Home Assistant state.
+ * @param hass Home Assistant state object
+ * @returns Array of EntityInfo for power entities
+ */
 function getPowerEntities(hass) {
     return Object.keys(hass.states)
         .filter(entityId => {
@@ -33,6 +42,11 @@ function getPowerEntities(hass) {
     })
         .sort((a, b) => b.powerValue - a.powerValue);
 }
+/**
+ * Returns all energy entities (Wh/kWh) from Home Assistant state.
+ * @param hass Home Assistant state object
+ * @returns Array of EntityInfo for energy entities
+ */
 function getEnergyEntities(hass) {
     return Object.keys(hass.states)
         .filter(entityId => {
@@ -68,6 +82,11 @@ function getEnergyEntities(hass) {
     })
         .sort((a, b) => b.energyValue - a.energyValue);
 }
+/**
+ * Loads toggle states from localStorage for a given key.
+ * @param key Storage key
+ * @returns Record of entityId to boolean, or null if not found
+ */
 function loadToggleStates(key) {
     try {
         const stored = localStorage.getItem(key);
@@ -77,6 +96,11 @@ function loadToggleStates(key) {
         return null;
     }
 }
+/**
+ * Saves toggle states to localStorage for a given key.
+ * @param states Record of entityId to boolean
+ * @param key Storage key
+ */
 function saveToggleStates(states, key) {
     try {
         localStorage.setItem(key, JSON.stringify(states));
@@ -94,6 +118,10 @@ function saveToggleStates(states, key) {
     }
 }
 
+/**
+ * Style definitions for the Energy Dashboard cards and editors.
+ * Includes card layout, entity list, controls, and editor form styles.
+ */
 function createStyles(cssText) {
     const style = document.createElement('style');
     style.textContent = cssText;
@@ -531,31 +559,35 @@ const editorStyles = `
   }
 `;
 
+/**
+ * Main component for the Energy Dashboard Entity Card.
+ * Handles entity selection, filtering, persistence, and UI controls for power and energy entities.
+ * Designed for Home Assistant custom dashboards.
+ *
+ * Key responsibilities:
+ * - Display and manage selectable power/energy entities
+ * - Provide search/filter, auto-select, clear, and reset controls
+ * - Persist entity selections and view mode
+ * - Sync with the chart card for visualization
+ */
 class EnergyDashboardEntityCard extends HTMLElement {
-    // Helper method to equalize button heights with ResizeObserver
     _equalizeButtonHeights(buttonContainer) {
         if (!buttonContainer)
             return;
         const buttons = Array.from(buttonContainer.querySelectorAll('button'));
         if (buttons.length === 0)
             return;
-        // First, reset heights to auto to get natural height
         buttons.forEach(btn => btn.style.height = 'auto');
-        // Use ResizeObserver for more reliable height adjustments
         try {
             const resizeObserver = new ResizeObserver(() => {
-                // Find tallest button
                 const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
-                // Set all buttons to the tallest height
                 if (maxHeight > 0) {
                     buttons.forEach(btn => {
                         btn.style.height = `${maxHeight}px`;
                     });
                 }
             });
-            // Observe all buttons
             buttons.forEach(button => resizeObserver.observe(button));
-            // Immediate equalization attempt
             requestAnimationFrame(() => {
                 const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
                 if (maxHeight > 0) {
@@ -564,13 +596,11 @@ class EnergyDashboardEntityCard extends HTMLElement {
                     });
                 }
             });
-            // Cleanup after 2 seconds (by then equalization should be stable)
             setTimeout(() => {
                 resizeObserver.disconnect();
             }, 2000);
         }
-        catch (e) {
-            // Fallback if ResizeObserver is not supported
+        catch {
             setTimeout(() => {
                 const maxHeight = Math.max(...buttons.map(btn => btn.offsetHeight));
                 if (maxHeight > 0) {
@@ -581,13 +611,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             }, 100);
         }
     }
-    // Force browser to recalculate layout to ensure all heights are properly calculated
     _forceRecalculation(element) {
-        // Reading offsetHeight forces a layout recalculation
-        const height = element.offsetHeight;
-        return height;
+        return element.offsetHeight;
     }
-    // Define card name and icon for card picker
     static get cardType() {
         return 'energy-dashboard-entity-card';
     }
@@ -608,21 +634,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this.energyEntityToggleStates = {};
         this._initialized = false;
         this._energyInitialized = false;
-        this._viewMode = 'power'; // Default view mode
+        this._viewMode = 'power';
         this._powerEntitiesContainer = null;
         this._energyEntitiesContainer = null;
-        this._dynamicFilterValue = ''; // Track dynamic filter value
-        this._filteredPowerEntities = []; // Track filtered power entities
-        this._filteredEnergyEntities = []; // Track filtered energy entities
-        this._searchInputHasFocus = false; // Track whether the search input has focus
-        this._refreshIntervalId = null; // Timer ID for auto-refresh
-        this._lastUpdateTimestamp = 0; // Track last entity update timestamp
-        this._forceUpdate = false; // Flag to force update regardless of timestamp
-        // Handle dynamic filter input change
+        this._dynamicFilterValue = '';
+        this._filteredPowerEntities = [];
+        this._filteredEnergyEntities = [];
+        this._searchInputHasFocus = false;
+        this._refreshIntervalId = null;
+        this._lastUpdateTimestamp = 0;
+        this._forceUpdate = false;
         this._handleFilterInput = (e) => {
             const target = e.target;
             this._dynamicFilterValue = target.value;
-            // Re-apply filters and update UI
             if (this._viewMode === 'power') {
                 const filteredEntities = this._applyRemovalFilter(this.powerEntities);
                 this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
@@ -639,7 +663,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
             let visibleEntities = this._applyRemovalFilter(entities);
             const toggleStates = {};
             const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.auto_select_count) !== null && _b !== void 0 ? _b : 6;
-            // Sort by absolute value descending
             visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.powerValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.powerValue) !== null && _b !== void 0 ? _b : 0); });
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
@@ -655,7 +678,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._clearAllPowerEntities = () => {
             const entities = getPowerEntities(this._hass);
             const newToggleStates = {};
-            // Set all entity toggle states to false
             entities.forEach(entity => {
                 newToggleStates[entity.entityId] = false;
             });
@@ -667,7 +689,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._selectAllPowerEntities = () => {
             const entities = getPowerEntities(this._hass);
             const newToggleStates = {};
-            // Set all entity toggle states to true
             entities.forEach(entity => {
                 newToggleStates[entity.entityId] = true;
             });
@@ -691,7 +712,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
             let visibleEntities = this._applyRemovalFilter(entities);
             const toggleStates = {};
             const count = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.auto_select_count) !== null && _b !== void 0 ? _b : 6;
-            // Sort by absolute value descending
             visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.energyValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.energyValue) !== null && _b !== void 0 ? _b : 0); });
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
@@ -707,7 +727,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._clearAllEnergyEntities = () => {
             const entities = getEnergyEntities(this._hass);
             const newToggleStates = {};
-            // Set all entity toggle states to false
             entities.forEach(entity => {
                 newToggleStates[entity.entityId] = false;
             });
@@ -719,7 +738,6 @@ class EnergyDashboardEntityCard extends HTMLElement {
         this._selectAllEnergyEntities = () => {
             const entities = getEnergyEntities(this._hass);
             const newToggleStates = {};
-            // Set all entity toggle states to true
             entities.forEach(entity => {
                 newToggleStates[entity.entityId] = true;
             });
@@ -739,36 +757,27 @@ class EnergyDashboardEntityCard extends HTMLElement {
         };
         this._togglePersistence = () => {
             if (this.config) {
-                // Toggle the persistence setting
                 this.config.persist_selection = !this.config.persist_selection;
-                // Always save the persistence toggle state, regardless of its value
                 this._savePersistenceState(this.config.persist_selection);
-                // If persistence is turned off, clear localStorage and reset to defaults immediately
                 if (!this.config.persist_selection) {
                     localStorage.removeItem('energy-dashboard-power-toggle-states');
                     localStorage.removeItem('energy-dashboard-energy-toggle-states');
-                    // Reset initialized state to force reload of default entities
                     this._initialized = false;
                     this._energyInitialized = false;
                 }
                 else {
-                    // If persistence is turned on, save the current toggle states
                     this._savePowerToggleStates();
                     this._saveEnergyToggleStates();
                 }
-                // Re-initialize and update the content with new settings
                 this._updateEntities();
                 this._updateContent();
             }
         };
-        // Toggle between power and energy view
         this._toggleViewMode = () => {
             const newMode = this._viewMode === 'power' ? 'energy' : 'power';
             this._viewMode = newMode;
             this._saveViewMode(newMode);
-            // Save the current view mode to be used by chart card
             this._updateContent();
-            // Dispatch a custom event that the chart card can listen for
             this.dispatchEvent(new CustomEvent('view-mode-changed', {
                 detail: { mode: newMode },
                 bubbles: true,
@@ -777,66 +786,50 @@ class EnergyDashboardEntityCard extends HTMLElement {
         };
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
-        // Create the card element
         const card = document.createElement('ha-card');
         this._root.appendChild(card);
-        // Only create containers here, do not append
         this._powerEntitiesContainer = document.createElement('div');
         this._powerEntitiesContainer.className = 'entities-container';
         this._energyEntitiesContainer = document.createElement('div');
         this._energyEntitiesContainer.className = 'entities-container';
     }
-    // Called when the element is added to the DOM
     connectedCallback() {
-        // Load persistence setting from localStorage when element is connected to DOM
         if (this.config) {
             this.config.persist_selection = this._loadPersistenceState();
         }
-        // Load view mode from localStorage
         this._viewMode = this._loadViewMode();
         if (this.config) {
             this.config.view_mode = this._viewMode;
         }
-        // Set up auto-refresh if configured
         this._setupRefreshInterval();
         this._updateContent();
     }
-    // Home Assistant specific method to set config
     setConfig(config) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
         if (!config) {
             throw new Error("Invalid configuration");
         }
-        // Clear any existing refresh interval before changing config
         this._clearRefreshInterval();
-        // Load persistence setting from localStorage first
         const persistenceFromStorage = this._loadPersistenceState();
-        // Create a merged config object correctly by spreading config first
         this.config = {
             ...config,
-            // Then set defaults only for missing properties
             title: (_a = config.title) !== null && _a !== void 0 ? _a : 'Energy Dashboard',
             show_header: (_b = config.show_header) !== null && _b !== void 0 ? _b : true,
             show_state: (_c = config.show_state) !== null && _c !== void 0 ? _c : true,
             show_toggle: (_d = config.show_toggle) !== null && _d !== void 0 ? _d : true,
             auto_select_count: (_e = config.auto_select_count) !== null && _e !== void 0 ? _e : 6,
-            max_height: (_f = config.max_height) !== null && _f !== void 0 ? _f : 0, // No longer using max_height, set to 0 by default
-            entity_removal_filter: (_g = config.entity_removal_filter) !== null && _g !== void 0 ? _g : '', // Default to empty string for no filter
-            refresh_rate: (_h = config.refresh_rate) !== null && _h !== void 0 ? _h : 'off', // Default to off for refresh rate
-            // Use the stored value as priority for persistence setting
+            max_height: (_f = config.max_height) !== null && _f !== void 0 ? _f : 0,
+            entity_removal_filter: (_g = config.entity_removal_filter) !== null && _g !== void 0 ? _g : '',
+            refresh_rate: (_h = config.refresh_rate) !== null && _h !== void 0 ? _h : 'off',
             persist_selection: persistenceFromStorage,
-            // Always enable energy section
             show_energy_section: true,
         };
-        // Set up auto-refresh if configured
         this._setupRefreshInterval();
-        // Reset initialization flags so that entity selection is re-initialized with new config values
         this._initialized = false;
         this._energyInitialized = false;
-        this._forceUpdate = true; // Force update to apply new config
+        this._forceUpdate = true;
         this._updateContent();
     }
-    // Home Assistant specific methods
     static getConfigElement() {
         return document.createElement('energy-dashboard-entity-card-editor');
     }
@@ -849,7 +842,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             auto_select_count: 6,
             max_height: 0,
             persist_selection: true,
-            entity_removal_filter: '' // Fixed: renamed from entity_filter to entity_removal_filter
+            entity_removal_filter: ''
         };
     }
     getCardSize() {
@@ -865,24 +858,16 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
         return rows > 0 ? rows : 1;
     }
-    // Called when Home Assistant updates
     set hass(hass) {
         var _a;
         const isFirstUpdate = !this._hass;
         this._hass = hass;
-        // Load the persistence setting from localStorage early to ensure it's always available
         if (this.config && isFirstUpdate) {
             this.config.persist_selection = this._loadPersistenceState();
-            // Force first update
             this._forceUpdate = true;
         }
-        // Only update entities based on refresh rate settings or force update flag
         const now = Date.now();
         let shouldUpdateEntities = false;
-        // Update in these cases:
-        // 1. First update (isFirstUpdate)
-        // 2. Force update flag is set (_forceUpdate)
-        // 3. Refresh rate is active and enough time has passed since last update
         if (isFirstUpdate || this._forceUpdate) {
             shouldUpdateEntities = true;
         }
@@ -895,11 +880,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
         if (shouldUpdateEntities) {
             this._updateEntities();
             this._lastUpdateTimestamp = now;
-            this._forceUpdate = false; // Reset force update flag
-            // Only update content when entities are updated
+            this._forceUpdate = false;
             this._updateContent();
         }
-        // Do NOT call _updateContent() on every hass update
     }
     get hass() {
         return this._hass;
@@ -924,16 +907,12 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._initializePowerToggleStates(newPowerEntities);
             this._initialized = true;
         }
-        // Map the entities with their toggle state
         this.powerEntities = newPowerEntities.map(entity => ({
             ...entity,
             isOn: this.entityToggleStates[entity.entityId] || false
         }));
-        // Sort by absolute power value, descending
         this.powerEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.powerValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.powerValue) !== null && _b !== void 0 ? _b : 0); });
-        // Apply the entity removal filter from config
         const filteredEntities = this._applyRemovalFilter(this.powerEntities);
-        // Apply dynamic filter if exists
         this._filteredPowerEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
         this._savePowerToggleStates();
     }
@@ -943,91 +922,66 @@ class EnergyDashboardEntityCard extends HTMLElement {
             this._initializeEnergyToggleStates(newEnergyEntities);
             this._energyInitialized = true;
         }
-        // Map the entities with their toggle state
         this.energyEntities = newEnergyEntities.map(entity => ({
             ...entity,
             isOn: this.energyEntityToggleStates[entity.entityId] || false
         }));
-        // Sort by absolute energy value, descending
         this.energyEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.energyValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.energyValue) !== null && _b !== void 0 ? _b : 0); });
-        // Apply the entity removal filter from config
         const filteredEntities = this._applyRemovalFilter(this.energyEntities);
-        // Apply dynamic filter if exists
         this._filteredEnergyEntities = this._applyDynamicFilter(filteredEntities, this._dynamicFilterValue);
         this._saveEnergyToggleStates();
     }
-    // Apply entity removal filter from configuration
     _applyRemovalFilter(entities) {
         var _a;
-        // If no filter is defined, return all entities
         if (!((_a = this.config) === null || _a === void 0 ? void 0 : _a.entity_removal_filter) || this.config.entity_removal_filter.trim() === '') {
             return entities;
         }
-        // Parse filter string: format is "string1,string2|option"
-        // Example: "kitchen,bedroom|contains" to filter out entities with kitchen or bedroom in their names
         const filterParts = this.config.entity_removal_filter.split('|');
         const filterString = filterParts[0].trim();
-        // If filter string is empty after trimming, return all entities
         if (filterString === '') {
             return entities;
         }
-        // Get filter terms: split by comma, trim each, convert to lowercase, remove empty strings
         const filterTerms = filterString
             .split(',')
             .map(term => term.trim().toLowerCase())
             .filter(term => term.length > 0);
-        // If no valid filter terms, return all entities
         if (filterTerms.length === 0) {
             return entities;
         }
-        // Get filter mode: default to 'contains' if not specified or invalid
-        let filterMode = 'contains'; // Default to contains for better usability
+        let filterMode = 'contains';
         if (filterParts.length > 1) {
             const mode = filterParts[1].trim().toLowerCase();
             if (['exact', 'start', 'contains', 'entity_id'].includes(mode)) {
                 filterMode = mode;
             }
         }
-        // Log the active filter for debugging
-        console.log(`Applying entity removal filter: terms=${filterTerms.join(', ')}, mode=${filterMode}`);
-        // Apply filter using the specified mode to remove matching entities
         return entities.filter(entity => {
-            // Convert entity name to lowercase for case-insensitive matching
             const nameLower = entity.name.toLowerCase();
             const entityIdLower = entity.entityId.toLowerCase();
-            // Check each filter term against this entity
             for (const term of filterTerms) {
                 let shouldRemove = false;
-                // Apply different matching logic based on filter mode
                 switch (filterMode) {
                     case 'exact':
-                        // Remove if the entity name exactly matches the term
                         shouldRemove = nameLower === term;
                         break;
                     case 'start':
-                        // Remove if the entity name starts with the term
                         shouldRemove = nameLower.startsWith(term);
                         break;
                     case 'entity_id':
-                        // Remove if the entity ID contains the term
                         shouldRemove = entityIdLower.includes(term);
                         break;
                     case 'contains':
                     default:
-                        // Remove if the entity name contains the term (default behavior)
                         shouldRemove = nameLower.includes(term);
                         break;
                 }
-                // If any term matches according to the filter mode, remove this entity
                 if (shouldRemove) {
                     return false;
                 }
             }
-            // Keep the entity if it didn't match any filter terms
             return true;
         });
     }
-    // Apply dynamic filter (from search box)
     _applyDynamicFilter(entities, filterValue) {
         if (!filterValue) {
             return entities;
@@ -1038,25 +992,19 @@ class EnergyDashboardEntityCard extends HTMLElement {
     }
     _initializePowerToggleStates(entities) {
         var _a, _b, _c, _d;
-        // Only load saved states if persistence is enabled
         const persistenceEnabled = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) !== null && _b !== void 0 ? _b : true;
         const savedStates = persistenceEnabled ? loadToggleStates('energy-dashboard-power-toggle-states') : null;
         if (savedStates && Object.keys(savedStates).length > 0) {
             this.entityToggleStates = savedStates;
         }
         else {
-            // Create a new toggle states object
             const toggleStates = {};
             const count = (_d = (_c = this.config) === null || _c === void 0 ? void 0 : _c.auto_select_count) !== null && _d !== void 0 ? _d : 6;
-            // Apply entity removal filter first to get only visible entities
             let visibleEntities = this._applyRemovalFilter(entities);
-            // Sort by absolute value descending
             visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.powerValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.powerValue) !== null && _b !== void 0 ? _b : 0); });
-            // Initialize all entities to false first (including hidden ones)
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
             });
-            // Then set the first `count` VISIBLE entities to true
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
@@ -1065,51 +1013,38 @@ class EnergyDashboardEntityCard extends HTMLElement {
     }
     _initializeEnergyToggleStates(entities) {
         var _a, _b, _c, _d;
-        // Only load saved states if persistence is enabled
         const persistenceEnabled = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.persist_selection) !== null && _b !== void 0 ? _b : true;
         const savedStates = persistenceEnabled ? loadToggleStates('energy-dashboard-energy-toggle-states') : null;
         if (savedStates && Object.keys(savedStates).length > 0) {
             this.energyEntityToggleStates = savedStates;
         }
         else {
-            // Create a new toggle states object
             const toggleStates = {};
             const count = (_d = (_c = this.config) === null || _c === void 0 ? void 0 : _c.auto_select_count) !== null && _d !== void 0 ? _d : 6;
-            // Apply entity removal filter first to get only visible entities
             let visibleEntities = this._applyRemovalFilter(entities);
-            // Sort by absolute value descending
             visibleEntities = visibleEntities.sort((a, b) => { var _a, _b; return Math.abs((_a = b.energyValue) !== null && _a !== void 0 ? _a : 0) - Math.abs((_b = a.energyValue) !== null && _b !== void 0 ? _b : 0); });
-            // Initialize all entities to false first (including hidden ones)
             entities.forEach(entity => {
                 toggleStates[entity.entityId] = false;
             });
-            // Then set the first `count` VISIBLE entities to true
             visibleEntities.slice(0, count).forEach(entity => {
                 toggleStates[entity.entityId] = true;
             });
             this.energyEntityToggleStates = toggleStates;
         }
     }
-    // Make entity selections accessible to other components even when persistence is off
     _savePowerToggleStates() {
-        // Always save toggle states to localStorage for the chart card to access, 
-        // but they will only be loaded on initialization if persistence is enabled
         saveToggleStates(this.entityToggleStates, 'energy-dashboard-power-toggle-states');
     }
-    // Make entity selections accessible to other components even when persistence is off
     _saveEnergyToggleStates() {
-        // Always save toggle states to localStorage for the chart card to access,
-        // but they will only be loaded on initialization if persistence is enabled
         saveToggleStates(this.energyEntityToggleStates, 'energy-dashboard-energy-toggle-states');
     }
-    // Manage the persistence toggle setting separately
     _loadPersistenceState() {
         try {
             const stored = localStorage.getItem('energy-dashboard-persistence-toggle');
             return stored === null ? true : stored === 'true';
         }
         catch {
-            return true; // Default to true if we can't load from localStorage
+            return true;
         }
     }
     _savePersistenceState(persist) {
@@ -1120,11 +1055,9 @@ class EnergyDashboardEntityCard extends HTMLElement {
             console.error("Failed to save persistence state:", e);
         }
     }
-    // Save view mode to localStorage
     _saveViewMode(mode) {
         try {
             localStorage.setItem('energy-dashboard-view-mode', mode);
-            // Also update config to keep it in sync
             if (this.config) {
                 this.config.view_mode = mode;
             }
@@ -1134,14 +1067,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
             console.error("Failed to save view mode:", e);
         }
     }
-    // Load view mode from localStorage
     _loadViewMode() {
         try {
             const stored = localStorage.getItem('energy-dashboard-view-mode');
             return (stored === 'power' || stored === 'energy') ? stored : 'power';
         }
         catch {
-            return 'power'; // Default to power view if we can't load from localStorage
+            return 'power';
         }
     }
     _updateContent() {
@@ -1221,10 +1153,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
         toggleWrapper.appendChild(energyOption);
         modeToggleContainer.appendChild(toggleWrapper);
         card.appendChild(modeToggleContainer);
-        // Section rendering
         const renderPersistenceToggle = () => {
             var _a, _b;
-            console.log("Rendering persistence toggle, config:", this.config);
             const persistenceToggle = document.createElement('div');
             persistenceToggle.className = 'persistence-toggle';
             persistenceToggle.style.display = 'flex';
@@ -1271,9 +1201,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
             persistenceToggle.appendChild(toggleSwitch);
             return persistenceToggle;
         };
-        // First always add the mode buttons (Power/Energy) section
         if (this._viewMode === 'power') {
-            // Add control buttons section
             const controlButtons = document.createElement('div');
             controlButtons.className = 'control-buttons';
             controlButtons.style.display = 'flex';
@@ -1304,15 +1232,12 @@ class EnergyDashboardEntityCard extends HTMLElement {
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             card.appendChild(controlButtons);
-            // Add the persistence toggle right after control buttons
             const persistenceToggleEl = renderPersistenceToggle();
             card.appendChild(persistenceToggleEl);
-            console.log("Appended persistence toggle to card:", persistenceToggleEl);
             const sectionTitle = document.createElement('div');
             sectionTitle.className = 'section-title';
             sectionTitle.textContent = 'Power Entities';
             card.appendChild(sectionTitle);
-            // Add dynamic filter input
             const searchContainer = document.createElement('div');
             searchContainer.className = 'search-container';
             const searchInput = document.createElement('input');
@@ -1320,104 +1245,83 @@ class EnergyDashboardEntityCard extends HTMLElement {
             searchInput.type = 'text';
             searchInput.placeholder = 'Filter entities...';
             searchInput.value = this._dynamicFilterValue;
-            // Add attribute to prevent Home Assistant from intercepting inputs
             searchInput.setAttribute('autocomplete', 'off');
             searchInput.setAttribute('autocorrect', 'off');
             searchInput.setAttribute('autocapitalize', 'none');
             searchInput.setAttribute('spellcheck', 'false');
-            // Prevent the input from being focused when clicking in empty areas of the card
             searchInput.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
-            // Prevent the key event from bubbling up to Home Assistant
             searchInput.addEventListener('keydown', (e) => {
                 e.stopPropagation();
             });
-            // Add our filter handler
             searchInput.addEventListener('input', this._handleFilterInput);
-            // Add focus and blur event listeners to track focus state
             searchInput.addEventListener('focus', () => {
                 this._searchInputHasFocus = true;
             });
             searchInput.addEventListener('blur', () => {
                 this._searchInputHasFocus = false;
             });
-            // If the search input had focus before re-rendering, restore focus
             if (this._searchInputHasFocus) {
-                // Need to delay this slightly to ensure the DOM is ready
                 setTimeout(() => {
                     searchInput.focus();
                 }, 0);
             }
             searchContainer.appendChild(searchInput);
             card.appendChild(searchContainer);
-            // Add refresh control after search input
             const refreshControlContainer = document.createElement('div');
             refreshControlContainer.className = 'refresh-control-container';
             const refreshControl = document.createElement('div');
             refreshControl.className = 'refresh-control';
-            // Off option
             const offOption = document.createElement('div');
             offOption.className = `refresh-option${this.config.refresh_rate === 'off' || !this.config.refresh_rate ? ' active' : ''}`;
             offOption.textContent = 'Off';
             offOption.addEventListener('click', () => this._setRefreshRate('off'));
-            // 10s option
             const tenSecOption = document.createElement('div');
             tenSecOption.className = `refresh-option${this.config.refresh_rate === '10s' ? ' active' : ''}`;
             tenSecOption.textContent = '10s';
             tenSecOption.addEventListener('click', () => this._setRefreshRate('10s'));
-            // 30s option
             const thirtySecOption = document.createElement('div');
             thirtySecOption.className = `refresh-option${this.config.refresh_rate === '30s' ? ' active' : ''}`;
             thirtySecOption.textContent = '30s';
             thirtySecOption.addEventListener('click', () => this._setRefreshRate('30s'));
-            // Refresh button
             const refreshButton = document.createElement('div');
             refreshButton.className = 'refresh-option refresh-button';
             refreshButton.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
             refreshButton.title = 'Refresh now';
             refreshButton.addEventListener('click', () => this._refreshNow());
-            // Add options to control
             refreshControl.appendChild(offOption);
             refreshControl.appendChild(tenSecOption);
             refreshControl.appendChild(thirtySecOption);
             refreshControl.appendChild(refreshButton);
             refreshControlContainer.appendChild(refreshControl);
             card.appendChild(refreshControlContainer);
-            // Apply max height if configured
             if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
-                // Create a container with fixed height and scrolling for the entities
                 const scrollContainer = document.createElement('div');
                 scrollContainer.className = 'scroll-container';
                 scrollContainer.style.maxHeight = `${this.config.max_height}px`;
                 scrollContainer.style.overflowY = 'auto';
                 scrollContainer.style.overflowX = 'hidden';
-                scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+                scrollContainer.style.paddingRight = '4px';
                 scrollContainer.style.marginBottom = '16px';
-                // Add the entities container to the scroll container
                 this._powerEntitiesContainer.style.display = '';
                 this._energyEntitiesContainer.style.display = 'none';
                 scrollContainer.appendChild(this._powerEntitiesContainer);
                 card.appendChild(scrollContainer);
             }
             else {
-                // Regular display without scroll
                 this._powerEntitiesContainer.style.display = '';
                 this._energyEntitiesContainer.style.display = 'none';
                 card.appendChild(this._powerEntitiesContainer);
             }
-            // Update the entity buttons with filtered entities
             if (this._filteredPowerEntities.length > 0) {
                 this._updateEntityButtons(this._powerEntitiesContainer, this._filteredPowerEntities, this._togglePowerEntity, true);
             }
             else {
-                // Clear the container but don't show any message
                 this._powerEntitiesContainer.innerHTML = '';
             }
         }
         else {
-            // Similar structure for energy view
-            // Add control buttons section  
             const controlButtons = document.createElement('div');
             controlButtons.className = 'control-buttons';
             controlButtons.style.display = 'flex';
@@ -1448,15 +1352,12 @@ class EnergyDashboardEntityCard extends HTMLElement {
             controlButtons.appendChild(clearButton);
             controlButtons.appendChild(selectAllButton);
             card.appendChild(controlButtons);
-            // Add the persistence toggle right after control buttons
             const persistenceToggleEl = renderPersistenceToggle();
             card.appendChild(persistenceToggleEl);
-            console.log("Appended persistence toggle to card:", persistenceToggleEl);
             const sectionTitle = document.createElement('div');
             sectionTitle.className = 'section-title';
             sectionTitle.textContent = 'Energy Entities';
             card.appendChild(sectionTitle);
-            // Add dynamic filter input
             const searchContainer = document.createElement('div');
             searchContainer.className = 'search-container';
             const searchInput = document.createElement('input');
@@ -1464,60 +1365,48 @@ class EnergyDashboardEntityCard extends HTMLElement {
             searchInput.type = 'text';
             searchInput.placeholder = 'Filter entities...';
             searchInput.value = this._dynamicFilterValue;
-            // Add attribute to prevent Home Assistant from intercepting inputs
             searchInput.setAttribute('autocomplete', 'off');
             searchInput.setAttribute('autocorrect', 'off');
             searchInput.setAttribute('autocapitalize', 'none');
             searchInput.setAttribute('spellcheck', 'false');
-            // Prevent the input from being focused when clicking in empty areas of the card
             searchInput.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
-            // Prevent the key event from bubbling up to Home Assistant
             searchInput.addEventListener('keydown', (e) => {
                 e.stopPropagation();
             });
-            // Add our filter handler
             searchInput.addEventListener('input', this._handleFilterInput);
-            // Add focus and blur event listeners to track focus state
             searchInput.addEventListener('focus', () => {
                 this._searchInputHasFocus = true;
             });
             searchInput.addEventListener('blur', () => {
                 this._searchInputHasFocus = false;
             });
-            // If the search input had focus before re-rendering, restore focus
             if (this._searchInputHasFocus) {
-                // Need to delay this slightly to ensure the DOM is ready
                 setTimeout(() => {
                     searchInput.focus();
                 }, 0);
             }
             searchContainer.appendChild(searchInput);
             card.appendChild(searchContainer);
-            // Apply max height if configured
             if (this.config.enable_max_height && this.config.max_height && this.config.max_height > 0) {
-                // Create a container with fixed height and scrolling for the entities
                 const scrollContainer = document.createElement('div');
                 scrollContainer.className = 'scroll-container';
                 scrollContainer.style.maxHeight = `${this.config.max_height}px`;
                 scrollContainer.style.overflowY = 'auto';
                 scrollContainer.style.overflowX = 'hidden';
-                scrollContainer.style.paddingRight = '4px'; // Small padding to account for scrollbar
+                scrollContainer.style.paddingRight = '4px';
                 scrollContainer.style.marginBottom = '16px';
-                // Add the entities container to the scroll container
                 this._powerEntitiesContainer.style.display = 'none';
                 this._energyEntitiesContainer.style.display = '';
                 scrollContainer.appendChild(this._energyEntitiesContainer);
                 card.appendChild(scrollContainer);
             }
             else {
-                // Regular display without scroll
                 this._powerEntitiesContainer.style.display = 'none';
                 this._energyEntitiesContainer.style.display = '';
                 card.appendChild(this._energyEntitiesContainer);
             }
-            // Show filtered entities or "no results" message
             if (this._filteredEnergyEntities.length > 0) {
                 this._updateEntityButtons(this._energyEntitiesContainer, this._filteredEnergyEntities, this._toggleEnergyEntity, false);
             }
@@ -1525,39 +1414,23 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 this._energyEntitiesContainer.innerHTML = '';
             }
         }
-        // Check after a short delay if the toggle actually appears in the DOM
-        setTimeout(() => {
-            const toggle = this._root.querySelector('#persistence-toggle');
-            console.log("Persistence toggle in DOM after rendering:", toggle);
-            if (toggle) {
-                console.log("Toggle styles:", window.getComputedStyle(toggle));
-            }
-        }, 100);
-        // Force layout recalculation to ensure all elements have proper dimensions
         requestAnimationFrame(() => {
             this._forceRecalculation(card);
-            // Wait a bit for the DOM to be fully rendered before equalizing button heights
             setTimeout(() => {
                 const controlButtonsContainers = Array.from(this._root.querySelectorAll('.control-buttons'));
-                console.log(`Found ${controlButtonsContainers.length} control button containers to process`);
-                controlButtonsContainers.forEach((container, index) => {
-                    console.log(`Equalizing heights for container ${index}`);
+                controlButtonsContainers.forEach(container => {
                     this._equalizeButtonHeights(container);
                 });
-                // Also check for entity lists and make sure they're visible
                 const entityContainers = Array.from(this._root.querySelectorAll('.entities-container'));
-                console.log(`Found ${entityContainers.length} entity containers`);
                 entityContainers.forEach(container => {
-                    console.log(`Entity container has ${container.childElementCount} children`);
                     if (container.childElementCount === 0) {
-                        console.warn("Entity container is empty!");
+                        console.error("Entity container is empty!");
                     }
                 });
             }, 100);
         });
     }
     _updateEntityButtons(container, entities, onClick, isPower) {
-        // Map existing entity items by entityId
         const existingItems = {};
         Array.from(container.children).forEach(child => {
             const el = child;
@@ -1565,9 +1438,7 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 existingItems[el.dataset.entity] = el;
             }
         });
-        // Track which nodes are still needed
         const usedNodes = new Set();
-        // Add or update entity items
         entities.forEach(entity => {
             var _a;
             let entityItem = existingItems[entity.entityId];
@@ -1577,10 +1448,8 @@ class EnergyDashboardEntityCard extends HTMLElement {
                 entityItem.addEventListener('click', onClick);
                 container.appendChild(entityItem);
             }
-            // Update class and content
             entityItem.className = `entity-item ${entity.isOn ? 'on' : 'off'}`;
             entityItem.style.gap = '4px';
-            // Build content
             entityItem.innerHTML = '';
             const entityLeft = document.createElement('div');
             entityLeft.className = 'entity-left';
@@ -1607,61 +1476,46 @@ class EnergyDashboardEntityCard extends HTMLElement {
             entityItem.appendChild(entityState);
             usedNodes.add(entity.entityId);
         });
-        // Remove any nodes that are no longer needed
         Object.keys(existingItems).forEach(entityId => {
             if (!usedNodes.has(entityId)) {
                 container.removeChild(existingItems[entityId]);
             }
         });
     }
-    // Refresh functionality methods
-    // Set the refresh rate and update the interval
     _setRefreshRate(rate) {
         if (!this.config)
             return;
-        // Update the config
         this.config.refresh_rate = rate;
-        // Clear existing interval if there is one
         this._clearRefreshInterval();
-        // Set up new interval if needed
         if (rate !== 'off') {
             const intervalMs = rate === '10s' ? 10000 : 30000;
             this._refreshIntervalId = window.setInterval(() => {
                 this._refreshNow();
             }, intervalMs);
         }
-        // Update the UI
         this._updateContent();
     }
-    // Manually refresh the card
     _refreshNow() {
-        // Set force update flag to bypass throttling
         this._forceUpdate = true;
-        // Force an update of the entities
         if (this._hass) {
             this._updateEntities();
-            this._lastUpdateTimestamp = Date.now(); // Update timestamp
-            this._forceUpdate = false; // Reset flag after update
+            this._lastUpdateTimestamp = Date.now();
+            this._forceUpdate = false;
             this._updateContent();
         }
     }
-    // Clear any existing refresh interval
     _clearRefreshInterval() {
         if (this._refreshIntervalId !== null) {
             window.clearInterval(this._refreshIntervalId);
             this._refreshIntervalId = null;
         }
     }
-    // Clean up when the card is removed from the DOM
     disconnectedCallback() {
         this._clearRefreshInterval();
     }
-    // Use this to set up the refresh interval when the card is initialized
     _setupRefreshInterval() {
         var _a;
-        // Clear any existing interval first
         this._clearRefreshInterval();
-        // Set up new interval if a refresh rate is configured
         if (((_a = this.config) === null || _a === void 0 ? void 0 : _a.refresh_rate) && this.config.refresh_rate !== 'off') {
             const intervalMs = this.config.refresh_rate === '10s' ? 10000 : 30000;
             this._refreshIntervalId = window.setInterval(() => {
@@ -1670,9 +1524,13 @@ class EnergyDashboardEntityCard extends HTMLElement {
         }
     }
 }
-// Register the card with the custom elements registry
 customElements.define('energy-dashboard-entity-card', EnergyDashboardEntityCard);
 
+/**
+ * Editor component for the Energy Dashboard Entity Card.
+ * Provides a UI for users to configure entity card options in Home Assistant.
+ * Handles form rendering, validation, and config change events.
+ */
 class EnergyDashboardEntityCardEditor extends HTMLElement {
     constructor() {
         super();
@@ -1846,6 +1704,10 @@ class EnergyDashboardEntityCardEditor extends HTMLElement {
 // Register the editor with the custom elements registry
 customElements.define('energy-dashboard-entity-card-editor', EnergyDashboardEntityCardEditor);
 
+/**
+ * Configuration and type definitions for the Energy Dashboard chart card.
+ * Describes chart options, presets, and config structure for type safety.
+ */
 function getDefaultChartConfig() {
     return {
         chart_height: 300,
@@ -1868,8 +1730,18 @@ function getDefaultChartConfig() {
     };
 }
 
+/**
+ * Main component for the Energy Dashboard Chart Card.
+ * Renders power and energy charts, handles user interaction, and manages chart configuration.
+ * Designed for Home Assistant custom dashboards.
+ *
+ * Key responsibilities:
+ * - Display power/energy charts with configurable options
+ * - Handle refresh, time range, and Y-axis controls
+ * - Sync with entity selection from the entity card
+ * - Manage chart state and updates
+ */
 class EnergyDashboardChartCard extends HTMLElement {
-    // Define card name and icon for card picker
     static get cardType() {
         return 'energy-dashboard-chart-card';
     }
@@ -1891,61 +1763,46 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._energyEntities = [];
         this._isLoading = true;
         this._apexChartCardRegistered = null;
-        this._currentRefreshInterval = 30; // Default to 30 seconds
-        this._currentTimeRangeHours = 24; // Default to 24 hours
-        this._viewMode = 'power'; // Default to power view
-        // Handle view mode changes from entity card
+        this._currentRefreshInterval = 30;
+        this._currentTimeRangeHours = 24;
+        this._viewMode = 'power';
         this._handleViewModeChange = (event) => {
             if (event.detail && event.detail.mode) {
                 this._viewMode = event.detail.mode;
-                console.log(`View mode changed to: ${this._viewMode}`);
-                // Update the chart display based on view mode
                 this._updateContent();
             }
         };
         this._root = this.attachShadow({ mode: 'open' });
         this._root.appendChild(createStyles(cardStyles));
-        // Create the card element
         const card = document.createElement('ha-card');
         this._root.appendChild(card);
     }
-    // Load the view mode from localStorage
     _loadViewMode() {
         try {
             const stored = localStorage.getItem('energy-dashboard-view-mode');
             return (stored === 'power' || stored === 'energy') ? stored : 'power';
         }
         catch {
-            return 'power'; // Default to power view if we can't load from localStorage
+            return 'power';
         }
     }
-    // Called when the element is added to the DOM
     connectedCallback() {
-        // Load the selected view mode from localStorage
         this._viewMode = this._loadViewMode();
-        // Add event listener for view mode changes from entity card
         window.addEventListener('view-mode-changed', this._handleViewModeChange);
         this._loadSelectedEntities();
         this._checkApexChartsRegistration();
-        // First update the content without starting the timer
         this._updateContent();
-        // Cancel and reset any existing timers and configuration
         this._stopUpdateInterval();
-        // Wait until the content is fully loaded before starting timers
-        // This ensures all chart elements have properly initialized
         setTimeout(() => {
-            // Only start the update timer if explicitly set
             if (this._currentRefreshInterval > 0) {
                 this._startUpdateInterval();
             }
-        }, 1000); // Longer timeout to ensure everything is properly loaded
+        }, 1000);
     }
     disconnectedCallback() {
         this._stopUpdateInterval();
-        // Remove event listener when component is removed
         window.removeEventListener('view-mode-changed', this._handleViewModeChange);
     }
-    // Home Assistant specific method to set config
     setConfig(config) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         if (!config) {
@@ -1980,7 +1837,6 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._isLoading = true;
         this._checkApexChartsRegistration();
     }
-    // Home Assistant specific methods
     static getConfigElement() {
         return document.createElement('energy-dashboard-chart-card-editor');
     }
@@ -1996,12 +1852,10 @@ class EnergyDashboardChartCard extends HTMLElement {
         var _a;
         return ((_a = this.config) === null || _a === void 0 ? void 0 : _a.chart_height) ? Math.ceil(this.config.chart_height / 50) : 6;
     }
-    // Called when Home Assistant updates
     set hass(hass) {
         const firstUpdate = !this._hass;
         this._hass = hass;
         if (firstUpdate) {
-            // When we get hass for the first time, end the loading state
             this._isLoading = false;
             this._updateContent();
         }
@@ -2010,7 +1864,6 @@ class EnergyDashboardChartCard extends HTMLElement {
         return this._hass;
     }
     _loadSelectedEntities() {
-        // Load the toggle states from localStorage to get the entities selected in the entity card
         const powerToggleStates = loadToggleStates('energy-dashboard-power-toggle-states');
         const energyToggleStates = loadToggleStates('energy-dashboard-energy-toggle-states');
         if (powerToggleStates) {
@@ -2021,24 +1874,18 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
     }
     _startUpdateInterval() {
-        this._stopUpdateInterval(); // Ensure no duplicate timers
+        this._stopUpdateInterval();
         const seconds = this._currentRefreshInterval;
         if (seconds > 0) {
             this._updateTimer = window.setInterval(() => {
-                console.log(`Timer triggered: Refreshing charts (Interval: ${seconds}s)`);
                 this._updateCharts();
             }, seconds * 1000);
-            console.log(`Update timer started with interval: ${seconds}s`);
-        }
-        else {
-            console.log('Update timer not started (interval is 0).');
         }
     }
     _stopUpdateInterval() {
         if (this._updateTimer !== null) {
             window.clearInterval(this._updateTimer);
             this._updateTimer = null;
-            console.log('Update timer stopped.');
         }
     }
     _generateApexchartsConfig(entities, isEnergy) {
@@ -2046,7 +1893,6 @@ class EnergyDashboardChartCard extends HTMLElement {
         if (!this.config || !entities.length || !this._hass)
             return null;
         const options = this.config.chart_options;
-        // Always use 'line' chart type
         const chartType = 'line';
         const hoursToShow = this.config.hours_to_show || 24;
         const showPoints = this.config.show_points || false;
@@ -2208,14 +2054,12 @@ class EnergyDashboardChartCard extends HTMLElement {
                 apexCard.hass = this._hass;
             }
             catch (configError) {
-                console.error('Error configuring apexcharts-card:', configError);
                 return this._createErrorMessage('Error configuring chart', ['The chart configuration is invalid',
                     'Check the console for more details']);
             }
             chartElement.appendChild(apexCard);
         }
         catch (err) {
-            console.error(`Error creating ${isEnergy ? 'energy' : 'power'} chart:`, err);
             return this._createErrorMessage(`Error: ${err instanceof Error ? err.message : 'Failed to create chart'}`, [
                 'Check that apexcharts-card is installed correctly',
                 'Make sure all entities exist in Home Assistant',
@@ -2336,34 +2180,24 @@ class EnergyDashboardChartCard extends HTMLElement {
     }
     _updateCharts() {
         var _a, _b, _c;
-        console.log("Executing _updateCharts: Updating chart elements.");
         if (!this._hass || this._isLoading || this._apexChartCardRegistered === false) {
-            console.log("Skipping _updateCharts: Hass not ready, loading, or apexcharts-card not registered.");
             return;
         }
-        // Always reload selected entities to ensure we have the latest selection
         this._loadSelectedEntities();
         const powerChartContainer = this._root.querySelector('.power-chart-placeholder');
         if (powerChartContainer) {
-            // Check for existing apexcharts-card element
             const existingPowerChart = powerChartContainer.querySelector('apexcharts-card');
             if (existingPowerChart) {
-                console.log("Refreshing existing power chart.");
-                // Generate updated chart config with latest entity selections
                 const updatedChartConfig = this._generateApexchartsConfig(this._powerEntities, false);
                 if (updatedChartConfig) {
-                    // Update the chart config with latest entity selections
                     try {
                         existingPowerChart.setConfig(updatedChartConfig);
                         existingPowerChart.hass = this._hass;
                     }
-                    catch (err) {
-                        console.warn("Failed to update chart config:", err);
-                    }
+                    catch (err) { }
                 }
             }
             else {
-                console.log("Creating new power chart (no existing chart found).");
                 const newPowerChart = this._createChart(false);
                 powerChartContainer.innerHTML = '';
                 powerChartContainer.appendChild(newPowerChart);
@@ -2375,7 +2209,6 @@ class EnergyDashboardChartCard extends HTMLElement {
             if (card) {
                 const powerSectionTitle = card.querySelector('.section-title:not([data-energy])');
                 if (powerSectionTitle) {
-                    console.log("Creating initial power chart (fallback).");
                     const placeholder = document.createElement('div');
                     placeholder.className = 'power-chart-placeholder';
                     const newChart = this._createChart(false);
@@ -2388,25 +2221,18 @@ class EnergyDashboardChartCard extends HTMLElement {
         const energyChartContainer = this._root.querySelector('.energy-chart-placeholder');
         if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.show_energy_section) {
             if (energyChartContainer) {
-                // Check for existing apexcharts-card element
                 const existingEnergyChart = energyChartContainer.querySelector('apexcharts-card');
                 if (existingEnergyChart) {
-                    console.log("Refreshing existing energy chart.");
-                    // Generate updated chart config with latest entity selections
                     const updatedChartConfig = this._generateApexchartsConfig(this._energyEntities, true);
                     if (updatedChartConfig) {
-                        // Update the chart config with latest entity selections
                         try {
                             existingEnergyChart.setConfig(updatedChartConfig);
                             existingEnergyChart.hass = this._hass;
                         }
-                        catch (err) {
-                            console.warn("Failed to update chart config:", err);
-                        }
+                        catch (err) { }
                     }
                 }
                 else {
-                    console.log("Creating new energy chart (no existing chart found).");
                     const newEnergyChart = this._createChart(true);
                     energyChartContainer.innerHTML = '';
                     energyChartContainer.appendChild(newEnergyChart);
@@ -2418,7 +2244,6 @@ class EnergyDashboardChartCard extends HTMLElement {
                 if (card) {
                     const energySectionTitle = card.querySelector('.section-title[data-energy]');
                     if (energySectionTitle) {
-                        console.log("Creating initial energy chart (fallback).");
                         const placeholder = document.createElement('div');
                         placeholder.className = 'energy-chart-placeholder';
                         const newChart = this._createChart(true);
@@ -2459,9 +2284,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         const card = this._root.querySelector('ha-card');
         if (!card)
             return;
-        // Clear previous content
         card.innerHTML = '';
-        // Reset any previous inline styles
         card.style.paddingTop = '';
         if (this.config.show_header) {
             const header = document.createElement('div');
@@ -2470,7 +2293,6 @@ class EnergyDashboardChartCard extends HTMLElement {
             card.appendChild(header);
         }
         else {
-            // Add padding to the top of the card when header is disabled
             card.style.paddingTop = 'var(--card-padding, 0px)';
         }
         if (this._isLoading) {
@@ -2487,10 +2309,8 @@ class EnergyDashboardChartCard extends HTMLElement {
             card.appendChild(errorMessage);
             return;
         }
-        // --- Controls Layout Container ---
         const controlsContainer = document.createElement('div');
         controlsContainer.className = 'controls-container';
-        // Helper to create a group
         const createGroup = (labelText, controls) => {
             const group = document.createElement('div');
             group.className = 'pill-group';
@@ -2507,21 +2327,17 @@ class EnergyDashboardChartCard extends HTMLElement {
             group.appendChild(controls);
             return group;
         };
-        // Create controls
         const refreshControls = this._createRefreshRatePillControls();
         const timeRangeControls = this._createTimeRangeControls();
         const yAxisControls = this._createYAxisControls();
-        // Ensure pill-row gap is 0
         [refreshControls, timeRangeControls, yAxisControls].forEach(row => {
             row.style.gap = '0';
             row.style.margin = '0';
             row.style.padding = '0';
         });
-        // Add groups to container
         controlsContainer.appendChild(createGroup('Refresh Rate', refreshControls));
         controlsContainer.appendChild(createGroup('Time Range', timeRangeControls));
         controlsContainer.appendChild(createGroup('Max Range', yAxisControls));
-        // Add the controls container to the card
         card.appendChild(controlsContainer);
         const chartContainer = document.createElement('div');
         chartContainer.className = 'chart-container';
@@ -2529,27 +2345,21 @@ class EnergyDashboardChartCard extends HTMLElement {
         chartContainer.style.display = 'flex';
         chartContainer.style.flexDirection = 'column';
         chartContainer.style.marginTop = '8px';
-        // Load the view mode from localStorage (in case it changed)
         this._viewMode = this._loadViewMode();
-        // Only show the appropriate chart based on view mode
         if (this._viewMode === 'power' || !this.config.show_energy_section) {
-            // Power chart section
             chartContainer.appendChild(this._renderSectionTitle('Power Consumption'));
             const powerPlaceholder = document.createElement('div');
             powerPlaceholder.className = 'power-chart-placeholder';
             chartContainer.appendChild(powerPlaceholder);
             this._powerChartEl = null;
-            // Reset energy chart element so it doesn't get updated
             this._energyChartEl = null;
         }
         else if (this._viewMode === 'energy' && this.config.show_energy_section) {
-            // Energy chart section
             chartContainer.appendChild(this._renderSectionTitle('Energy Consumption', true));
             const energyPlaceholder = document.createElement('div');
             energyPlaceholder.className = 'energy-chart-placeholder';
             chartContainer.appendChild(energyPlaceholder);
             this._energyChartEl = null;
-            // Reset power chart element so it doesn't get updated
             this._powerChartEl = null;
         }
         card.appendChild(chartContainer);
@@ -2562,7 +2372,6 @@ class EnergyDashboardChartCard extends HTMLElement {
         }, 100);
     }
     _setRefreshInterval(seconds) {
-        console.log(`Setting refresh interval to: ${seconds} seconds`);
         if (this.config) {
             this.config.update_interval = seconds;
         }
@@ -2581,20 +2390,17 @@ class EnergyDashboardChartCard extends HTMLElement {
         this._updateCharts();
     }
     _manualRefresh() {
-        console.log("Manual refresh triggered.");
         this._updateCharts();
     }
     _createRefreshRatePillControls() {
         const container = document.createElement('div');
         container.className = 'refresh-rate-controls pill-row';
-        // Manual refresh button as first pill
         const manualBtn = document.createElement('button');
         manualBtn.className = 'pill-control refresh-rate-button manual-refresh';
         manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
         manualBtn.title = 'Manual Refresh';
         manualBtn.addEventListener('click', () => this._manualRefresh());
         container.appendChild(manualBtn);
-        // Off option as second pill
         const offBtn = document.createElement('button');
         offBtn.className = 'pill-control refresh-rate-button';
         offBtn.textContent = 'Off';
@@ -2603,7 +2409,6 @@ class EnergyDashboardChartCard extends HTMLElement {
         offBtn.style.marginLeft = '-1px';
         offBtn.addEventListener('click', () => this._setRefreshInterval(0));
         container.appendChild(offBtn);
-        // Add other refresh rate options (5s, 15s, 30s, 60s)
         const rates = [5, 15, 30, 60];
         rates.forEach((rate, idx) => {
             const btn = document.createElement('button');
@@ -2623,23 +2428,19 @@ class EnergyDashboardChartCard extends HTMLElement {
         const controls = container || this._root.querySelector('.refresh-rate-controls');
         if (!controls)
             return;
-        // Get all buttons including the manual refresh button
         const buttons = controls.querySelectorAll('.refresh-rate-button');
-        // Reset all buttons to default state
         buttons.forEach(btn => {
             const button = btn;
-            button.classList.remove('active'); // Remove active from all
+            button.classList.remove('active');
             button.style.backgroundColor = 'var(--card-background-color, white)';
             button.style.color = 'var(--primary-text-color, #212121)';
             button.style.borderColor = 'var(--divider-color, #e0e0e0)';
         });
-        // Find the active button by rate value (skip manual refresh which has no rate)
         const activeRate = this._currentRefreshInterval.toString();
         const activeButton = Array.from(buttons).find(btn => {
             const button = btn;
             return button.dataset.rate === activeRate;
         });
-        // Apply active styling if found
         if (activeButton) {
             activeButton.classList.add('active');
             activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
@@ -2701,7 +2502,6 @@ class EnergyDashboardChartCard extends HTMLElement {
         this.config.chart_options.y_axis.max = maxValue === 'auto' ? undefined : Number(maxValue);
         this._updateYAxisControlsUI();
         this._updateCharts();
-        console.log(`Set Y-axis max to ${maxValue}`);
     }
     _createTimeRangeControls() {
         const container = document.createElement('div');
@@ -2770,19 +2570,9 @@ class EnergyDashboardChartCard extends HTMLElement {
         });
         return container;
     }
-    // Check if apexcharts-card is registered as a custom element
     _checkApexChartsRegistration() {
-        // Check if apexcharts-card is registered as a custom element
         const isRegistered = customElements.get('apexcharts-card') !== undefined;
-        if (isRegistered) {
-            console.log('apexcharts-card is registered as a custom element');
-            this._apexChartCardRegistered = true;
-        }
-        else {
-            console.warn('apexcharts-card is not registered as a custom element');
-            this._apexChartCardRegistered = false;
-        }
-        // Update content once we know the status
+        this._apexChartCardRegistered = !!isRegistered;
         if (!this._isLoading) {
             this._updateContent();
         }
@@ -2790,6 +2580,11 @@ class EnergyDashboardChartCard extends HTMLElement {
 }
 customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);
 
+/**
+ * Editor component for the Energy Dashboard Chart Card.
+ * Provides a UI for users to configure chart options in Home Assistant.
+ * Handles form rendering, validation, and config change events.
+ */
 class EnergyDashboardChartCardEditor extends HTMLElement {
     constructor() {
         super();
