@@ -2737,32 +2737,34 @@ class EnergyDashboardChartCard extends HTMLElement {
         container.className = 'refresh-rate-controls pill-row';
         // Manual refresh button as first pill
         const manualBtn = document.createElement('button');
-        manualBtn.className = 'pill-control refresh-rate-button manual-refresh'; // Use the new class
+        manualBtn.className = 'pill-control refresh-rate-button manual-refresh';
         manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
         manualBtn.title = 'Manual Refresh';
         manualBtn.addEventListener('click', () => this._manualRefresh());
         container.appendChild(manualBtn);
+        // Off option as second pill
+        const offBtn = document.createElement('button');
+        offBtn.className = 'pill-control refresh-rate-button';
+        offBtn.textContent = 'Off';
+        offBtn.dataset.rate = '0';
+        offBtn.style.borderRadius = '0';
+        offBtn.style.marginLeft = '-1px';
+        offBtn.addEventListener('click', () => this._setRefreshInterval(0));
+        container.appendChild(offBtn);
         // Add other refresh rate options (5s, 15s, 30s, 60s)
         const rates = [5, 15, 30, 60];
-        rates.forEach((rate) => {
+        rates.forEach((rate, idx) => {
             const btn = document.createElement('button');
             btn.className = 'pill-control refresh-rate-button';
             btn.textContent = `${rate}s`;
             btn.dataset.rate = rate.toString();
-            btn.style.marginRight = '-1px'; // Keep pill overlap style
+            btn.style.marginRight = '-1px';
+            btn.style.borderRadius = idx === rates.length - 1 ? '0 16px 16px 0' : '0';
+            btn.style.marginLeft = '-1px';
             btn.addEventListener('click', () => this._setRefreshInterval(rate));
             container.appendChild(btn);
         });
-        // Add 'Off' option
-        const offBtn = document.createElement('button');
-        offBtn.className = 'pill-control refresh-rate-button';
-        offBtn.textContent = 'Off';
-        offBtn.dataset.rate = '0'; // Use 0 for 'Off'
-        offBtn.style.borderRadius = '0 16px 16px 0'; // Apply border radius as it's the last logical item
-        offBtn.style.marginLeft = '-1px'; // Overlap with previous
-        offBtn.addEventListener('click', () => this._setRefreshInterval(0)); // 0 represents 'Off'
-        container.appendChild(offBtn);
-        this._updateRefreshRatePillControlsUI(container); // Initial selection update
+        this._updateRefreshRatePillControlsUI(container);
         return container;
     }
     _updateRefreshRatePillControlsUI(container) {
