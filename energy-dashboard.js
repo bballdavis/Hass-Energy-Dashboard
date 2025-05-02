@@ -2765,12 +2765,9 @@ class EnergyDashboardChartCard extends HTMLElement {
         container.className = 'refresh-rate-controls pill-row';
         // Manual refresh button as first pill
         const manualBtn = document.createElement('button');
-        // Apply the base class and the new specific class
-        manualBtn.className = 'pill-control refresh-rate-button manual-refresh';
-        // Remove inline styles for flex centering and icon size, now handled by CSS class
+        manualBtn.className = 'pill-control refresh-rate-button manual-refresh'; // Use the new class
         manualBtn.innerHTML = '<ha-icon icon="mdi:refresh"></ha-icon>';
         manualBtn.title = 'Manual Refresh';
-        // Removed inline styles previously here, now controlled by CSS
         manualBtn.addEventListener('click', () => this._manualRefresh());
         container.appendChild(manualBtn);
         // Add other refresh rate options (5s, 15s, 30s, 60s)
@@ -2780,8 +2777,7 @@ class EnergyDashboardChartCard extends HTMLElement {
             btn.className = 'pill-control refresh-rate-button';
             btn.textContent = `${rate}s`;
             btn.dataset.rate = rate.toString();
-            // Removed height style, assuming base pill-control handles it or adjust base class if needed
-            btn.style.marginRight = '-1px'; // Overlap borders for pill effect
+            btn.style.marginRight = '-1px'; // Keep pill overlap style
             btn.addEventListener('click', () => this._setRefreshInterval(rate));
             container.appendChild(btn);
         });
@@ -2790,10 +2786,8 @@ class EnergyDashboardChartCard extends HTMLElement {
         offBtn.className = 'pill-control refresh-rate-button';
         offBtn.textContent = 'Off';
         offBtn.dataset.rate = '0'; // Use 0 for 'Off'
-        // Removed height style, assuming base pill-control handles it or adjust base class if needed
         offBtn.style.borderRadius = '0 16px 16px 0'; // Apply border radius as it's the last logical item
         offBtn.style.marginLeft = '-1px'; // Overlap with previous
-        // Removed marginRight style
         offBtn.addEventListener('click', () => this._setRefreshInterval(0)); // 0 represents 'Off'
         container.appendChild(offBtn);
         this._updateRefreshRatePillControlsUI(container); // Initial selection update
