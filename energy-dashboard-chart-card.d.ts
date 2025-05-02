@@ -28,24 +28,16 @@ export declare class EnergyDashboardChartCard extends HTMLElement {
         title: string;
         show_header: boolean;
         show_energy_section: boolean;
-        chart_type?: string | undefined;
         chart_height?: number | undefined;
         show_points?: boolean | undefined;
         smooth_curve?: boolean | undefined;
         stroke_width?: number | undefined;
         update_interval?: number | undefined;
         hours_to_show?: number | undefined;
-        aggregate_func?: string | undefined;
-        power_chart_options?: {
-            y_axis: import("./energy-dashboard-chart-config").ChartAxisOptions;
-            x_axis?: import("./energy-dashboard-chart-config").ChartAxisOptions;
-        } | undefined;
-        energy_chart_options?: {
-            y_axis: import("./energy-dashboard-chart-config").ChartAxisOptions;
-            x_axis?: import("./energy-dashboard-chart-config").ChartAxisOptions;
-        } | undefined;
+        chart_options?: import("./energy-dashboard-chart-config").ChartOptions | undefined;
         use_custom_colors?: boolean | undefined;
         show_legend?: boolean | undefined;
+        y_axis_max_presets?: number[] | undefined;
         show_state?: boolean | undefined;
         show_toggle?: boolean | undefined;
         auto_select_count?: number | undefined;

@@ -19,55 +19,42 @@ export interface ChartAxisOptions {
   unit?: string;
 }
 
+export interface ChartOptions {
+  y_axis: ChartAxisOptions;
+  x_axis?: ChartAxisOptions;
+}
+
 export interface EnergyDashboardChartConfig extends EnergyDashboardConfig {
-  // Chart specific options
-  chart_type: string; // 'line', 'area', 'bar'
   chart_height: number;
   show_points: boolean;
   smooth_curve: boolean;
-  stroke_width: number; // Controls the thickness of chart lines
+  stroke_width: number; // Allow decimals
   update_interval: number; // In seconds
   hours_to_show: number;
-  aggregate_func: string; // 'avg', 'min', 'max', 'sum', etc.
-  power_chart_options: {
-    y_axis: ChartAxisOptions;
-    x_axis?: ChartAxisOptions;
-  };
-  energy_chart_options: {
-    y_axis: ChartAxisOptions;
-    x_axis?: ChartAxisOptions;
-  };
+  chart_options: ChartOptions;
   use_custom_colors: boolean;
   show_legend: boolean;
+  y_axis_max_presets: number[];
 }
 
 export function getDefaultChartConfig(): Partial<EnergyDashboardChartConfig> {
   return {
-    chart_type: 'line',
     chart_height: 300,
     show_points: false,
     smooth_curve: true,
-    stroke_width: 2, // Default line thickness
-    update_interval: 30, // Set default to 30 seconds
+    stroke_width: 2,
+    update_interval: 30,
     hours_to_show: 24,
-    aggregate_func: 'avg',
-    power_chart_options: {
+    chart_options: {
       y_axis: {
-        min: 0,
+        // min is undefined by default (auto)
         decimals: 1,
         title: 'Power',
         unit: 'W'
       }
     },
-    energy_chart_options: {
-      y_axis: {
-        min: 0,
-        decimals: 2,
-        title: 'Energy',
-        unit: 'kWh'
-      }
-    },
     use_custom_colors: false,
-    show_legend: true
+    show_legend: true,
+    y_axis_max_presets: [500, 3000, 9000]
   };
 }

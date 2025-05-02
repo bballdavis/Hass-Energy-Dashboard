@@ -59,28 +59,16 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
   }
 
   setConfig(config: Partial<EnergyDashboardChartConfig>) {
-    // Apply default chart config values 
     const defaultConfig = getDefaultChartConfig();
-    
-    // Create a merged config object
     this.config = {
       ...defaultConfig,
       ...config,
-      // Handle nested objects properly
-      power_chart_options: {
-        ...defaultConfig.power_chart_options,
-        ...(config.power_chart_options || {}),
+      chart_options: {
+        ...defaultConfig.chart_options,
+        ...(config.chart_options || {}),
         y_axis: {
-          ...defaultConfig.power_chart_options?.y_axis,
-          ...(config.power_chart_options?.y_axis || {})
-        }
-      },
-      energy_chart_options: {
-        ...defaultConfig.energy_chart_options,
-        ...(config.energy_chart_options || {}),
-        y_axis: {
-          ...defaultConfig.energy_chart_options?.y_axis,
-          ...(config.energy_chart_options?.y_axis || {})
+          ...defaultConfig.chart_options?.y_axis,
+          ...(config.chart_options?.y_axis || {})
         }
       },
       // Add base EnergyDashboardConfig properties
@@ -92,8 +80,8 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
       max_height: config.max_height ?? 400,
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
       show_legend: config.show_legend ?? true,
+      y_axis_max_presets: config.y_axis_max_presets ?? [500, 3000, 9000],
     } as EnergyDashboardChartConfig;
-    
     this._updateForm();
   }
 
@@ -115,7 +103,7 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
       }
     }
 
-    // Handle nested properties like power_chart_options.y_axis.title
+    // Handle nested properties like chart_options.y_axis.title
     if (configValue.includes('.')) {
       const parts = configValue.split('.');
       const newConfig = { ...this.config };
@@ -196,31 +184,6 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     const chartAppearance = document.createElement('div');
     chartAppearance.innerHTML = '<div class="title">Chart Appearance</div>';
     
-    // Chart Type
-    const chartTypeRow = document.createElement('div');
-    chartTypeRow.className = 'row';
-    const chartTypeLabel = document.createElement('div');
-    chartTypeLabel.textContent = 'Chart Type';
-    
-    const chartTypeSelect = document.createElement('select');
-    chartTypeSelect.className = 'value';
-    const chartTypes = ['line', 'area', 'bar'];
-    chartTypes.forEach(type => {
-      const option = document.createElement('option');
-      option.value = type;
-      option.text = type.charAt(0).toUpperCase() + type.slice(1);
-      option.selected = this.config?.chart_type === type;
-      chartTypeSelect.appendChild(option);
-    });
-    chartTypeSelect.addEventListener('change', (e) => {
-      this.config = { ...this.config as EnergyDashboardChartConfig, chart_type: (e.target as HTMLSelectElement).value };
-      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
-    });
-    
-    chartTypeRow.appendChild(chartTypeLabel);
-    chartTypeRow.appendChild(chartTypeSelect);
-    chartAppearance.appendChild(chartTypeRow);
-    
     // Chart Height
     const chartHeightRow = document.createElement('div');
     chartHeightRow.className = 'row';
@@ -257,7 +220,7 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     const strokeWidthInput = document.createElement('ha-slider') as HaSlider;
     strokeWidthInput.min = '1';
     strokeWidthInput.max = '5';
-    strokeWidthInput.step = '1';
+    strokeWidthInput.step = '0.25';
     strokeWidthInput.value = (this.config?.stroke_width || 2).toString();
     strokeWidthInput.style.flex = '1';
     strokeWidthInput.addEventListener('change', (e) => {
@@ -340,157 +303,86 @@ export class EnergyDashboardChartCardEditor extends HTMLElement {
     customColorsRow.appendChild(customColorsLabel);
     form.appendChild(customColorsRow);
 
-    // Aggregate Function dropdown
-    const aggregateRow = this._createRow();
-    const aggregateField = document.createElement('ha-select') as HaFormElement;
-    aggregateField.className = 'value';
-    aggregateField.label = 'Aggregate Function';
-    aggregateField.configValue = 'aggregate_func';
-    
-    // Set options for the aggregate function dropdown
-    aggregateField.options = [
-      { value: 'avg', label: 'Average' },
-      { value: 'min', label: 'Minimum' },
-      { value: 'max', label: 'Maximum' },
-      { value: 'sum', label: 'Sum' },
-      { value: 'first', label: 'First' },
-      { value: 'last', label: 'Last' }
-    ];
-    
-    aggregateField.value = this.config.aggregate_func || 'avg';
-    aggregateField.addEventListener('change', this.valueChanged);
-    aggregateRow.appendChild(aggregateField);
-    form.appendChild(aggregateRow);
+    // SECTION: Y-Axis Settings
+    this._addSectionTitle(form as HTMLElement, 'Y-Axis Settings');
 
-    // SECTION: Power Chart Settings
-    this._addSectionTitle(form as HTMLElement, 'Power Chart Y-Axis Settings');
+    // Y-Axis Title
+    const yTitleRow = this._createRow();
+    const yTitleField = document.createElement('ha-textfield') as HaFormElement;
+    yTitleField.className = 'value';
+    yTitleField.label = 'Y-Axis Title';
+    yTitleField.value = this.config.chart_options?.y_axis?.title || '';
+    yTitleField.configValue = 'chart_options.y_axis.title';
+    yTitleField.addEventListener('change', this.valueChanged);
+    yTitleRow.appendChild(yTitleField);
+    form.appendChild(yTitleRow);
 
-    // Power Y-Axis Title
-    const powerYTitleRow = this._createRow();
-    const powerYTitleField = document.createElement('ha-textfield') as HaFormElement;
-    powerYTitleField.className = 'value';
-    powerYTitleField.label = 'Y-Axis Title';
-    powerYTitleField.value = this.config.power_chart_options?.y_axis?.title || 'Power';
-    powerYTitleField.configValue = 'power_chart_options.y_axis.title';
-    powerYTitleField.addEventListener('change', this.valueChanged);
-    powerYTitleRow.appendChild(powerYTitleField);
-    form.appendChild(powerYTitleRow);
+    // Y-Axis Unit
+    const yUnitRow = this._createRow();
+    const yUnitField = document.createElement('ha-textfield') as HaFormElement;
+    yUnitField.className = 'value';
+    yUnitField.label = 'Y-Axis Unit';
+    yUnitField.value = this.config.chart_options?.y_axis?.unit || '';
+    yUnitField.configValue = 'chart_options.y_axis.unit';
+    yUnitField.addEventListener('change', this.valueChanged);
+    yUnitRow.appendChild(yUnitField);
+    form.appendChild(yUnitRow);
 
-    // Power Y-Axis Unit
-    const powerYUnitRow = this._createRow();
-    const powerYUnitField = document.createElement('ha-textfield') as HaFormElement;
-    powerYUnitField.className = 'value';
-    powerYUnitField.label = 'Y-Axis Unit';
-    powerYUnitField.value = this.config.power_chart_options?.y_axis?.unit || 'W';
-    powerYUnitField.configValue = 'power_chart_options.y_axis.unit';
-    powerYUnitField.addEventListener('change', this.valueChanged);
-    powerYUnitRow.appendChild(powerYUnitField);
-    form.appendChild(powerYUnitRow);
+    // Y-Axis Decimals
+    const yDecimalsRow = this._createRow();
+    const yDecimalsField = document.createElement('ha-textfield') as HaFormElement;
+    yDecimalsField.className = 'value';
+    yDecimalsField.label = 'Y-Axis Decimals';
+    yDecimalsField.type = 'number';
+    yDecimalsField.min = '0';
+    yDecimalsField.max = '5';
+    yDecimalsField.value = String(this.config.chart_options?.y_axis?.decimals ?? 1);
+    yDecimalsField.configValue = 'chart_options.y_axis.decimals';
+    yDecimalsField.addEventListener('change', this.valueChanged);
+    yDecimalsRow.appendChild(yDecimalsField);
+    form.appendChild(yDecimalsRow);
 
-    // Power Y-Axis Decimals
-    const powerYDecimalsRow = this._createRow();
-    const powerYDecimalsField = document.createElement('ha-textfield') as HaFormElement;
-    powerYDecimalsField.className = 'value';
-    powerYDecimalsField.label = 'Y-Axis Decimals';
-    powerYDecimalsField.type = 'number';
-    powerYDecimalsField.min = '0';
-    powerYDecimalsField.max = '5';
-    powerYDecimalsField.value = String(this.config.power_chart_options?.y_axis?.decimals ?? 1);
-    powerYDecimalsField.configValue = 'power_chart_options.y_axis.decimals';
-    powerYDecimalsField.addEventListener('change', this.valueChanged);
-    powerYDecimalsRow.appendChild(powerYDecimalsField);
-    form.appendChild(powerYDecimalsRow);
+    // Y-Axis Min
+    const yMinRow = this._createRow();
+    const yMinField = document.createElement('ha-textfield') as HaFormElement;
+    yMinField.className = 'value';
+    yMinField.label = 'Y-Axis Minimum (empty for auto)';
+    yMinField.type = 'number';
+    yMinField.value = this.config.chart_options?.y_axis?.min !== undefined ? String(this.config.chart_options.y_axis.min) : '';
+    yMinField.configValue = 'chart_options.y_axis.min';
+    yMinField.addEventListener('change', this.valueChanged);
+    yMinRow.appendChild(yMinField);
+    form.appendChild(yMinRow);
 
-    // Power Y-Axis Min
-    const powerYMinRow = this._createRow();
-    const powerYMinField = document.createElement('ha-textfield') as HaFormElement;
-    powerYMinField.className = 'value';
-    powerYMinField.label = 'Y-Axis Minimum (empty for auto)';
-    powerYMinField.type = 'number';
-    powerYMinField.value = this.config.power_chart_options?.y_axis?.min !== undefined ? 
-      String(this.config.power_chart_options.y_axis.min) : '';
-    powerYMinField.configValue = 'power_chart_options.y_axis.min';
-    powerYMinField.addEventListener('change', this.valueChanged);
-    powerYMinRow.appendChild(powerYMinField);
-    form.appendChild(powerYMinRow);
+    // Y-Axis Max
+    const yMaxRow = this._createRow();
+    const yMaxField = document.createElement('ha-textfield') as HaFormElement;
+    yMaxField.className = 'value';
+    yMaxField.label = 'Y-Axis Maximum (empty for auto)';
+    yMaxField.type = 'number';
+    yMaxField.value = this.config.chart_options?.y_axis?.max !== undefined ? String(this.config.chart_options.y_axis.max) : '';
+    yMaxField.configValue = 'chart_options.y_axis.max';
+    yMaxField.addEventListener('change', this.valueChanged);
+    yMaxRow.appendChild(yMaxField);
+    form.appendChild(yMaxRow);
 
-    // Power Y-Axis Max
-    const powerYMaxRow = this._createRow();
-    const powerYMaxField = document.createElement('ha-textfield') as HaFormElement;
-    powerYMaxField.className = 'value';
-    powerYMaxField.label = 'Y-Axis Maximum (empty for auto)';
-    powerYMaxField.type = 'number';
-    powerYMaxField.value = this.config.power_chart_options?.y_axis?.max !== undefined ? 
-      String(this.config.power_chart_options.y_axis.max) : '';
-    powerYMaxField.configValue = 'power_chart_options.y_axis.max';
-    powerYMaxField.addEventListener('change', this.valueChanged);
-    powerYMaxRow.appendChild(powerYMaxField);
-    form.appendChild(powerYMaxRow);
-
-    // SECTION: Energy Chart Settings - Always shown now
-    this._addSectionTitle(form as HTMLElement, 'Energy Chart Y-Axis Settings');
-
-    // Energy Y-Axis Title
-    const energyYTitleRow = this._createRow();
-    const energyYTitleField = document.createElement('ha-textfield') as HaFormElement;
-    energyYTitleField.className = 'value';
-    energyYTitleField.label = 'Y-Axis Title';
-    energyYTitleField.value = this.config.energy_chart_options?.y_axis?.title || 'Energy';
-    energyYTitleField.configValue = 'energy_chart_options.y_axis.title';
-    energyYTitleField.addEventListener('change', this.valueChanged);
-    energyYTitleRow.appendChild(energyYTitleField);
-    form.appendChild(energyYTitleRow);
-
-    // Energy Y-Axis Unit
-    const energyYUnitRow = this._createRow();
-    const energyYUnitField = document.createElement('ha-textfield') as HaFormElement;
-    energyYUnitField.className = 'value';
-    energyYUnitField.label = 'Y-Axis Unit';
-    energyYUnitField.value = this.config.energy_chart_options?.y_axis?.unit || 'kWh';
-    energyYUnitField.configValue = 'energy_chart_options.y_axis.unit';
-    energyYUnitField.addEventListener('change', this.valueChanged);
-    energyYUnitRow.appendChild(energyYUnitField);
-    form.appendChild(energyYUnitRow);
-
-    // Energy Y-Axis Decimals
-    const energyYDecimalsRow = this._createRow();
-    const energyYDecimalsField = document.createElement('ha-textfield') as HaFormElement;
-    energyYDecimalsField.className = 'value';
-    energyYDecimalsField.label = 'Y-Axis Decimals';
-    energyYDecimalsField.type = 'number';
-    energyYDecimalsField.min = '0';
-    energyYDecimalsField.max = '5';
-    energyYDecimalsField.value = String(this.config.energy_chart_options?.y_axis?.decimals ?? 2);
-    energyYDecimalsField.configValue = 'energy_chart_options.y_axis.decimals';
-    energyYDecimalsField.addEventListener('change', this.valueChanged);
-    energyYDecimalsRow.appendChild(energyYDecimalsField);
-    form.appendChild(energyYDecimalsRow);
-
-    // Energy Y-Axis Min
-    const energyYMinRow = this._createRow();
-    const energyYMinField = document.createElement('ha-textfield') as HaFormElement;
-    energyYMinField.className = 'value';
-    energyYMinField.label = 'Y-Axis Minimum (empty for auto)';
-    energyYMinField.type = 'number';
-    energyYMinField.value = this.config.energy_chart_options?.y_axis?.min !== undefined ? 
-      String(this.config.energy_chart_options.y_axis.min) : '';
-    energyYMinField.configValue = 'energy_chart_options.y_axis.min';
-    energyYMinField.addEventListener('change', this.valueChanged);
-    energyYMinRow.appendChild(energyYMinField);
-    form.appendChild(energyYMinRow);
-
-    // Energy Y-Axis Max
-    const energyYMaxRow = this._createRow();
-    const energyYMaxField = document.createElement('ha-textfield') as HaFormElement;
-    energyYMaxField.className = 'value';
-    energyYMaxField.label = 'Y-Axis Maximum (empty for auto)';
-    energyYMaxField.type = 'number';
-    energyYMaxField.value = this.config.energy_chart_options?.y_axis?.max !== undefined ? 
-      String(this.config.energy_chart_options.y_axis.max) : '';
-    energyYMaxField.configValue = 'energy_chart_options.y_axis.max';
-    energyYMaxField.addEventListener('change', this.valueChanged);
-    energyYMaxRow.appendChild(energyYMaxField);
-    form.appendChild(energyYMaxRow);
+    // Y-Axis Max Presets
+    const yMaxPresetsRow = this._createRow();
+    const yMaxPresetsLabel = document.createElement('div');
+    yMaxPresetsLabel.textContent = 'Y-Axis Max Presets (comma separated)';
+    const yMaxPresetsInput = document.createElement('input');
+    yMaxPresetsInput.className = 'value';
+    yMaxPresetsInput.type = 'text';
+    yMaxPresetsInput.value = (this.config.y_axis_max_presets || [500, 3000, 9000]).join(', ');
+    yMaxPresetsInput.addEventListener('change', (e) => {
+      const val = (e.target as HTMLInputElement).value;
+      const arr = val.split(',').map(v => parseInt(v.trim(), 10)).filter(v => !isNaN(v));
+      this.config = { ...this.config as EnergyDashboardChartConfig, y_axis_max_presets: arr };
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config } }));
+    });
+    yMaxPresetsRow.appendChild(yMaxPresetsLabel);
+    yMaxPresetsRow.appendChild(yMaxPresetsInput);
+    form.appendChild(yMaxPresetsRow);
   }
 
   private _createRow(): HTMLDivElement {

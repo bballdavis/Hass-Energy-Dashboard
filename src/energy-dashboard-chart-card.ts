@@ -135,32 +135,18 @@ export class EnergyDashboardChartCard extends HTMLElement {
     if (!config) {
       throw new Error("Invalid configuration");
     }
-    
-    // Apply default chart config values 
     const defaultConfig = getDefaultChartConfig();
-    
-    // Create a merged config object
     this.config = {
       ...defaultConfig,
       ...config,
-      // Handle nested objects properly
-      power_chart_options: {
-        ...defaultConfig.power_chart_options,
-        ...(config.power_chart_options || {}),
+      chart_options: {
+        ...defaultConfig.chart_options,
+        ...(config.chart_options || {}),
         y_axis: {
-          ...defaultConfig.power_chart_options?.y_axis,
-          ...(config.power_chart_options?.y_axis || {})
+          ...defaultConfig.chart_options?.y_axis,
+          ...(config.chart_options?.y_axis || {})
         }
       },
-      energy_chart_options: {
-        ...defaultConfig.energy_chart_options,
-        ...(config.energy_chart_options || {}),
-        y_axis: {
-          ...defaultConfig.energy_chart_options?.y_axis,
-          ...(config.energy_chart_options?.y_axis || {})
-        }
-      },
-      // Add base EnergyDashboardConfig properties
       title: config.title ?? 'Energy Dashboard Chart',
       show_header: config.show_header ?? true,
       show_state: config.show_state ?? true,
@@ -169,14 +155,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
       max_height: config.max_height ?? 400,
       show_energy_section: config.show_energy_section ?? true,
       energy_auto_select_count: config.energy_auto_select_count ?? 6,
-      // Set update_interval default to 30 seconds if not specified
       update_interval: config.update_interval ?? 30,
+      y_axis_max_presets: config.y_axis_max_presets ?? [500, 3000, 9000],
     } as EnergyDashboardChartConfig;
-    
-    // Set the current refresh interval from config
     this._currentRefreshInterval = this.config.update_interval ?? 30;
     this._currentTimeRangeHours = this.config.hours_to_show ?? 24;
-    
     this._loadSelectedEntities();
     this._isLoading = true;
     this._checkApexChartsRegistration();
@@ -260,42 +243,29 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   private _generateApexchartsConfig(entities: string[], isEnergy: boolean) {
     if (!this.config || !entities.length || !this._hass) return null;
-
-    const options = isEnergy
-      ? this.config.energy_chart_options
-      : this.config.power_chart_options;
-
-    // Generate Apexcharts configuration
-    const chartType = this.config.chart_type || 'line';
+    const options = this.config.chart_options;
+    // Always use 'line' chart type
+    const chartType = 'line';
     const hoursToShow = this.config.hours_to_show || 24;
     const showPoints = this.config.show_points || false;
     const showLegend = this.config.show_legend !== false;
     const smoothCurve = this.config.smooth_curve !== false;
     const strokeWidth = this.config.stroke_width || 2;
-
     const series = entities.map(entityId => ({
       entity: entityId,
       name: this._hass.states[entityId]?.attributes?.friendly_name || entityId
     }));
-
-    // Use only user-configured min/max, otherwise let apexcharts auto-range
     let yMin = options?.y_axis?.min;
     let yMax = options?.y_axis?.max;
-    let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
-    if (options?.y_axis?.title) yTitle = options.y_axis.title;
-
+    let yTitle = options?.y_axis?.title || (isEnergy ? 'Energy (kWh)' : 'Power (W)');
     const decimals = options?.y_axis?.decimals !== undefined ? options.y_axis.decimals : (isEnergy ? 2 : 0);
-
     const apexChartCardConfig = {
       type: 'custom:apexcharts-card',
-      header: {
-        show: false
-      },
+      header: { show: false },
       graph_span: `${hoursToShow}h`,
       chart_type: chartType,
       series,
       yaxis: [{
-        // Only set min/max if explicitly configured
         ...(typeof yMin !== 'undefined' ? { min: yMin } : {}),
         ...(typeof yMax !== 'undefined' ? { max: yMax } : {}),
         decimals: decimals
@@ -318,7 +288,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
           }
         },
         yaxis: [{
-          // No custom tickAmount or forceNiceScale, let apexcharts handle it
           title: { 
             text: yTitle || '',
             style: {
@@ -360,22 +329,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
           borderColor: 'var(--divider-color, #e0e0e0)',
           strokeDashArray: 0,
           position: 'back',
-          xaxis: {
-            lines: {
-              show: false
-            }
-          },
-          yaxis: {
-            lines: {
-              show: true
-            }
-          },
-          padding: {
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0
-          }
+          xaxis: { lines: { show: false } },
+          yaxis: { lines: { show: true } },
+          padding: { top: 0, right: 0, bottom: 0, left: 0 }
         },
         markers: { 
           size: showPoints ? 4 : 0,
@@ -393,9 +349,7 @@ export class EnergyDashboardChartCard extends HTMLElement {
           position: 'bottom',
           fontSize: '12px',
           fontFamily: 'Helvetica, Arial, sans-serif',
-          labels: {
-            colors: 'var(--primary-text-color, #000)'
-          }
+          labels: { colors: 'var(--primary-text-color, #000)' }
         },
         tooltip: {
           theme: 'light',
@@ -405,22 +359,11 @@ export class EnergyDashboardChartCard extends HTMLElement {
           }
         },
         states: {
-          hover: {
-            filter: {
-              type: 'lighten',
-              value: 0.1
-            }
-          },
-          active: {
-            filter: {
-              type: 'darken',
-              value: 0.35
-            }
-          }
+          hover: { filter: { type: 'lighten', value: 0.1 } },
+          active: { filter: { type: 'darken', value: 0.35 } }
         }
       }
     };
-
     // --- Data Smoothing (Averaging) ---
     let averageWindow = 1;
     if ((this.config as any)?.average_window && (this.config as any).average_window !== 'off') {
@@ -441,7 +384,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         });
       }
     }
-
     return apexChartCardConfig;
   }
 
@@ -1019,26 +961,17 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _updateYAxisControlsUI(container?: HTMLElement) {
     const controls = container || this._root.querySelector('.y-axis-controls');
     if (!controls) return;
-
-    // Get the current max value based on the view mode
-    const isEnergy = this._viewMode === 'energy';
-    const currentMax = isEnergy 
-      ? (this.config?.energy_chart_options?.y_axis?.max ?? 'auto')
-      : (this.config?.power_chart_options?.y_axis?.max ?? 'auto');
-    
-    // Convert to string for comparison with button data attribute
+    const yAxis = this.config?.chart_options?.y_axis;
+    const currentMax = yAxis && typeof yAxis.max !== 'undefined' ? yAxis.max : 'auto';
     const currentMaxStr = currentMax === undefined ? 'auto' : String(currentMax);
-    
     const buttons = controls.querySelectorAll('.yaxis-button');
     buttons.forEach(btn => {
       const button = btn as HTMLElement;
       button.classList.remove('active');
-      button.style.backgroundColor = 'var(--card-background-color, white)'; // Changed from secondary-background-color
+      button.style.backgroundColor = 'var(--card-background-color, white)';
       button.style.color = 'var(--primary-text-color, #212121)';
       button.style.borderColor = 'var(--divider-color, #e0e0e0)';
     });
-    
-    // Find the active button by its data-yaxis attribute
     const activeButton = controls.querySelector(`.yaxis-button[data-yaxis="${currentMaxStr}"]`) as HTMLElement;
     if (activeButton) {
       activeButton.classList.add('active');
@@ -1050,42 +983,12 @@ export class EnergyDashboardChartCard extends HTMLElement {
 
   private _setYAxisMax(maxValue: string) {
     if (!this.config) return;
-
-    // Get current view mode
-    const isEnergy = this._viewMode === 'energy';
-    
-    // Update config based on current view mode
-    if (isEnergy) {
-      if (!this.config.energy_chart_options) {
-        this.config.energy_chart_options = { y_axis: {} };
-      }
-      if (!this.config.energy_chart_options.y_axis) {
-        this.config.energy_chart_options.y_axis = {};
-      }
-      
-      // Set max to number or undefined for auto
-      this.config.energy_chart_options.y_axis.max = 
-        maxValue === 'auto' ? undefined : Number(maxValue);
-    } else {
-      if (!this.config.power_chart_options) {
-        this.config.power_chart_options = { y_axis: {} };
-      }
-      if (!this.config.power_chart_options.y_axis) {
-        this.config.power_chart_options.y_axis = {};
-      }
-      
-      // Set max to number or undefined for auto
-      this.config.power_chart_options.y_axis.max = 
-        maxValue === 'auto' ? undefined : Number(maxValue);
-    }
-    
-    // Update the UI to show the active button
+    if (!this.config.chart_options) this.config.chart_options = { y_axis: {} };
+    if (!this.config.chart_options.y_axis) this.config.chart_options.y_axis = {};
+    this.config.chart_options.y_axis.max = maxValue === 'auto' ? undefined : Number(maxValue);
     this._updateYAxisControlsUI();
-    
-    // Refresh the chart to apply new Y-axis setting
     this._updateCharts();
-    
-    console.log(`Set Y-axis max to ${maxValue} for ${isEnergy ? 'energy' : 'power'} chart`);
+    console.log(`Set Y-axis max to ${maxValue}`);
   }
 
   private _createAveragingControls(): HTMLElement {
@@ -1202,16 +1105,13 @@ export class EnergyDashboardChartCard extends HTMLElement {
   private _createYAxisControls(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'y-axis-controls pill-row';
+    const presets = this.config?.y_axis_max_presets || [500, 3000, 9000];
     const yAxisPresets = [
       { label: 'Auto', value: 'auto' },
-      { label: '500', value: '500' },
-      { label: '3000', value: '3000' },
-      { label: '9000', value: '9000' }
+      ...presets.map(v => ({ label: String(v), value: String(v) }))
     ];
-    const isEnergy = this._viewMode === 'energy';
-    const currentMax = isEnergy
-      ? (this.config?.energy_chart_options?.y_axis?.max ?? 'auto')
-      : (this.config?.power_chart_options?.y_axis?.max ?? 'auto');
+    const yAxis = this.config?.chart_options?.y_axis;
+    const currentMax = yAxis && typeof yAxis.max !== 'undefined' ? yAxis.max : 'auto';
     const currentMaxStr = currentMax === undefined ? 'auto' : String(currentMax);
     yAxisPresets.forEach((preset, index) => {
       const btn = document.createElement('button');
