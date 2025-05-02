@@ -4,6 +4,16 @@ A Home Assistant custom dashboard for visualizing and managing power and energy 
 - **Entity Card**: Select, filter, and control which entities are shown.
 - **Chart Card**: Visualize power and energy usage with configurable charts.
 
+## Card Previews
+
+**Entity Card Example:**
+
+![Entity Card Preview](Entity.png)
+
+**Chart Card Example:**
+
+![Chart Card Preview](chart.png)
+
 ## Features
 
 - Select and filter power/energy entities
