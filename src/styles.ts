@@ -402,7 +402,8 @@ export const cardStyles = `
   }
 
   .pill-label {
-    font-size: 0.45em; /* Reduced by 40% from 0.75em */
+    font-size: 11px !important;
+    line-height: 1;
     color: var(--secondary-text-color, #888);
     margin-bottom: 2px;
     margin-top: 0px;
