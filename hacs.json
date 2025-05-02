@@ -4,5 +4,6 @@
   "filename": "energy-dashboard.js",
   "render_readme": true,
   "domains": ["sensor", "switch", "light"],
-  "homeassistant": "2023.8.0"
+  "homeassistant": "2023.8.0",
+  "description": "A Home Assistant dashboard for visualizing and managing power and energy entities with interactive charts and entity selection."
 }

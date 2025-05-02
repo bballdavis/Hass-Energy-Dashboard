@@ -14,6 +14,14 @@ A Home Assistant custom dashboard for visualizing and managing power and energy 
 - Custom chart options: legend, smooth curve, points, etc.
 - LocalStorage-based state persistence
 
+## Card Layout & Home Assistant Recommendations
+
+These cards are designed to be managed by the Home Assistant Layout control. For best results:
+- **Chart Card**: Set width to **24** (full-width in most layouts)
+- **Entity Card**: Set width to **9** (sidebar style)
+
+This ensures the chart is large and readable, while the entity card remains compact and easy to use.
+
 ## Configuration Options
 
 ### Entity Card
@@ -24,7 +32,13 @@ A Home Assistant custom dashboard for visualizing and managing power and energy 
 - `auto_select_count`: Number of entities to auto-select
 - `max_height`: Max height for scrollable entity list
 - `persist_selection`: Remember selection between reloads
-- `entity_removal_filter`: Filter to remove entities by name or ID (format: `string1,string2|mode`)
+- `entity_removal_filter`: Filter to remove entities by name or ID. **Format:** `string1,string2|mode`  
+  - Example: `kitchen,bedroom|contains` removes entities whose names contain "kitchen" or "bedroom".
+  - **Modes:**
+    - `contains` (default): Remove if name contains any term
+    - `exact`: Remove if name exactly matches a term
+    - `start`: Remove if name starts with a term
+    - `entity_id`: Remove if entity_id contains a term
 - `refresh_rate`: Refresh interval for entity updates (`off`, `10s`, `30s`)
 
 ### Chart Card
