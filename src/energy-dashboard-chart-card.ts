@@ -2,38 +2,6 @@ import { createStyles, cardStyles } from './styles';
 import { loadToggleStates } from './entity-utils';
 import { EnergyDashboardChartConfig, getDefaultChartConfig } from './energy-dashboard-chart-config';
 
-// Gaussian smoothing utility
-function gaussianSmooth(data: number[], window: number): number[] {
-  if (window <= 1) return data;
-  const sigma = window / 3;
-  const kernel = [];
-  const mean = Math.floor(window / 2);
-  let sum = 0;
-  for (let i = 0; i < window; i++) {
-    const x = i - mean;
-    const value = Math.exp(-(x * x) / (2 * sigma * sigma));
-    kernel.push(value);
-    sum += value;
-  }
-  // Normalize
-  for (let i = 0; i < kernel.length; i++) kernel[i] /= sum;
-  const half = Math.floor(window / 2);
-  const smoothed = [];
-  for (let i = 0; i < data.length; i++) {
-    let acc = 0;
-    let weight = 0;
-    for (let j = 0; j < window; j++) {
-      const idx = i + j - half;
-      if (idx >= 0 && idx < data.length) {
-        acc += data[idx] * kernel[j];
-        weight += kernel[j];
-      }
-    }
-    smoothed.push(acc / (weight || 1));
-  }
-  return smoothed;
-}
-
 export class EnergyDashboardChartCard extends HTMLElement {
   // Properties
   private _hass: any;
@@ -364,26 +332,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
         }
       }
     };
-    // --- Data Smoothing (Averaging) ---
-    let averageWindow = 1;
-    if ((this.config as any)?.average_window && (this.config as any).average_window !== 'off') {
-      if ((this.config as any).average_window === '15min') averageWindow = 3;
-      if ((this.config as any).average_window === '1h') averageWindow = 12;
-      if ((this.config as any).average_window === '5h') averageWindow = 60;
-    }
-    if (averageWindow > 1 && this._hass) {
-      if (Array.isArray(apexChartCardConfig.series)) {
-        apexChartCardConfig.series = apexChartCardConfig.series.map((s: any) => {
-          const stateObj = this._hass.states[s.entity];
-          if (stateObj) {
-            const val = parseFloat(stateObj.state);
-            const dataArr = Array(60).fill(val); // Simulate 60 points
-            return { ...s, data: gaussianSmooth(dataArr, averageWindow) };
-          }
-          return s;
-        });
-      }
-    }
     return apexChartCardConfig;
   }
 
@@ -774,10 +722,9 @@ export class EnergyDashboardChartCard extends HTMLElement {
     const refreshControls = this._createRefreshRatePillControls();
     const timeRangeControls = this._createTimeRangeControls();
     const yAxisControls = this._createYAxisControls();
-    const averagingControls = this._createAveragingControls();
 
     // Ensure pill-row gap is 0
-    [refreshControls, timeRangeControls, yAxisControls, averagingControls].forEach(row => {
+    [refreshControls, timeRangeControls, yAxisControls].forEach(row => {
       row.style.gap = '0';
       row.style.margin = '0';
       row.style.padding = '0';
@@ -787,7 +734,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     controlsContainer.appendChild(createGroup('Refresh Rate', refreshControls));
     controlsContainer.appendChild(createGroup('Time Range', timeRangeControls));
     controlsContainer.appendChild(createGroup('Max Range', yAxisControls));
-    controlsContainer.appendChild(createGroup('Smoothing', averagingControls));
 
     // Add the controls container to the card
     card.appendChild(controlsContainer);
@@ -833,7 +779,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
       this._updateRefreshRatePillControlsUI();
       this._updateTimeRangeControlsUI();
       this._updateYAxisControlsUI();
-      this._updateAveragingControlsUI();
     }, 100);
   }
 
@@ -989,80 +934,6 @@ export class EnergyDashboardChartCard extends HTMLElement {
     this._updateYAxisControlsUI();
     this._updateCharts();
     console.log(`Set Y-axis max to ${maxValue}`);
-  }
-
-  private _createAveragingControls(): HTMLElement {
-    const averagingContainer = document.createElement('div');
-    averagingContainer.className = 'averaging-controls pill-row';
-    averagingContainer.style.display = 'flex';
-    averagingContainer.style.justifyContent = 'center';
-    averagingContainer.style.alignItems = 'center';
-    averagingContainer.style.gap = '0';
-    averagingContainer.style.height = '26px';
-    averagingContainer.style.padding = '0';
-    const averagingOptions = [
-      { label: 'Off', value: 'off' },
-      { label: '15m', value: '15min' },
-      { label: '1h', value: '1h' },
-      { label: '5h', value: '5h' }
-    ];
-    averagingOptions.forEach((option, index) => {
-      const btn = document.createElement('button');
-      btn.className = 'pill-control averaging-button';
-      btn.textContent = option.label;
-      btn.dataset.value = option.value;
-      btn.style.borderRadius =
-        index === 0 ? '16px 0 0 16px' :
-        index === averagingOptions.length - 1 ? '0 16px 16px 0' : '0';
-      btn.style.marginLeft = index > 0 ? '-1px' : '0';
-      btn.style.minWidth = '40px';
-      btn.style.height = '26px';
-      btn.style.display = 'flex';
-      btn.style.alignItems = 'center';
-      btn.style.justifyContent = 'center';
-      btn.style.fontSize = '0.9em';
-      btn.style.border = '1px solid var(--divider-color, #e0e0e0)';
-      btn.style.backgroundColor = 'var(--card-background-color, white)';
-      btn.style.color = 'var(--primary-text-color)';
-      btn.style.cursor = 'pointer';
-      btn.style.transition = 'all 0.2s';
-      btn.style.padding = '0';
-      if ((this.config as any)?.average_window === option.value || (!this.config?.average_window && option.value === 'off')) {
-        btn.style.backgroundColor = 'var(--primary-color, #03a9f4)';
-        btn.style.color = 'var(--text-primary-color, #fff)';
-        btn.style.borderColor = 'var(--primary-color, #03a9f4)';
-      }
-      btn.addEventListener('click', () => {
-        if (this.config) {
-          (this.config as any).average_window = option.value;
-          this._updateCharts();
-          this._updateAveragingControlsUI(averagingContainer);
-        }
-      });
-      averagingContainer.appendChild(btn);
-    });
-    return averagingContainer;
-  }
-
-  private _updateAveragingControlsUI(container?: HTMLElement) {
-    const controls = container || this._root.querySelector('.averaging-controls');
-    if (!controls) return;
-    const buttons = controls.querySelectorAll('.averaging-button');
-    buttons.forEach(btn => {
-      const button = btn as HTMLElement;
-      button.classList.remove('active');
-      button.style.backgroundColor = 'var(--card-background-color, white)';
-      button.style.color = 'var(--primary-text-color, #212121)';
-      button.style.borderColor = 'var(--divider-color, #e0e0e0)';
-    });
-    const activeValue = (this.config as any)?.average_window || 'off';
-    const activeButton = controls.querySelector(`.averaging-button[data-value="${activeValue}"]`) as HTMLElement;
-    if (activeButton) {
-      activeButton.classList.add('active');
-      activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
-      activeButton.style.color = 'var(--text-primary-color, #fff)';
-      activeButton.style.borderColor = 'var(--primary-color, #03a9f4)';
-    }
   }
 
   private _createTimeRangeControls(): HTMLElement {
