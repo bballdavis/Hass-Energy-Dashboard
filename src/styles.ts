@@ -12,7 +12,7 @@ export const cardStyles = `
     --button-height: 32px;
     --entity-font-size: 0.95em;
     --section-title-font-size: 0.9975em;
-    --control-spacing: 8px;
+    --control-spacing: 5px;
   }
   .card-header {
     padding: var(--card-padding);
@@ -30,7 +30,7 @@ export const cardStyles = `
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    gap: min(4px, 1%); /* Use dynamic gap that shrinks with card size */
+    gap: var(--control-spacing, 5px); /* Using variable with 5px default */
   }
   .control-button, .select-all-button {
     background-color: var(--card-background-color, white);
@@ -287,7 +287,7 @@ export const cardStyles = `
     flex-direction: column;
     align-items: center;
     margin: 0;
-    margin-right: var(--control-spacing, 8px);
+    margin-right: 5px; /* Fixed 5px spacing */
     min-width: 0;
     flex: 1 1 auto;
   }
@@ -315,7 +315,7 @@ export const cardStyles = `
     align-items: flex-end;
     justify-content: flex-start;
     width: 100%;
-    gap: 0;
+    gap: 5px; /* Set to exactly 5px */
     margin-bottom: 4px;
     margin-top: 0px;
     min-height: 0;

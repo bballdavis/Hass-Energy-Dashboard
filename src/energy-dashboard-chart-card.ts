@@ -289,20 +289,59 @@ export class EnergyDashboardChartCard extends HTMLElement {
     if (typeof yMin === 'undefined' || typeof yMax === 'undefined') {
       let minVal: number | undefined = undefined;
       let maxVal: number | undefined = undefined;
+
+      // First pass: get initial min/max values
       for (const entityId of entities) {
         const stateObj = this._hass.states[entityId];
         if (stateObj) {
           const val = parseFloat(stateObj.state);
           if (!isNaN(val)) {
-            if (typeof minVal === 'undefined') minVal = val;
-            else minVal = Math.min(minVal, val);
-            if (typeof maxVal === 'undefined') maxVal = val;
-            else maxVal = Math.max(maxVal, val);
+            if (typeof minVal === 'undefined' || val < minVal) minVal = val;
+            if (typeof maxVal === 'undefined' || val > maxVal) maxVal = val;
           }
         }
       }
-      if (typeof yMin === 'undefined') yMin = typeof minVal !== 'undefined' ? minVal : 0;
-      if (typeof yMax === 'undefined') yMax = typeof maxVal !== 'undefined' ? maxVal : 0;
+
+      // Apply buffer for better visualization (10% on both ends)
+      if (typeof minVal !== 'undefined' && typeof maxVal !== 'undefined') {
+        // Calculate the data range
+        const dataRange = maxVal - minVal;
+        
+        // Add 10% buffer on both ends
+        const buffer = dataRange * 0.1;
+        
+        // If min is undefined or auto, set it with buffer (can go negative)
+        if (typeof yMin === 'undefined') {
+          yMin = minVal - buffer;
+        }
+        
+        // If max is undefined or auto, set it with buffer
+        if (typeof yMax === 'undefined') {
+          yMax = maxVal + buffer;
+        }
+        
+        // Special case: if min and max are very close or equal, add some separation
+        if (Math.abs(yMax - yMin) < 0.001) {
+          if (yMin === 0 && yMax === 0) {
+            // If both are zero, set a reasonable range
+            yMin = -1;
+            yMax = 1;
+          } else {
+            // Otherwise add 20% buffer on both sides
+            const absVal = Math.abs(yMin || yMax);
+            const buffer = absVal * 0.2;
+            yMin = (yMin || 0) - buffer;
+            yMax = (yMax || 0) + buffer;
+          }
+        }
+        
+        console.log(`Auto Y-axis range for ${isEnergy ? 'energy' : 'power'} chart: [${yMin}, ${yMax}]`);
+      } else {
+        // Fallback if no valid values found
+        yMin = 0;
+        yMax = 100;
+        console.log(`Using default Y-axis range: [${yMin}, ${yMax}]`);
+      }
     }
 
     // Calculate appropriate tick amount based on y-axis range

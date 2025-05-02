@@ -107,7 +107,7 @@ const cardStyles = `
     --button-height: 32px;
     --entity-font-size: 0.95em;
     --section-title-font-size: 0.9975em;
-    --control-spacing: 8px;
+    --control-spacing: 5px;
   }
   .card-header {
     padding: var(--card-padding);
@@ -125,7 +125,7 @@ const cardStyles = `
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    gap: min(4px, 1%); /* Use dynamic gap that shrinks with card size */
+    gap: 5px; /* Fixed 5px gap */
   }
   .control-button, .select-all-button {
     background-color: var(--card-background-color, white);
@@ -382,7 +382,7 @@ const cardStyles = `
     flex-direction: column;
     align-items: center;
     margin: 0;
-    margin-right: var(--control-spacing, 8px);
+    margin-right: 5px; /* Fixed 5px spacing */
     min-width: 0;
     flex: 1 1 auto;
   }
@@ -410,7 +410,7 @@ const cardStyles = `
     align-items: flex-end;
     justify-content: flex-start;
     width: 100%;
-    gap: 0;
+    gap: 5px; /* Set to exactly 5px */
     margin-bottom: 4px;
     margin-top: 0px;
     min-height: 0;
@@ -2117,26 +2117,56 @@ class EnergyDashboardChartCard extends HTMLElement {
         if (typeof yMin === 'undefined' || typeof yMax === 'undefined') {
             let minVal = undefined;
             let maxVal = undefined;
+            // First pass: get initial min/max values
             for (const entityId of entities) {
                 const stateObj = this._hass.states[entityId];
                 if (stateObj) {
                     const val = parseFloat(stateObj.state);
                     if (!isNaN(val)) {
-                        if (typeof minVal === 'undefined')
+                        if (typeof minVal === 'undefined' || val < minVal)
                             minVal = val;
-                        else
-                            minVal = Math.min(minVal, val);
-                        if (typeof maxVal === 'undefined')
+                        if (typeof maxVal === 'undefined' || val > maxVal)
                             maxVal = val;
-                        else
-                            maxVal = Math.max(maxVal, val);
                     }
                 }
             }
-            if (typeof yMin === 'undefined')
-                yMin = typeof minVal !== 'undefined' ? minVal : 0;
-            if (typeof yMax === 'undefined')
-                yMax = typeof maxVal !== 'undefined' ? maxVal : 0;
+            // Apply buffer for better visualization (10% on both ends)
+            if (typeof minVal !== 'undefined' && typeof maxVal !== 'undefined') {
+                // Calculate the data range
+                const dataRange = maxVal - minVal;
+                // Add 10% buffer on both ends
+                const buffer = dataRange * 0.1;
+                // If min is undefined or auto, set it with buffer (can go negative)
+                if (typeof yMin === 'undefined') {
+                    yMin = minVal - buffer;
+                }
+                // If max is undefined or auto, set it with buffer
+                if (typeof yMax === 'undefined') {
+                    yMax = maxVal + buffer;
+                }
+                // Special case: if min and max are very close or equal, add some separation
+                if (Math.abs(yMax - yMin) < 0.001) {
+                    if (yMin === 0 && yMax === 0) {
+                        // If both are zero, set a reasonable range
+                        yMin = -1;
+                        yMax = 1;
+                    }
+                    else {
+                        // Otherwise add 20% buffer on both sides
+                        const absVal = Math.abs(yMin || yMax);
+                        const buffer = absVal * 0.2;
+                        yMin = (yMin || 0) - buffer;
+                        yMax = (yMax || 0) + buffer;
+                    }
+                }
+                console.log(`Auto Y-axis range for ${isEnergy ? 'energy' : 'power'} chart: [${yMin}, ${yMax}]`);
+            }
+            else {
+                // Fallback if no valid values found
+                yMin = 0;
+                yMax = 100;
+                console.log(`Using default Y-axis range: [${yMin}, ${yMax}]`);
+            }
         }
         // Calculate appropriate tick amount based on y-axis range
         let tickAmount = 5; // Default to 5 grid lines
