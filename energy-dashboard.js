@@ -495,6 +495,16 @@ const cardStyles = `
     margin: 0;
     line-height: 1;
   }
+
+  .pill-label {
+    font-size: 0.45em; /* Reduced by 40% from 0.75em */
+    color: var(--secondary-text-color, #888);
+    margin-bottom: 2px;
+    margin-top: 0px;
+    text-align: center;
+    letter-spacing: 0.01em;
+    font-weight: 500;
+  }
 `;
 const editorStyles = `
   .form {
