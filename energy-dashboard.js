@@ -386,7 +386,7 @@ const cardStyles = `
     width: 100%;
     padding: 8px var(--card-padding);
     box-sizing: border-box;
-    gap: 10px !important; /* Ensure 10px between groups */
+    gap: 10px;
     margin: 0;
   }
 
@@ -396,20 +396,25 @@ const cardStyles = `
     flex-direction: column;
     align-items: center;
     margin: 0 !important;
+    padding: 0 !important;
     min-width: 0;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
   }
-  
+
+  .controls-container > .pill-group:not(:last-child) {
+    margin-right: 0 !important;
+  }
+
   .pill-row {
     display: flex;
     flex-direction: row;
     align-items: flex-end;
     justify-content: flex-start;
     width: 100%;
-    gap: 0 !important; /* No gap between buttons in a group */
+    gap: 0;
     margin: 0;
-    min-height: 0;
     padding: 0;
+    min-height: 0;
     box-sizing: border-box;
   }
   
