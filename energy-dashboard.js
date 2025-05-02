@@ -2591,83 +2591,39 @@ class EnergyDashboardChartCard extends HTMLElement {
         // --- Controls Layout Container ---
         const controlsContainer = document.createElement('div');
         controlsContainer.className = 'controls-container';
-        controlsContainer.style.display = 'flex';
-        controlsContainer.style.flexDirection = 'row';
-        controlsContainer.style.flexWrap = 'wrap';
-        controlsContainer.style.justifyContent = 'flex-start';
-        controlsContainer.style.alignItems = 'flex-end';
-        controlsContainer.style.width = '100%';
-        controlsContainer.style.padding = '8px var(--card-padding)';
-        controlsContainer.style.boxSizing = 'border-box';
-        controlsContainer.style.gap = '10px'; // 10px between groups
-        // Create the refresh rate group
-        const refreshGroup = document.createElement('div');
-        refreshGroup.className = 'pill-group';
-        refreshGroup.style.display = 'flex';
-        refreshGroup.style.flexDirection = 'column';
-        refreshGroup.style.alignItems = 'center';
-        refreshGroup.style.flexGrow = '0';
-        refreshGroup.style.flexShrink = '0';
-        const refreshLabel = document.createElement('div');
-        refreshLabel.className = 'pill-label';
-        refreshLabel.textContent = 'Refresh Rate';
-        refreshLabel.style.textAlign = 'center';
-        refreshGroup.appendChild(refreshLabel);
+        // Helper to create a group
+        const createGroup = (labelText, controls) => {
+            const group = document.createElement('div');
+            group.className = 'pill-group';
+            group.style.display = 'flex';
+            group.style.flexDirection = 'column';
+            group.style.alignItems = 'center';
+            group.style.margin = '0';
+            group.style.padding = '0';
+            const label = document.createElement('div');
+            label.className = 'pill-label';
+            label.textContent = labelText;
+            label.style.textAlign = 'center';
+            group.appendChild(label);
+            group.appendChild(controls);
+            return group;
+        };
+        // Create controls
         const refreshControls = this._createRefreshRatePillControls();
-        refreshGroup.appendChild(refreshControls);
-        controlsContainer.appendChild(refreshGroup);
-        // Time range group
-        const timeGroup = document.createElement('div');
-        timeGroup.className = 'pill-group';
-        timeGroup.style.display = 'flex';
-        timeGroup.style.flexDirection = 'column';
-        timeGroup.style.alignItems = 'center';
-        timeGroup.style.flexGrow = '0';
-        timeGroup.style.flexShrink = '0';
-        const timeLabel = document.createElement('div');
-        timeLabel.className = 'pill-label';
-        timeLabel.textContent = 'Time Range';
-        timeLabel.style.textAlign = 'center';
-        timeGroup.appendChild(timeLabel);
         const timeRangeControls = this._createTimeRangeControls();
-        timeGroup.appendChild(timeRangeControls);
-        controlsContainer.appendChild(timeGroup);
-        // Y-axis group (renamed to Max Range)
-        const yaxisGroup = document.createElement('div');
-        yaxisGroup.className = 'pill-group';
-        yaxisGroup.style.display = 'flex';
-        yaxisGroup.style.flexDirection = 'column';
-        yaxisGroup.style.alignItems = 'center';
-        yaxisGroup.style.flexGrow = '0';
-        yaxisGroup.style.flexShrink = '0';
-        const yaxisLabel = document.createElement('div');
-        yaxisLabel.className = 'pill-label';
-        yaxisLabel.textContent = 'Max Range';
-        yaxisLabel.style.textAlign = 'center';
-        yaxisGroup.appendChild(yaxisLabel);
         const yAxisControls = this._createYAxisControls();
-        yaxisGroup.appendChild(yAxisControls);
-        controlsContainer.appendChild(yaxisGroup);
-        // Averaging group (smoothing)
-        const avgGroup = document.createElement('div');
-        avgGroup.className = 'pill-group';
-        avgGroup.style.display = 'flex';
-        avgGroup.style.flexDirection = 'column';
-        avgGroup.style.alignItems = 'center';
-        avgGroup.style.flexGrow = '0';
-        avgGroup.style.flexShrink = '0';
-        const avgLabel = document.createElement('div');
-        avgLabel.className = 'pill-label';
-        avgLabel.textContent = 'Smoothing';
-        avgLabel.style.textAlign = 'center';
-        avgGroup.appendChild(avgLabel);
         const averagingControls = this._createAveragingControls();
-        avgGroup.appendChild(averagingControls);
-        controlsContainer.appendChild(avgGroup);
-        // In each pill-row, ensure gap is 0
+        // Ensure pill-row gap is 0
         [refreshControls, timeRangeControls, yAxisControls, averagingControls].forEach(row => {
             row.style.gap = '0';
+            row.style.margin = '0';
+            row.style.padding = '0';
         });
+        // Add groups to container
+        controlsContainer.appendChild(createGroup('Refresh Rate', refreshControls));
+        controlsContainer.appendChild(createGroup('Time Range', timeRangeControls));
+        controlsContainer.appendChild(createGroup('Max Range', yAxisControls));
+        controlsContainer.appendChild(createGroup('Smoothing', averagingControls));
         // Add the controls container to the card
         card.appendChild(controlsContainer);
         const chartContainer = document.createElement('div');
