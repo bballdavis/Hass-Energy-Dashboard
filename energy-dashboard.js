@@ -107,6 +107,7 @@ const cardStyles = `
     --button-height: 32px;
     --entity-font-size: 0.95em;
     --section-title-font-size: 0.9975em;
+    --control-spacing: 8px;
   }
   .card-header {
     padding: var(--card-padding);
@@ -375,18 +376,26 @@ const cardStyles = `
     --mdc-icon-size: 14px;
   }
 
+  /* Pill controls layout */
   .pill-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 0 8px;
+    margin: 0;
+    margin-right: var(--control-spacing, 8px);
     min-width: 0;
-    flex: 1 1 0;
+    flex: 1 1 auto;
   }
+  
+  /* No margin on the last pill group */
+  .pill-group:last-child {
+    margin-right: 0;
+  }
+  
   .pill-label {
     font-size: 0.75em;
     color: var(--secondary-text-color, #888);
-    margin-bottom: 0px;
+    margin-bottom: 2px;
     margin-top: 0px;
     text-align: center;
     letter-spacing: 0.01em;
@@ -394,17 +403,21 @@ const cardStyles = `
     user-select: none;
     line-height: 1.1;
   }
+  
   .pill-row {
     display: flex;
     flex-direction: row;
     align-items: flex-end;
-    justify-content: stretch;
+    justify-content: flex-start;
     width: 100%;
     gap: 0;
     margin-bottom: 4px;
     margin-top: 0px;
     min-height: 0;
+    padding: 0 var(--card-padding);
+    box-sizing: border-box;
   }
+  
   .pill-control {
     background-color: var(--card-background-color, white);
     border: 1px solid var(--divider-color, #e0e0e0);
@@ -423,41 +436,50 @@ const cardStyles = `
     outline: none;
     border-right: none;
     line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+  
   .pill-control:last-child {
     border-right: 1px solid var(--divider-color, #e0e0e0);
   }
+  
   .pill-control.active {
     background-color: var(--primary-color, #03a9f4);
     color: var(--text-primary-color, #fff);
     border-color: var(--primary-color, #03a9f4);
     z-index: 1;
   }
+  
   .pill-control:not(.active):hover {
     background-color: var(--divider-color, #e0e0e0);
     color: var(--primary-text-color);
   }
+  
   .pill-row .pill-control {
     border-radius: 0;
   }
+  
   .pill-row .pill-control:first-child {
     border-radius: 16px 0 0 16px;
   }
+  
   .pill-row .pill-control:last-child {
     border-radius: 0 16px 16px 0;
     border-right: 1px solid var(--divider-color, #e0e0e0);
   }
 
-  /* Add styles for the manual refresh button */
+  /* Manual refresh button specific styles */
   .refresh-rate-button.manual-refresh {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0; /* Remove padding to rely on flex centering */
     min-width: 36px; /* Keep minimum width */
-    /* Ensure consistent height with other pills */
-    height: 26px;
-    /* Specific border radius for the first pill */
+    width: 36px; /* Fixed width to match other buttons */
+    height: 26px; /* Fixed height to match other pills */
+    box-sizing: border-box;
     border-radius: 16px 0 0 16px;
     margin-right: -1px; /* For pill group effect */
   }
@@ -465,10 +487,13 @@ const cardStyles = `
   .refresh-rate-button.manual-refresh ha-icon {
     /* Set explicit size for the icon */
     --mdc-icon-size: 14px;
-    height: 14px;
     width: 14px;
-    /* No extra margins needed with flex centering */
+    height: 14px;
+    display: flex; /* Make the icon itself a flex container */
+    align-items: center;
+    justify-content: center;
     margin: 0;
+    line-height: 1;
   }
 `;
 const editorStyles = `
@@ -2601,7 +2626,6 @@ class EnergyDashboardChartCard extends HTMLElement {
         }
         else {
             // Add padding to the top of the card when header is disabled
-            // This matches the entity card's buffer space
             card.style.paddingTop = 'var(--card-padding, 0px)';
         }
         if (this._isLoading) {
@@ -2618,22 +2642,26 @@ class EnergyDashboardChartCard extends HTMLElement {
             card.appendChild(errorMessage);
             return;
         }
-        // --- Pills Layout ---
-        const pillRow = document.createElement('div');
-        pillRow.className = 'pill-row';
-        pillRow.style.display = 'flex';
-        pillRow.style.justifyContent = 'flex-start';
-        pillRow.style.alignItems = 'center';
-        pillRow.style.width = '100%';
-        pillRow.style.margin = '0 0 12px 0';
-        pillRow.style.gap = '10px'; // Ensure exactly 10px between all pill groups
-        // Refresh rate group (with manual refresh as first pill)
+        // --- Controls Layout Container ---
+        const controlsContainer = document.createElement('div');
+        controlsContainer.className = 'controls-container';
+        controlsContainer.style.display = 'flex';
+        controlsContainer.style.flexDirection = 'row';
+        controlsContainer.style.flexWrap = 'wrap';
+        controlsContainer.style.justifyContent = 'flex-start';
+        controlsContainer.style.alignItems = 'flex-end';
+        controlsContainer.style.width = '100%';
+        controlsContainer.style.padding = '8px var(--card-padding)';
+        controlsContainer.style.boxSizing = 'border-box';
+        controlsContainer.style.gap = 'var(--control-spacing, 8px)';
+        // Create the refresh rate group
         const refreshGroup = document.createElement('div');
         refreshGroup.className = 'pill-group';
         refreshGroup.style.display = 'flex';
         refreshGroup.style.flexDirection = 'column';
         refreshGroup.style.alignItems = 'center';
-        refreshGroup.style.justifyContent = 'center';
+        refreshGroup.style.flexGrow = '0';
+        refreshGroup.style.flexShrink = '0';
         const refreshLabel = document.createElement('div');
         refreshLabel.className = 'pill-label';
         refreshLabel.textContent = 'Refresh Rate';
@@ -2641,14 +2669,15 @@ class EnergyDashboardChartCard extends HTMLElement {
         refreshGroup.appendChild(refreshLabel);
         const refreshControls = this._createRefreshRatePillControls();
         refreshGroup.appendChild(refreshControls);
-        pillRow.appendChild(refreshGroup);
+        controlsContainer.appendChild(refreshGroup);
         // Time range group
         const timeGroup = document.createElement('div');
         timeGroup.className = 'pill-group';
         timeGroup.style.display = 'flex';
         timeGroup.style.flexDirection = 'column';
         timeGroup.style.alignItems = 'center';
-        timeGroup.style.justifyContent = 'center';
+        timeGroup.style.flexGrow = '0';
+        timeGroup.style.flexShrink = '0';
         const timeLabel = document.createElement('div');
         timeLabel.className = 'pill-label';
         timeLabel.textContent = 'Time Range';
@@ -2656,48 +2685,47 @@ class EnergyDashboardChartCard extends HTMLElement {
         timeGroup.appendChild(timeLabel);
         const timeRangeControls = this._createTimeRangeControls();
         timeGroup.appendChild(timeRangeControls);
-        pillRow.appendChild(timeGroup);
+        controlsContainer.appendChild(timeGroup);
         // Y-axis group (renamed to Max Range)
         const yaxisGroup = document.createElement('div');
         yaxisGroup.className = 'pill-group';
         yaxisGroup.style.display = 'flex';
         yaxisGroup.style.flexDirection = 'column';
         yaxisGroup.style.alignItems = 'center';
-        yaxisGroup.style.justifyContent = 'center';
+        yaxisGroup.style.flexGrow = '0';
+        yaxisGroup.style.flexShrink = '0';
         const yaxisLabel = document.createElement('div');
         yaxisLabel.className = 'pill-label';
         yaxisLabel.textContent = 'Max Range';
         yaxisLabel.style.textAlign = 'center';
-        yaxisLabel.style.width = '100%';
         yaxisGroup.appendChild(yaxisLabel);
         const yAxisControls = this._createYAxisControls();
         yaxisGroup.appendChild(yAxisControls);
-        pillRow.appendChild(yaxisGroup);
+        controlsContainer.appendChild(yaxisGroup);
         // Averaging group (smoothing)
         const avgGroup = document.createElement('div');
         avgGroup.className = 'pill-group';
         avgGroup.style.display = 'flex';
         avgGroup.style.flexDirection = 'column';
         avgGroup.style.alignItems = 'center';
-        avgGroup.style.justifyContent = 'center';
+        avgGroup.style.flexGrow = '0';
+        avgGroup.style.flexShrink = '0';
         const avgLabel = document.createElement('div');
         avgLabel.className = 'pill-label';
         avgLabel.textContent = 'Smoothing';
         avgLabel.style.textAlign = 'center';
-        avgLabel.style.width = '100%';
         avgGroup.appendChild(avgLabel);
         const averagingControls = this._createAveragingControls();
-        averagingControls.style.height = '26px'; // Match other controls
-        averagingControls.style.alignItems = 'center'; // Ensure vertical alignment
         avgGroup.appendChild(averagingControls);
-        pillRow.appendChild(avgGroup);
-        // Add the pill row to the card above the chart
-        card.appendChild(pillRow);
+        controlsContainer.appendChild(avgGroup);
+        // Add the controls container to the card
+        card.appendChild(controlsContainer);
         const chartContainer = document.createElement('div');
         chartContainer.className = 'chart-container';
         chartContainer.style.width = '100%';
         chartContainer.style.display = 'flex';
         chartContainer.style.flexDirection = 'column';
+        chartContainer.style.marginTop = '8px';
         // Load the view mode from localStorage (in case it changed)
         this._viewMode = this._loadViewMode();
         // Only show the appropriate chart based on view mode
@@ -2724,18 +2752,12 @@ class EnergyDashboardChartCard extends HTMLElement {
         card.appendChild(chartContainer);
         setTimeout(() => this._updateCharts(), 0);
         setTimeout(() => this._startUpdateInterval(), 50);
-        setTimeout(() => this._updateAveragingControlsUI(), 100);
-    }
-    _checkApexChartsRegistration() {
-        if (this._apexChartCardRegistered !== null)
-            return;
-        this._isLoading = true;
         setTimeout(() => {
-            this._apexChartCardRegistered = !!customElements.get('apexcharts-card');
-            console.log(`ApexCharts registration check: ${this._apexChartCardRegistered}`);
-            this._isLoading = false;
-            this._updateContent();
-        }, 500);
+            this._updateRefreshRatePillControlsUI();
+            this._updateTimeRangeControlsUI();
+            this._updateYAxisControlsUI();
+            this._updateAveragingControlsUI();
+        }, 100);
     }
     _setRefreshInterval(seconds) {
         console.log(`Setting refresh interval to: ${seconds} seconds`);
@@ -2797,7 +2819,9 @@ class EnergyDashboardChartCard extends HTMLElement {
         const controls = container || this._root.querySelector('.refresh-rate-controls');
         if (!controls)
             return;
+        // Get all buttons including the manual refresh button
         const buttons = controls.querySelectorAll('.refresh-rate-button');
+        // Reset all buttons to default state
         buttons.forEach(btn => {
             const button = btn;
             button.classList.remove('active'); // Remove active from all
@@ -2805,7 +2829,13 @@ class EnergyDashboardChartCard extends HTMLElement {
             button.style.color = 'var(--primary-text-color, #212121)';
             button.style.borderColor = 'var(--divider-color, #e0e0e0)';
         });
-        const activeButton = controls.querySelector(`.refresh-rate-button[data-value="${this._currentRefreshInterval}"]`);
+        // Find the active button by rate value (skip manual refresh which has no rate)
+        const activeRate = this._currentRefreshInterval.toString();
+        const activeButton = Array.from(buttons).find(btn => {
+            const button = btn;
+            return button.dataset.rate === activeRate;
+        });
+        // Apply active styling if found
         if (activeButton) {
             activeButton.classList.add('active');
             activeButton.style.backgroundColor = 'var(--primary-color, #03a9f4)';
@@ -3040,6 +3070,23 @@ class EnergyDashboardChartCard extends HTMLElement {
             container.appendChild(btn);
         });
         return container;
+    }
+    // Check if apexcharts-card is registered as a custom element
+    _checkApexChartsRegistration() {
+        // Check if apexcharts-card is registered as a custom element
+        const isRegistered = customElements.get('apexcharts-card') !== undefined;
+        if (isRegistered) {
+            console.log('apexcharts-card is registered as a custom element');
+            this._apexChartCardRegistered = true;
+        }
+        else {
+            console.warn('apexcharts-card is not registered as a custom element');
+            this._apexChartCardRegistered = false;
+        }
+        // Update content once we know the status
+        if (!this._isLoading) {
+            this._updateContent();
+        }
     }
 }
 customElements.define('energy-dashboard-chart-card', EnergyDashboardChartCard);

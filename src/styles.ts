@@ -12,6 +12,7 @@ export const cardStyles = `
     --button-height: 32px;
     --entity-font-size: 0.95em;
     --section-title-font-size: 0.9975em;
+    --control-spacing: 8px;
   }
   .card-header {
     padding: var(--card-padding);
@@ -280,18 +281,26 @@ export const cardStyles = `
     --mdc-icon-size: 14px;
   }
 
+  /* Pill controls layout */
   .pill-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 0 8px;
+    margin: 0;
+    margin-right: var(--control-spacing, 8px);
     min-width: 0;
-    flex: 1 1 0;
+    flex: 1 1 auto;
   }
+  
+  /* No margin on the last pill group */
+  .pill-group:last-child {
+    margin-right: 0;
+  }
+  
   .pill-label {
     font-size: 0.75em;
     color: var(--secondary-text-color, #888);
-    margin-bottom: 0px;
+    margin-bottom: 2px;
     margin-top: 0px;
     text-align: center;
     letter-spacing: 0.01em;
@@ -299,17 +308,21 @@ export const cardStyles = `
     user-select: none;
     line-height: 1.1;
   }
+  
   .pill-row {
     display: flex;
     flex-direction: row;
     align-items: flex-end;
-    justify-content: stretch;
+    justify-content: flex-start;
     width: 100%;
     gap: 0;
     margin-bottom: 4px;
     margin-top: 0px;
     min-height: 0;
+    padding: 0 var(--card-padding);
+    box-sizing: border-box;
   }
+  
   .pill-control {
     background-color: var(--card-background-color, white);
     border: 1px solid var(--divider-color, #e0e0e0);
@@ -328,41 +341,50 @@ export const cardStyles = `
     outline: none;
     border-right: none;
     line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+  
   .pill-control:last-child {
     border-right: 1px solid var(--divider-color, #e0e0e0);
   }
+  
   .pill-control.active {
     background-color: var(--primary-color, #03a9f4);
     color: var(--text-primary-color, #fff);
     border-color: var(--primary-color, #03a9f4);
     z-index: 1;
   }
+  
   .pill-control:not(.active):hover {
     background-color: var(--divider-color, #e0e0e0);
     color: var(--primary-text-color);
   }
+  
   .pill-row .pill-control {
     border-radius: 0;
   }
+  
   .pill-row .pill-control:first-child {
     border-radius: 16px 0 0 16px;
   }
+  
   .pill-row .pill-control:last-child {
     border-radius: 0 16px 16px 0;
     border-right: 1px solid var(--divider-color, #e0e0e0);
   }
 
-  /* Add styles for the manual refresh button */
+  /* Manual refresh button specific styles */
   .refresh-rate-button.manual-refresh {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0; /* Remove padding to rely on flex centering */
     min-width: 36px; /* Keep minimum width */
-    /* Ensure consistent height with other pills */
-    height: 26px;
-    /* Specific border radius for the first pill */
+    width: 36px; /* Fixed width to match other buttons */
+    height: 26px; /* Fixed height to match other pills */
+    box-sizing: border-box;
     border-radius: 16px 0 0 16px;
     margin-right: -1px; /* For pill group effect */
   }
@@ -370,10 +392,13 @@ export const cardStyles = `
   .refresh-rate-button.manual-refresh ha-icon {
     /* Set explicit size for the icon */
     --mdc-icon-size: 14px;
-    height: 14px;
     width: 14px;
-    /* No extra margins needed with flex centering */
+    height: 14px;
+    display: flex; /* Make the icon itself a flex container */
+    align-items: center;
+    justify-content: center;
     margin: 0;
+    line-height: 1;
   }
 `;
 
