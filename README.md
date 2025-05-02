@@ -14,15 +14,18 @@ A Home Assistant custom dashboard for visualizing and managing power and energy 
 
 ![Chart Card Preview](chart.png)
 
-## Features
+## Requirements
 
-- Select and filter power/energy entities
-- Dynamic search/filter for entities
-- Persistence of entity selections (with toggle)
-- Auto-select, clear, and reset entity controls
-- Configurable refresh rate, time range, and Y-axis presets for charts
-- Custom chart options: legend, smooth curve, points, etc.
-- LocalStorage-based state persistence
+- **apexcharts-card is required** for the chart card to function. Install it via HACS before using this dashboard.
+
+## Installation in HACS
+
+1. Go to HACS in Home Assistant.
+2. Click the three dots (⋮) in the top right and select **Custom repositories**.
+3. Add this repository's URL as a custom repository (select type: "Dashboard").
+4. Search for **Energy Dashboard** and install it as a dashboard.
+5. Install **apexcharts-card** (search for "ApexCharts Card" in HACS and install).
+6. Refresh your browser and add the cards to your dashboard from the UI.
 
 ## Card Layout & Home Assistant Recommendations
 
@@ -68,7 +71,7 @@ This ensures the chart is large and readable, while the entity card remains comp
 
 ## Usage
 
-1. Add the cards to your Home Assistant dashboard (via YAML or UI).  The cards are designed to be added from the UI and configured with in the card configuration panel.
+1. Add the cards to your Home Assistant dashboard (via YAML or UI). The cards are designed to be added from the UI and configured within the card configuration panel.
 2. Configure options as needed (see above).
 3. Use the entity card to select/filter entities. Use the chart card to visualize data.
 
