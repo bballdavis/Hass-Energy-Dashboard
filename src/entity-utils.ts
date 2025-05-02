@@ -94,3 +94,76 @@ export function saveToggleStates(states: Record<string, boolean>, key: string): 
     } catch {}
   }
 }
+
+/**
+ * Retrieves min/max historical values for a set of entities over a specific time period
+ * Uses the Home Assistant History API
+ * 
+ * @param hass - Home Assistant instance
+ * @param entityIds - Array of entity IDs to retrieve history for
+ * @param hours - Number of hours to look back
+ * @returns Promise with an object containing min and max values for each entity
+ */
+export async function getHistoricalMinMax(
+  hass: any, 
+  entityIds: string[], 
+  hours: number = 24
+): Promise<Record<string, {min: number, max: number}>> {
+  const now = new Date();
+  const start = new Date(now.getTime() - hours * 60 * 60 * 1000);
+  
+  // Format dates for HA API
+  const startStr = start.toISOString();
+  const endStr = now.toISOString();
+  
+  try {
+    // Call the History API
+    const history = await hass.callApi('GET', `history/period/${startStr}`, {
+      filter_entity_id: entityIds.join(','),
+      end_time: endStr,
+      minimal_response: true
+    });
+
+    const result: Record<string, {min: number, max: number}> = {};
+    
+    // Process the history data for each entity
+    if (Array.isArray(history)) {
+      history.forEach(entityHistory => {
+        if (!entityHistory || entityHistory.length === 0) return;
+        
+        const entityId = entityHistory[0].entity_id;
+        let min: number | null = null;
+        let max: number | null = null;
+        
+        // Find min and max values in the history
+        entityHistory.forEach((state: any) => {
+          if (state.state === 'unavailable' || state.state === 'unknown') return;
+          
+          const value = parseFloat(state.state);
+          if (isNaN(value)) return;
+          
+          // Apply unit conversion if needed
+          let adjustedValue = value;
+          if (state.attributes && 
+             (state.attributes.unit_of_measurement === 'kW' || 
+              state.attributes.unit_of_measurement === 'kWh')) {
+            adjustedValue *= 1000; // Convert to W or Wh
+          }
+          
+          if (min === null || adjustedValue < min) min = adjustedValue;
+          if (max === null || adjustedValue > max) max = adjustedValue;
+        });
+        
+        // Only add to result if we found valid values
+        if (min !== null && max !== null) {
+          result[entityId] = { min, max };
+        }
+      });
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error fetching historical data:', error);
+    return {};
+  }
+}

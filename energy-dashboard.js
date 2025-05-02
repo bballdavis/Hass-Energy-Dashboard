@@ -125,7 +125,7 @@ const cardStyles = `
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    gap: 5px; /* Fixed 5px gap */
+    gap: var(--control-spacing, 5px); /* Using variable with 5px default */
   }
   .control-button, .select-all-button {
     background-color: var(--card-background-color, white);
@@ -2098,8 +2098,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         const showPoints = this.config.show_points || false;
         const showLegend = this.config.show_legend !== false;
         const smoothCurve = this.config.smooth_curve !== false;
-        const strokeWidth = this.config.stroke_width || 2; // Get the stroke width from config
-        // Strictly minimal series config matching apexcharts-card schema
+        const strokeWidth = this.config.stroke_width || 2;
         const series = entities.map(entityId => {
             var _a, _b;
             return ({
@@ -2107,95 +2106,13 @@ class EnergyDashboardChartCard extends HTMLElement {
                 name: ((_b = (_a = this._hass.states[entityId]) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.friendly_name) || entityId
             });
         });
-        // --- Y Axis Auto-Range Logic ---
+        // Use only user-configured min/max, otherwise let apexcharts auto-range
         let yMin = (_a = options === null || options === void 0 ? void 0 : options.y_axis) === null || _a === void 0 ? void 0 : _a.min;
         let yMax = (_b = options === null || options === void 0 ? void 0 : options.y_axis) === null || _b === void 0 ? void 0 : _b.max;
         let yTitle = isEnergy ? 'Energy (kWh)' : 'Power (W)';
         if ((_c = options === null || options === void 0 ? void 0 : options.y_axis) === null || _c === void 0 ? void 0 : _c.title)
             yTitle = options.y_axis.title;
-        // If yMin/yMax are not set, calculate from data (including negatives)
-        if (typeof yMin === 'undefined' || typeof yMax === 'undefined') {
-            let minVal = undefined;
-            let maxVal = undefined;
-            // First pass: get initial min/max values
-            for (const entityId of entities) {
-                const stateObj = this._hass.states[entityId];
-                if (stateObj) {
-                    const val = parseFloat(stateObj.state);
-                    if (!isNaN(val)) {
-                        if (typeof minVal === 'undefined' || val < minVal)
-                            minVal = val;
-                        if (typeof maxVal === 'undefined' || val > maxVal)
-                            maxVal = val;
-                    }
-                }
-            }
-            // Apply buffer for better visualization (10% on both ends)
-            if (typeof minVal !== 'undefined' && typeof maxVal !== 'undefined') {
-                // Calculate the data range
-                const dataRange = maxVal - minVal;
-                // Add 10% buffer on both ends
-                const buffer = dataRange * 0.1;
-                // If min is undefined or auto, set it with buffer (can go negative)
-                if (typeof yMin === 'undefined') {
-                    yMin = minVal - buffer;
-                }
-                // If max is undefined or auto, set it with buffer
-                if (typeof yMax === 'undefined') {
-                    yMax = maxVal + buffer;
-                }
-                // Special case: if min and max are very close or equal, add some separation
-                if (Math.abs(yMax - yMin) < 0.001) {
-                    if (yMin === 0 && yMax === 0) {
-                        // If both are zero, set a reasonable range
-                        yMin = -1;
-                        yMax = 1;
-                    }
-                    else {
-                        // Otherwise add 20% buffer on both sides
-                        const absVal = Math.abs(yMin || yMax);
-                        const buffer = absVal * 0.2;
-                        yMin = (yMin || 0) - buffer;
-                        yMax = (yMax || 0) + buffer;
-                    }
-                }
-                console.log(`Auto Y-axis range for ${isEnergy ? 'energy' : 'power'} chart: [${yMin}, ${yMax}]`);
-            }
-            else {
-                // Fallback if no valid values found
-                yMin = 0;
-                yMax = 100;
-                console.log(`Using default Y-axis range: [${yMin}, ${yMax}]`);
-            }
-        }
-        // Calculate appropriate tick amount based on y-axis range
-        let tickAmount = 5; // Default to 5 grid lines
-        // For power, we can adjust the tick interval to be nice round numbers
-        if (!isEnergy) {
-            // If we have a fixed max, adjust the tick amount accordingly
-            if (typeof yMax === 'number') {
-                if (yMax <= 500) {
-                    tickAmount = 5; // For 0-500, show ticks at 0, 100, 200, 300, 400, 500
-                }
-                else if (yMax <= 2000) {
-                    tickAmount = 10; // For 0-2000, show more ticks
-                }
-                else {
-                    tickAmount = 15; // For larger values, use more ticks
-                }
-            }
-            else {
-                // For auto, use a reasonable default
-                tickAmount = 10;
-            }
-        }
-        else {
-            // For energy charts, use fewer ticks by default
-            tickAmount = 5;
-        }
-        // Ensure consistent decimal formatting
         const decimals = ((_d = options === null || options === void 0 ? void 0 : options.y_axis) === null || _d === void 0 ? void 0 : _d.decimals) !== undefined ? options.y_axis.decimals : (isEnergy ? 2 : 0);
-        // Minimal config object matching apexcharts-card schema
         const apexChartCardConfig = {
             type: 'custom:apexcharts-card',
             header: {
@@ -2205,9 +2122,10 @@ class EnergyDashboardChartCard extends HTMLElement {
             chart_type: chartType,
             series,
             yaxis: [{
-                    min: yMin,
-                    max: yMax, // Apply max value from config - undefined will be auto
-                    decimals: decimals // Default to 2 decimal places for energy, 0 for power
+                    // Only set min/max if explicitly configured
+                    ...(typeof yMin !== 'undefined' ? { min: yMin } : {}),
+                    ...(typeof yMax !== 'undefined' ? { max: yMax } : {}),
+                    decimals: decimals
                 }],
             apex_config: {
                 chart: {
@@ -2227,8 +2145,7 @@ class EnergyDashboardChartCard extends HTMLElement {
                     }
                 },
                 yaxis: [{
-                        tickAmount,
-                        forceNiceScale: true, // Force nice rounded intervals
+                        // No custom tickAmount or forceNiceScale, let apexcharts handle it
                         title: {
                             text: yTitle || '',
                             style: {
@@ -2295,7 +2212,7 @@ class EnergyDashboardChartCard extends HTMLElement {
                 },
                 stroke: {
                     curve: smoothCurve ? 'smooth' : 'straight',
-                    width: strokeWidth, // Apply the configured stroke width
+                    width: strokeWidth,
                     lineCap: 'round'
                 },
                 legend: {
@@ -2340,7 +2257,6 @@ class EnergyDashboardChartCard extends HTMLElement {
             if (this.config.average_window === '5h')
                 averageWindow = 60;
         }
-        // Actually smooth the data for each series
         if (averageWindow > 1 && this._hass) {
             if (Array.isArray(apexChartCardConfig.series)) {
                 apexChartCardConfig.series = apexChartCardConfig.series.map((s) => {
@@ -2683,7 +2599,7 @@ class EnergyDashboardChartCard extends HTMLElement {
         controlsContainer.style.width = '100%';
         controlsContainer.style.padding = '8px var(--card-padding)';
         controlsContainer.style.boxSizing = 'border-box';
-        controlsContainer.style.gap = 'var(--control-spacing, 8px)';
+        controlsContainer.style.gap = '10px'; // 10px between groups
         // Create the refresh rate group
         const refreshGroup = document.createElement('div');
         refreshGroup.className = 'pill-group';
@@ -2748,6 +2664,10 @@ class EnergyDashboardChartCard extends HTMLElement {
         const averagingControls = this._createAveragingControls();
         avgGroup.appendChild(averagingControls);
         controlsContainer.appendChild(avgGroup);
+        // In each pill-row, ensure gap is 0
+        [refreshControls, timeRangeControls, yAxisControls, averagingControls].forEach(row => {
+            row.style.gap = '0';
+        });
         // Add the controls container to the card
         card.appendChild(controlsContainer);
         const chartContainer = document.createElement('div');
